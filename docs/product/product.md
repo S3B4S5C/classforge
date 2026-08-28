@@ -1414,3 +1414,25 @@ Modelo conceptual futuro:
 ## Landing publica
 
 La ruta raiz de ClassForge es publica y presenta las capacidades centrales del producto y enlaza a registro e inicio de sesion.
+
+<!-- PROJECT-DOCUMENT-V1 -->
+# Actualizacion de producto — Documento de proyecto
+
+ClassForge persiste cada proyecto como un `ProjectDocument` versionado.
+
+El documento contiene dos partes independientes:
+
+- `UmlModel`: significado UML.
+- `DiagramLayout`: informacion visual.
+
+Esta separacion garantiza que:
+
+- la UI no define el dominio;
+- JointJS puede reemplazarse sin perder modelos;
+- importacion XMI, IA y voz operan sobre el mismo dominio;
+- la colaboracion puede sincronizar operaciones semanticas;
+- el layout puede cambiar sin reinterpretar UML.
+
+Cada guardado del documento utiliza revision optimista y puede detectar modificaciones concurrentes.
+
+La iconografia de ClassForge utiliza Material Symbols Rounded self-hosted mediante npm para mantener disponibilidad offline.

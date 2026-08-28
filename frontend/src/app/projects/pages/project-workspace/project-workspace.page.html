@@ -1,50 +1,250 @@
 <section class="workspace-shell">
   <nav class="breadcrumbs" aria-label="Navegacion">
-    <a mat-button class="cf-button-secondary" routerLink="/projects">Proyectos</a>
+    <a
+      mat-button
+      class="cf-button-secondary"
+      routerLink="/projects"
+    >
+      <span class="material-symbols-rounded" aria-hidden="true">
+        arrow_back
+      </span>
+      Proyectos
+    </a>
+
     <span aria-hidden="true">/</span>
-    <span>{{ project()?.name ?? 'Cargando...' }}</span>
+    <span>{{ store.project()?.name ?? 'Cargando...' }}</span>
   </nav>
 
-  @if (errorMessage()) {
+  @if (store.errorMessage() && !store.project()) {
     <div class="feedback-panel error-panel" role="alert">
-      <p>{{ errorMessage() }}</p>
+      <span
+        class="material-symbols-rounded feedback-icon"
+        aria-hidden="true"
+      >
+        error
+      </span>
+
+      <p>{{ store.errorMessage() }}</p>
+
       <div class="feedback-actions">
-        <button mat-button class="cf-button-secondary" type="button" (click)="retry()">Reintentar</button>
-        <a mat-button class="cf-button-secondary" routerLink="/projects">Volver a proyectos</a>
+        <button
+          mat-button
+          class="cf-button-secondary"
+          type="button"
+          (click)="retry()"
+        >
+          <span class="material-symbols-rounded" aria-hidden="true">
+            refresh
+          </span>
+          Reintentar
+        </button>
+
+        <a
+          mat-button
+          class="cf-button-secondary"
+          routerLink="/projects"
+        >
+          Volver a proyectos
+        </a>
       </div>
     </div>
-  } @else if (loading()) {
+  } @else if (store.loading()) {
     <div class="feedback-panel" aria-live="polite">
       <mat-spinner diameter="40"></mat-spinner>
       <p>Abriendo proyecto...</p>
     </div>
-  } @else if (project(); as currentProject) {
+  } @else if (store.project(); as currentProject) {
     <header class="workspace-heading">
-      <div>
+      <div class="title-block">
         <p class="eyebrow">WORKSPACE</p>
-        <h1>{{ currentProject.name }}</h1>
-        <p>
-          Revision {{ currentProject.revision }} · UML
-          {{ currentProject.umlModel.schemaVersion }}
+
+        @if (editingName()) {
+          <div class="rename-row">
+            <mat-form-field
+              appearance="outline"
+              subscriptSizing="dynamic"
+            >
+              <mat-label>Nombre del proyecto</mat-label>
+              <input
+                matInput
+                maxlength="120"
+                [formControl]="nameControl"
+                (keyup.enter)="rename()"
+                (keyup.escape)="cancelRename()"
+              />
+            </mat-form-field>
+
+            <div class="rename-actions">
+              <button
+                mat-flat-button
+                class="cf-button-primary"
+                type="button"
+                [disabled]="store.renaming()"
+                (click)="rename()"
+              >
+                <span class="material-symbols-rounded" aria-hidden="true">
+                  check
+                </span>
+                Guardar nombre
+              </button>
+
+              <button
+                mat-button
+                class="cf-button-secondary"
+                type="button"
+                (click)="cancelRename()"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        } @else {
+          <div class="title-row">
+            <h1>{{ currentProject.name }}</h1>
+
+            <button
+              mat-button
+              class="cf-button-secondary rename-button"
+              type="button"
+              (click)="startRename()"
+            >
+              <span class="material-symbols-rounded" aria-hidden="true">
+                edit
+              </span>
+              Renombrar
+            </button>
+          </div>
+        }
+
+        <p class="workspace-subtitle">
+          Documento {{ currentProject.document.schemaVersion }}
+          · Revision {{ currentProject.revision }}
         </p>
+      </div>
+
+      <div class="save-toolbar">
+        <div
+          class="save-status"
+          [class.is-dirty]="store.saveState() === 'dirty'"
+          [class.is-saving]="store.saveState() === 'saving'"
+          [class.is-conflict]="store.saveState() === 'conflict'"
+          [class.is-error]="store.saveState() === 'error'"
+          aria-live="polite"
+        >
+          <span
+            class="material-symbols-rounded"
+            [class.is-spinning]="store.saveState() === 'saving'"
+            aria-hidden="true"
+          >
+            {{ saveStateIcon(store.saveState()) }}
+          </span>
+
+          <span>{{ saveStateText(store.saveState()) }}</span>
+        </div>
+
+        <button
+          mat-flat-button
+          class="cf-button-primary save-button"
+          type="button"
+          [disabled]="!store.dirty() || store.saving()"
+          (click)="save()"
+        >
+          <span class="material-symbols-rounded" aria-hidden="true">
+            save
+          </span>
+          Guardar
+        </button>
       </div>
     </header>
 
+    @if (store.errorMessage()) {
+      <div
+        class="workspace-alert"
+        [class.conflict-alert]="store.saveState() === 'conflict'"
+        role="alert"
+      >
+        <span class="material-symbols-rounded" aria-hidden="true">
+          {{ store.saveState() === 'conflict' ? 'warning' : 'error' }}
+        </span>
+
+        <div>
+          <strong>
+            {{
+              store.saveState() === 'conflict'
+                ? 'El documento cambio'
+                : 'Ocurrio un problema'
+            }}
+          </strong>
+          <p>{{ store.errorMessage() }}</p>
+        </div>
+
+        @if (store.saveState() === 'conflict') {
+          <button
+            mat-button
+            class="cf-button-secondary"
+            type="button"
+            (click)="retry()"
+          >
+            <span class="material-symbols-rounded" aria-hidden="true">
+              refresh
+            </span>
+            Recargar revision {{ store.conflictRevision() }}
+          </button>
+        }
+      </div>
+    }
+
     <div class="workspace-layout">
-      <mat-card class="canvas-placeholder" appearance="outlined">
+      <mat-card
+        class="canvas-placeholder"
+        appearance="outlined"
+      >
         <mat-card-content>
           <div class="placeholder-content">
-            <span class="placeholder-kicker">MODELO UML</span>
-            <h2>El proyecto esta listo para diagramar.</h2>
+            <span
+              class="material-symbols-rounded placeholder-icon"
+              aria-hidden="true"
+            >
+              account_tree
+            </span>
+
+            <span class="placeholder-kicker">
+              MODELO UML CANONICO
+            </span>
+
+            <h2>
+              Documento listo para recibir el diagramador.
+            </h2>
+
             <p>
-              El modelo canonico fue inicializado vacio. El canvas UML se
-              incorporara en la siguiente iteracion sin cambiar este contrato
-              de proyecto.
+              CU-02 ya separa el modelo UML de su layout visual.
+              JointJS se conectara en el siguiente caso de uso sin
+              convertirse en el formato persistido.
             </p>
 
-            <div class="model-state">
-              <span>Elementos actuales</span>
-              <strong>{{ currentProject.umlModel.elements.length }}</strong>
+            <div class="document-stats">
+              <div>
+                <span>Clases</span>
+                <strong>
+                  {{
+                    currentProject.document.umlModel.classes.length
+                  }}
+                </strong>
+              </div>
+
+              <div>
+                <span>Relaciones</span>
+                <strong>
+                  {{
+                    currentProject.document.umlModel.relationships.length
+                  }}
+                </strong>
+              </div>
+
+              <div>
+                <span>Posiciones</span>
+                <strong>{{ layoutNodeCount() }}</strong>
+              </div>
             </div>
           </div>
         </mat-card-content>
@@ -53,7 +253,17 @@
       <aside class="details-panel">
         <mat-card appearance="outlined">
           <mat-card-header>
-            <mat-card-title>Detalles del proyecto</mat-card-title>
+            <mat-card-title>
+              <span class="details-title">
+                <span
+                  class="material-symbols-rounded"
+                  aria-hidden="true"
+                >
+                  info
+                </span>
+                Detalles del proyecto
+              </span>
+            </mat-card-title>
           </mat-card-header>
 
           <mat-card-content>
@@ -62,23 +272,61 @@
                 <dt>ID</dt>
                 <dd>{{ currentProject.id }}</dd>
               </div>
+
               <div>
-                <dt>Revision</dt>
+                <dt>Revision del documento</dt>
                 <dd>{{ currentProject.revision }}</dd>
               </div>
+
               <div>
-                <dt>Schema UML</dt>
-                <dd>{{ currentProject.umlModel.schemaVersion }}</dd>
+                <dt>Schema</dt>
+                <dd>
+                  {{ currentProject.document.schemaVersion }}
+                </dd>
               </div>
+
               <div>
                 <dt>Creado</dt>
-                <dd>{{ currentProject.createdAt | date:'medium' }}</dd>
+                <dd>
+                  {{
+                    currentProject.createdAt
+                      | date:'medium'
+                  }}
+                </dd>
               </div>
+
               <div>
-                <dt>Actualizado</dt>
-                <dd>{{ currentProject.updatedAt | date:'medium' }}</dd>
+                <dt>Ultimo cambio</dt>
+                <dd>
+                  {{
+                    currentProject.updatedAt
+                      | date:'medium'
+                  }}
+                </dd>
               </div>
             </dl>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card
+          class="architecture-card"
+          appearance="outlined"
+        >
+          <mat-card-content>
+            <span
+              class="material-symbols-rounded"
+              aria-hidden="true"
+            >
+              layers
+            </span>
+
+            <div>
+              <strong>Semantica y layout separados</strong>
+              <p>
+                El modelo define que existe. El layout solo define
+                como se representa.
+              </p>
+            </div>
           </mat-card-content>
         </mat-card>
       </aside>

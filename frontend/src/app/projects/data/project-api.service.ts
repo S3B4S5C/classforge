@@ -2,7 +2,12 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { CreateProjectRequest, Project } from '../model/project';
+import {
+  CreateProjectRequest,
+  Project,
+  SaveProjectDocumentRequest,
+  UpdateProjectRequest,
+} from '../model/project';
 
 @Injectable({
   providedIn: 'root',
@@ -16,10 +21,35 @@ export class ProjectApiService {
   }
 
   get(projectId: string): Observable<Project> {
-    return this.http.get<Project>(`${this.baseUrl}/${projectId}`);
+    return this.http.get<Project>(
+      `${this.baseUrl}/${projectId}`,
+    );
   }
 
   create(request: CreateProjectRequest): Observable<Project> {
-    return this.http.post<Project>(this.baseUrl, request);
+    return this.http.post<Project>(
+      this.baseUrl,
+      request,
+    );
+  }
+
+  rename(
+    projectId: string,
+    request: UpdateProjectRequest,
+  ): Observable<Project> {
+    return this.http.patch<Project>(
+      `${this.baseUrl}/${projectId}`,
+      request,
+    );
+  }
+
+  saveDocument(
+    projectId: string,
+    request: SaveProjectDocumentRequest,
+  ): Observable<Project> {
+    return this.http.put<Project>(
+      `${this.baseUrl}/${projectId}/document`,
+      request,
+    );
   }
 }

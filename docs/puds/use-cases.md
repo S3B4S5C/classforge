@@ -2251,3 +2251,49 @@ Solicitar un UUID de otro usuario devuelve 404.
 9. WebSocket autoriza sesion colaborativa mediante membresia.
 
 Este caso queda documentado pero no implementado en este incremento.
+
+<!-- CU02-PROJECT-DOCUMENT-V1 -->
+# Revision de CU-02 — Documento versionado
+
+CU-02 se implementa sobre usuarios autenticados y proyectos con ownership.
+
+## Precondiciones
+
+- Usuario autenticado.
+- Usuario propietario del proyecto o, en una iteracion futura, miembro autorizado.
+
+## Flujo de apertura
+
+1. Usuario selecciona un proyecto.
+2. Angular solicita `GET /api/projects/{id}`.
+3. Backend valida el usuario.
+4. Se recupera `ProjectDocument`.
+5. Se migra el formato si corresponde.
+6. Frontend reconstruye el workspace desde el documento canonico.
+
+## Flujo de guardado
+
+1. Frontend conserva una copia editable del documento.
+2. Una modificacion marca el workspace como dirty.
+3. Usuario solicita guardar.
+4. Frontend envia documento + `baseRevision`.
+5. Backend bloquea el proyecto durante la transaccion.
+6. Compara `baseRevision` con la revision actual.
+7. Si coinciden, persiste e incrementa revision.
+8. Si no coinciden, devuelve 409.
+9. Frontend informa conflicto y solicita recarga.
+
+## Regla arquitectonica
+
+El documento separa:
+
+- semantica UML;
+- layout visual.
+
+JointJS no se utiliza como formato persistido.
+
+## Postcondiciones
+
+- El documento sobrevive recarga y reinicio del backend.
+- La revision almacenada representa la version del documento.
+- El proyecto continua aislado por ownership.

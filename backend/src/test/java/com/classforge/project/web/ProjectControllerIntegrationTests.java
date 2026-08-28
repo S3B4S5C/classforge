@@ -13,6 +13,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -38,46 +39,169 @@ class ProjectControllerIntegrationTests {
         String tokenB = register("Bruno", "bruno@classforge.test");
 
         HttpResponse<String> createResponse = send(
-                "POST", "/api/projects", """
+                "POST",
+                "/api/projects",
+                """
                 {"name":"Veterinaria"}
-                """, tokenA
+                """,
+                tokenA
         );
 
         assertEquals(201, createResponse.statusCode());
-        String projectId = jsonMapper.readTree(createResponse.body()).get("id").asString();
+        JsonNode created = jsonMapper.readTree(createResponse.body());
+        String projectId = created.get("id").asString();
 
-        HttpResponse<String> listA = send("GET", "/api/projects", null, tokenA);
+        assertEquals("1.0", created.at("/document/schemaVersion").asString());
+        assertEquals(0, created.at("/document/umlModel/classes").size());
+
+        HttpResponse<String> listA = send(
+                "GET",
+                "/api/projects",
+                null,
+                tokenA
+        );
         assertEquals(1, jsonMapper.readTree(listA.body()).size());
 
-        HttpResponse<String> listB = send("GET", "/api/projects", null, tokenB);
+        HttpResponse<String> listB = send(
+                "GET",
+                "/api/projects",
+                null,
+                tokenB
+        );
         assertEquals(0, jsonMapper.readTree(listB.body()).size());
 
-        HttpResponse<String> foreignRead = send("GET", "/api/projects/" + projectId, null, tokenB);
+        HttpResponse<String> foreignRead = send(
+                "GET",
+                "/api/projects/" + projectId,
+                null,
+                tokenB
+        );
         assertEquals(404, foreignRead.statusCode());
     }
 
     @Test
+    void renamesAndSavesDocumentUsingRevision() throws Exception {
+        String token = register("Sebas", "sebas@classforge.test");
+
+        HttpResponse<String> createdResponse = send(
+                "POST",
+                "/api/projects",
+                """
+                {"name":"Veterinaria"}
+                """,
+                token
+        );
+
+        String projectId = jsonMapper
+                .readTree(createdResponse.body())
+                .get("id")
+                .asString();
+
+        HttpResponse<String> renamedResponse = send(
+                "PATCH",
+                "/api/projects/" + projectId,
+                """
+                {"name":"Veterinaria Central"}
+                """,
+                token
+        );
+
+        assertEquals(200, renamedResponse.statusCode());
+        JsonNode renamed = jsonMapper.readTree(renamedResponse.body());
+        assertEquals("Veterinaria Central", renamed.get("name").asString());
+        assertEquals(0L, renamed.get("revision").asLong());
+
+        String savePayload = """
+                {
+                  "baseRevision":0,
+                  "document":{
+                    "schemaVersion":"1.0",
+                    "umlModel":{
+                      "classes":[],
+                      "relationships":[]
+                    },
+                    "layout":{
+                      "nodes":{}
+                    }
+                  }
+                }
+                """;
+
+        HttpResponse<String> savedResponse = send(
+                "PUT",
+                "/api/projects/" + projectId + "/document",
+                savePayload,
+                token
+        );
+
+        assertEquals(200, savedResponse.statusCode());
+        assertEquals(
+                1L,
+                jsonMapper.readTree(savedResponse.body())
+                        .get("revision")
+                        .asLong()
+        );
+
+        HttpResponse<String> staleResponse = send(
+                "PUT",
+                "/api/projects/" + projectId + "/document",
+                savePayload,
+                token
+        );
+
+        assertEquals(409, staleResponse.statusCode());
+
+        JsonNode conflict = jsonMapper.readTree(staleResponse.body());
+        assertEquals(
+                "PROJECT_REVISION_CONFLICT",
+                conflict.get("error").asString()
+        );
+        assertEquals(1L, conflict.get("currentRevision").asLong());
+    }
+
+    @Test
     void projectEndpointsRequireAuthentication() throws Exception {
-        HttpResponse<String> response = send("GET", "/api/projects", null, null);
+        HttpResponse<String> response = send(
+                "GET",
+                "/api/projects",
+                null,
+                null
+        );
+
         assertEquals(401, response.statusCode());
     }
 
-    private String register(String displayName, String email) throws Exception {
+    private String register(
+            String displayName,
+            String email
+    ) throws Exception {
         HttpResponse<String> response = send(
-                "POST", "/api/auth/register", """
+                "POST",
+                "/api/auth/register",
+                """
                 {
                   "displayName":"%s",
                   "email":"%s",
                   "password":"password123"
                 }
-                """.formatted(displayName, email), null
+                """.formatted(displayName, email),
+                null
         );
 
         assertEquals(201, response.statusCode());
-        return jsonMapper.readTree(response.body()).get("accessToken").asString();
+
+        return jsonMapper
+                .readTree(response.body())
+                .get("accessToken")
+                .asString();
     }
 
-    private HttpResponse<String> send(String method, String path, String body, String token) throws Exception {
+    private HttpResponse<String> send(
+            String method,
+            String path,
+            String body,
+            String token
+    ) throws Exception {
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:" + port + path))
                 .header("Accept", "application/json");
@@ -87,12 +211,21 @@ class ProjectControllerIntegrationTests {
         }
 
         if (body == null) {
-            builder.method(method, HttpRequest.BodyPublishers.noBody());
+            builder.method(
+                    method,
+                    HttpRequest.BodyPublishers.noBody()
+            );
         } else {
             builder.header("Content-Type", "application/json");
-            builder.method(method, HttpRequest.BodyPublishers.ofString(body));
+            builder.method(
+                    method,
+                    HttpRequest.BodyPublishers.ofString(body)
+            );
         }
 
-        return httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+        return httpClient.send(
+                builder.build(),
+                HttpResponse.BodyHandlers.ofString()
+        );
     }
 }

@@ -25,9 +25,13 @@ public class ProjectEntity {
     @Column(nullable = false)
     private long revision;
 
+    /*
+     * Se conserva el nombre fisico uml_model para no destruir bases H2
+     * existentes. Desde CU-02 el contenido representa ProjectDocument.
+     */
     @Lob
     @Column(name = "uml_model", nullable = false)
-    private String umlModel;
+    private String documentJson;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -43,7 +47,7 @@ public class ProjectEntity {
             UUID ownerId,
             String name,
             long revision,
-            String umlModel,
+            String documentJson,
             Instant createdAt,
             Instant updatedAt
     ) {
@@ -51,16 +55,36 @@ public class ProjectEntity {
         this.ownerId = ownerId;
         this.name = name;
         this.revision = revision;
-        this.umlModel = umlModel;
+        this.documentJson = documentJson;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
 
-    public UUID getId() { return id; }
-    public UUID getOwnerId() { return ownerId; }
-    public String getName() { return name; }
-    public long getRevision() { return revision; }
-    public String getUmlModel() { return umlModel; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public UUID getOwnerId() {
+        return ownerId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public long getRevision() {
+        return revision;
+    }
+
+    public String getDocumentJson() {
+        return documentJson;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
 }

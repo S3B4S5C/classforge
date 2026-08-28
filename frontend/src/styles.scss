@@ -1,3 +1,47 @@
+/* CLASSFORGE-MATERIAL-SYMBOLS-V1
+   Fuente local: node_modules/material-symbols. No requiere Google Fonts remoto. */
+@import 'material-symbols/rounded.css';
+
+.material-symbols-rounded {
+  display: inline-block;
+  flex: 0 0 auto;
+  font-size: 1.25rem;
+  line-height: 1;
+  font-weight: normal;
+  font-style: normal;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'liga';
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 500,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
+.material-symbols-rounded.is-filled {
+  font-variation-settings:
+    'FILL' 1,
+    'wght' 500,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
+.material-symbols-rounded.is-spinning {
+  animation: cf-symbol-spin 800ms linear infinite;
+}
+
+@keyframes cf-symbol-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 :root {
   --cf-page: #f7f8fb;
   --cf-surface: #ffffff;
@@ -147,4 +191,35 @@ a {
   .cf-button-secondary.mat-mdc-button-base {
     min-height: 44px;
   }
+}
+
+/* CLASSFORGE-BUTTON-ICON-ALIGN-V1
+   Centrado consistente de Material Symbols + label dentro de botones MDC. */
+
+.cf-button-primary.mat-mdc-button-base,
+.cf-button-secondary.mat-mdc-button-base {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.cf-button-primary.mat-mdc-button-base .mdc-button__label,
+.cf-button-secondary.mat-mdc-button-base .mdc-button__label {
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  line-height: 1.15;
+}
+
+.cf-button-primary.mat-mdc-button-base .material-symbols-rounded,
+.cf-button-secondary.mat-mdc-button-base .material-symbols-rounded {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  margin: 0;
+  line-height: 1;
+  vertical-align: middle;
 }
