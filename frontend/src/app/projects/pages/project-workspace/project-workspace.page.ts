@@ -44,6 +44,7 @@ import {
   relationshipTypeLabel,
 } from '../../diagram/uml-relationship-shape';
 import {
+  ProjectValidationDiagnostic,
   UmlAttribute,
   UmlClass,
   UmlDataType,
@@ -263,6 +264,71 @@ export class ProjectWorkspacePage {
 
   save(): void {
     this.store.saveDocument();
+  }
+
+  validateModel(): void {
+    this.store.validateDocument();
+  }
+
+  selectValidationDiagnostic(
+    diagnostic: ProjectValidationDiagnostic,
+  ): void {
+    if (!diagnostic.elementId) {
+      return;
+    }
+
+    const classExists =
+      this.store.classes().some(
+        (umlClass) =>
+          umlClass.id === diagnostic.elementId,
+      );
+
+    if (classExists) {
+      this.diagramSelection.set({
+        kind: 'class',
+        id: diagnostic.elementId,
+      });
+      return;
+    }
+
+    const relationshipExists =
+      this.store.relationships().some(
+        (relationship) =>
+          relationship.id === diagnostic.elementId,
+      );
+
+    if (relationshipExists) {
+      this.diagramSelection.set({
+        kind: 'relationship',
+        id: diagnostic.elementId,
+      });
+    }
+  }
+
+  validationSeverityLabel(
+    diagnostic: ProjectValidationDiagnostic,
+  ): string {
+    switch (diagnostic.severity) {
+      case 'ERROR':
+        return 'Error';
+      case 'WARNING':
+        return 'Advertencia';
+      default:
+        return 'Info';
+    }
+  }
+
+  validationSeverityIcon(
+    diagnostic: ProjectValidationDiagnostic,
+  ): string {
+    switch (diagnostic.severity) {
+      case 'ERROR':
+        return 'error';
+      case 'WARNING':
+        return 'warning';
+      default:
+        return 'info';
+    }
   }
 
   createClass(): void {

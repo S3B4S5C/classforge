@@ -305,7 +305,10 @@
       >
         <app-uml-canvas
           [document]="store.documentDraft()"
+          [requestedSelection]="diagramSelection()"
+          [validating]="store.validating()"
           (createClassRequested)="createClass()"
+          (validateRequested)="validateModel()"
           (editClassRequested)="
             editClassById($event)
           "
@@ -570,6 +573,219 @@
         </mat-card>
       </aside>
     </div>
+
+    @if (store.validationRequestError()) {
+      <section
+        class="validation-request-error"
+        role="alert"
+      >
+        <span
+          class="material-symbols-rounded"
+          aria-hidden="true"
+        >
+          cloud_off
+        </span>
+
+        <div>
+          <strong>
+            No se pudo completar la validacion
+          </strong>
+          <p>
+            {{ store.validationRequestError() }}
+          </p>
+        </div>
+
+        <button
+          mat-button
+          class="cf-button-secondary"
+          type="button"
+          (click)="validateModel()"
+        >
+          Reintentar
+        </button>
+      </section>
+    }
+
+    @if (
+      store.validationResult();
+      as validation
+    ) {
+      <section
+        class="validation-panel"
+        [class.has-errors]="
+          validation.errors > 0
+        "
+        aria-labelledby="validation-title"
+      >
+        <header class="validation-header">
+          <div class="validation-title-group">
+            <span
+              class="material-symbols-rounded validation-main-icon"
+              [class.success-icon]="
+                validation.errors === 0
+              "
+              aria-hidden="true"
+            >
+              {{
+                validation.errors === 0
+                  ? 'task_alt'
+                  : 'rule'
+              }}
+            </span>
+
+            <div>
+              <p class="eyebrow">
+                VALIDACION UML · CU-04
+              </p>
+
+              <h2 id="validation-title">
+                {{
+                  validation.errors === 0
+                    ? (
+                        validation.warnings === 0
+                          ? 'Modelo valido'
+                          : 'Modelo valido con observaciones'
+                      )
+                    : 'El modelo necesita correcciones'
+                }}
+              </h2>
+
+              @if (
+                store.validationCheckedAt();
+                as checkedAt
+              ) {
+                <p class="validation-time">
+                  Validado
+                  {{ checkedAt | date:'mediumTime' }}
+                  · no se guardaron cambios
+                </p>
+              }
+            </div>
+          </div>
+
+          <div class="validation-counts">
+            <span class="error-count">
+              <strong>{{ validation.errors }}</strong>
+              errores
+            </span>
+
+            <span class="warning-count">
+              <strong>{{ validation.warnings }}</strong>
+              advertencias
+            </span>
+
+            <span class="info-count">
+              <strong>{{ validation.infos }}</strong>
+              info
+            </span>
+          </div>
+        </header>
+
+        @if (
+          validation.diagnostics.length === 0
+        ) {
+          <div class="validation-clean">
+            <span
+              class="material-symbols-rounded"
+              aria-hidden="true"
+            >
+              verified
+            </span>
+
+            <div>
+              <strong>
+                No encontramos problemas.
+              </strong>
+
+              <p>
+                El documento supera las reglas
+                estructurales y de calidad
+                disponibles en esta iteracion.
+              </p>
+            </div>
+          </div>
+        } @else {
+          <div class="diagnostic-list">
+            @for (
+              diagnostic
+                of validation.diagnostics;
+              track
+                diagnostic.severity
+                + diagnostic.code
+                + diagnostic.field
+            ) {
+              <button
+                type="button"
+                class="diagnostic-row"
+                [class.diagnostic-error]="
+                  diagnostic.severity === 'ERROR'
+                "
+                [class.diagnostic-warning]="
+                  diagnostic.severity === 'WARNING'
+                "
+                [class.diagnostic-info]="
+                  diagnostic.severity === 'INFO'
+                "
+                [class.is-navigable]="
+                  diagnostic.elementId
+                "
+                [disabled]="!diagnostic.elementId"
+                (click)="
+                  selectValidationDiagnostic(
+                    diagnostic
+                  )
+                "
+              >
+                <span
+                  class="material-symbols-rounded diagnostic-icon"
+                  aria-hidden="true"
+                >
+                  {{
+                    validationSeverityIcon(
+                      diagnostic
+                    )
+                  }}
+                </span>
+
+                <span class="diagnostic-copy">
+                  <span class="diagnostic-meta">
+                    <strong>
+                      {{
+                        validationSeverityLabel(
+                          diagnostic
+                        )
+                      }}
+                    </strong>
+
+                    <code>
+                      {{ diagnostic.code }}
+                    </code>
+                  </span>
+
+                  <span class="diagnostic-message">
+                    {{ diagnostic.message }}
+                  </span>
+
+                  <small>
+                    {{ diagnostic.field }}
+                  </small>
+                </span>
+
+                @if (diagnostic.elementId) {
+                  <span
+                    class="material-symbols-rounded diagnostic-target"
+                    aria-label="Mostrar elemento en el canvas"
+                    title="Mostrar elemento en el canvas"
+                  >
+                    center_focus_strong
+                  </span>
+                }
+              </button>
+            }
+          </div>
+        }
+      </section>
+    }
 
     <div class="workspace-layout">
       <section

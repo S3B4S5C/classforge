@@ -5,8 +5,10 @@ import { Observable } from 'rxjs';
 import {
   CreateProjectRequest,
   Project,
+  ProjectValidationResult,
   SaveProjectDocumentRequest,
   UpdateProjectRequest,
+  ValidateProjectDocumentRequest,
 } from '../model/project';
 
 @Injectable({
@@ -39,6 +41,16 @@ export class ProjectApiService {
   ): Observable<Project> {
     return this.http.patch<Project>(
       `${this.baseUrl}/${projectId}`,
+      request,
+    );
+  }
+
+  validateDocument(
+    projectId: string,
+    request: ValidateProjectDocumentRequest,
+  ): Observable<ProjectValidationResult> {
+    return this.http.post<ProjectValidationResult>(
+      `${this.baseUrl}/${projectId}/validate`,
       request,
     );
   }

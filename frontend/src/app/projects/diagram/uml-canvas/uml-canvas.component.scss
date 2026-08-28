@@ -359,3 +359,18 @@
     grid-column: auto;
   }
 }
+
+/* CLASSFORGE-CU04-VALIDATE-BUTTON */
+
+.validate-button {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+@media (max-width: 600px) {
+  .validate-button {
+    width: 100%;
+    justify-content: center;
+  }
+}

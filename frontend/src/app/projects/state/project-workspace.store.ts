@@ -14,6 +14,7 @@ import {
   DiagramNodeLayout,
   Project,
   ProjectDocument,
+  ProjectValidationResult,
   UmlAttribute,
   UmlClass,
   UmlRelationship,
@@ -39,6 +40,7 @@ export class ProjectWorkspaceStore {
 
   readonly loading = signal(true);
   readonly saving = signal(false);
+  readonly validating = signal(false);
   readonly renaming = signal(false);
   readonly dirty = signal(false);
   readonly saveState = signal<ProjectSaveState>('saved');
@@ -46,6 +48,15 @@ export class ProjectWorkspaceStore {
   readonly conflictRevision = signal<number | null>(null);
   readonly validationViolations =
     signal<BackendValidationViolation[]>([]);
+
+  readonly validationResult =
+    signal<ProjectValidationResult | null>(null);
+
+  readonly validationRequestError =
+    signal<string | null>(null);
+
+  readonly validationCheckedAt =
+    signal<string | null>(null);
 
   readonly revision = computed(
     () => this.projectState()?.revision ?? 0,
@@ -70,6 +81,9 @@ export class ProjectWorkspaceStore {
     this.errorMessage.set(null);
     this.conflictRevision.set(null);
     this.validationViolations.set([]);
+    this.validationResult.set(null);
+    this.validationRequestError.set(null);
+    this.validationCheckedAt.set(null);
 
     this.projectApi
       .get(projectId)
@@ -361,6 +375,50 @@ export class ProjectWorkspaceStore {
     this.commitDraft(document);
   }
 
+  validateDocument(): void {
+    const project = this.projectState();
+    const document = this.documentDraftState();
+
+    if (
+      !project
+      || !document
+      || this.validating()
+    ) {
+      return;
+    }
+
+    this.validating.set(true);
+    this.validationRequestError.set(null);
+
+    this.projectApi
+      .validateDocument(
+        project.id,
+        {
+          document,
+        },
+      )
+      .pipe(
+        finalize(
+          () => this.validating.set(false),
+        ),
+      )
+      .subscribe({
+        next: (result) => {
+          this.validationResult.set(result);
+          this.validationCheckedAt.set(
+            new Date().toISOString(),
+          );
+        },
+        error: () => {
+          this.validationResult.set(null);
+          this.validationCheckedAt.set(null);
+          this.validationRequestError.set(
+            'No pudimos validar el modelo. Verifica la conexion con el backend e intenta nuevamente.',
+          );
+        },
+      });
+  }
+
   saveDocument(): void {
     const project = this.projectState();
     const document =
@@ -380,6 +438,9 @@ export class ProjectWorkspaceStore {
     this.errorMessage.set(null);
     this.conflictRevision.set(null);
     this.validationViolations.set([]);
+    this.validationResult.set(null);
+    this.validationRequestError.set(null);
+    this.validationCheckedAt.set(null);
 
     this.projectApi
       .saveDocument(project.id, {
@@ -459,6 +520,9 @@ export class ProjectWorkspaceStore {
     this.dirty.set(true);
     this.conflictRevision.set(null);
     this.validationViolations.set([]);
+    this.validationResult.set(null);
+    this.validationRequestError.set(null);
+    this.validationCheckedAt.set(null);
     this.errorMessage.set(null);
     this.saveState.set('dirty');
   }

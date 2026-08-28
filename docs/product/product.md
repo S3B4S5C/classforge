@@ -1486,3 +1486,22 @@ La creacion de relaciones se realiza seleccionando origen y destino directamente
 JointJS proyecta los links y labels, mientras ProjectDocument continua siendo la fuente de verdad.
 
 El backend protege la integridad del modelo, incluyendo deteccion de ciclos de generalizacion.
+
+<!-- EXPLICIT-UML-VALIDATION-V1 -->
+# Actualizacion de producto — Validacion UML
+
+ClassForge incorpora validacion explicita del modelo sin persistencia.
+
+El usuario puede validar el draft actual y recibir:
+
+- errores;
+- advertencias;
+- informacion;
+- codigos estables;
+- mensajes legibles;
+- rutas de campo;
+- UUID del elemento afectado cuando existe.
+
+Los diagnosticos navegables seleccionan la clase o relacion correspondiente en el canvas.
+
+El guardado conserva validacion automatica y rechaza solo errores; las advertencias no bloquean la persistencia.

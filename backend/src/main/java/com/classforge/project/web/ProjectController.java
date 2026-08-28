@@ -80,6 +80,20 @@ public class ProjectController {
         );
     }
 
+    @PostMapping("/{projectId}/validate")
+    public ProjectValidationResponse validateDocument(
+            @PathVariable UUID projectId,
+            @Valid @RequestBody ValidateProjectDocumentRequest request
+    ) {
+        return ProjectValidationResponse.from(
+                projectService.validateDocument(
+                        currentUser.id(),
+                        projectId,
+                        request.document()
+                )
+        );
+    }
+
     @PutMapping("/{projectId}/document")
     public ProjectResponse saveDocument(
             @PathVariable UUID projectId,

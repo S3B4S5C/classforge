@@ -5,6 +5,7 @@ import com.classforge.project.domain.document.ProjectDocument;
 import com.classforge.project.persistence.ProjectEntity;
 import com.classforge.project.persistence.ProjectMapper;
 import com.classforge.project.persistence.ProjectRepository;
+import com.classforge.project.validation.ProjectDocumentValidationReport;
 import com.classforge.project.validation.ProjectDocumentValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,6 +64,17 @@ public class ProjectService {
         return projectMapper.toDomain(
                 projectRepository.save(projectMapper.toEntity(renamed))
         );
+    }
+
+    @Transactional(readOnly = true)
+    public ProjectDocumentValidationReport validateDocument(
+            UUID ownerId,
+            UUID projectId,
+            ProjectDocument document
+    ) {
+        get(ownerId, projectId);
+
+        return projectDocumentValidator.analyze(document);
     }
 
     @Transactional

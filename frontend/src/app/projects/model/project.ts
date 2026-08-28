@@ -95,6 +95,31 @@ export interface SaveProjectDocumentRequest {
   document: ProjectDocument;
 }
 
+export type ValidationSeverity =
+  | 'ERROR'
+  | 'WARNING'
+  | 'INFO';
+
+export interface ProjectValidationDiagnostic {
+  severity: ValidationSeverity;
+  code: string;
+  field: string;
+  elementId: string | null;
+  message: string;
+}
+
+export interface ProjectValidationResult {
+  valid: boolean;
+  errors: number;
+  warnings: number;
+  infos: number;
+  diagnostics: ProjectValidationDiagnostic[];
+}
+
+export interface ValidateProjectDocumentRequest {
+  document: ProjectDocument;
+}
+
 export interface BackendValidationViolation {
   field: string;
   code: string;

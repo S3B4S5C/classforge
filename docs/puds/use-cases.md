@@ -2414,3 +2414,42 @@ La validacion del documento rechaza:
 ## Postcondicion
 
 CU-03 queda completo: el usuario puede construir manualmente un diagrama UML de clases persistible sin depender de formatos internos de JointJS.
+
+<!-- CU04-001-UML-VALIDATION-V1 -->
+# Implementacion de CU-04 — Validar modelo UML
+
+## Flujo
+
+El usuario puede ejecutar Validar desde la barra del canvas.
+
+La operacion utiliza:
+
+`POST /api/projects/{projectId}/validate`
+
+con el ProjectDocument actual.
+
+La operacion:
+
+- exige autenticacion y ownership;
+- no persiste;
+- no incrementa revision;
+- devuelve todos los diagnosticos;
+- utiliza HTTP 200 aunque existan errores de UML.
+
+## Severidades
+
+- ERROR: invalida y bloquea Guardar.
+- WARNING: observacion de calidad; permite Guardar.
+- INFO: disponible para reglas informativas.
+
+## Navegacion
+
+Los diagnosticos asociados a clases o relaciones incluyen `elementId`.
+
+Al seleccionar un diagnostico, el frontend selecciona el elemento correspondiente en el canvas JointJS.
+
+## Reutilizacion del motor
+
+Guardar y Validar comparten `ProjectDocumentValidator.analyze()`.
+
+No se mantienen reglas duplicadas entre el endpoint de validacion y el guardado.

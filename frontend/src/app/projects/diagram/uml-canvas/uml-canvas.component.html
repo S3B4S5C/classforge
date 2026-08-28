@@ -69,6 +69,23 @@
         </button>
       }
 
+      <button
+        mat-button
+        class="cf-button-secondary validate-button"
+        type="button"
+        [disabled]="validating"
+        (click)="validateRequested.emit()"
+      >
+        <span
+          class="material-symbols-rounded"
+          [class.is-spinning]="validating"
+          aria-hidden="true"
+        >
+          {{ validating ? 'progress_activity' : 'fact_check' }}
+        </span>
+        {{ validating ? 'Validando...' : 'Validar' }}
+      </button>
+
       <div
         class="view-controls"
         aria-label="Controles de vista"

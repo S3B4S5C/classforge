@@ -61,8 +61,18 @@ export class UmlCanvasComponent
   @Input({ required: true })
   document: ProjectDocument | null = null;
 
+  @Input()
+  requestedSelection: UmlCanvasSelection = null;
+
+  @Input()
+  validating = false;
+
   @Output()
   readonly createClassRequested =
+    new EventEmitter<void>();
+
+  @Output()
+  readonly validateRequested =
     new EventEmitter<void>();
 
   @Output()
@@ -211,11 +221,18 @@ export class UmlCanvasComponent
   ngOnChanges(
     changes: SimpleChanges,
   ): void {
-    if (
-      this.initialized
-      && changes['document']
-    ) {
+    if (!this.initialized) {
+      return;
+    }
+
+    if (changes['document']) {
       this.syncGraph(false);
+    }
+
+    if (changes['requestedSelection']) {
+      this.applyRequestedSelection(
+        this.requestedSelection,
+      );
     }
   }
 
@@ -689,6 +706,31 @@ export class UmlCanvasComponent
         () => this.fitToContent(),
       );
     }
+  }
+
+  private applyRequestedSelection(
+    selection: UmlCanvasSelection,
+  ): void {
+    if (!selection) {
+      this.clearSelection(false);
+      return;
+    }
+
+    if (
+      this.selection?.kind === selection.kind
+      && this.selection.id === selection.id
+    ) {
+      return;
+    }
+
+    if (!this.graph.getCell(selection.id)) {
+      return;
+    }
+
+    this.selectCell(
+      selection,
+      false,
+    );
   }
 
   private selectCell(
