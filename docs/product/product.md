@@ -1,0 +1,1359 @@
+# ClassForge
+
+> Herramienta CASE colaborativa para modelado UML de clases y generación automática de aplicaciones backend/frontend operables mediante interfaz convencional, lenguaje natural y voz.
+
+---
+
+## 1. Visión del producto
+
+**ClassForge** es una aplicación web colaborativa orientada al diseño de diagramas de clases UML con foco en el modelado de aplicaciones respaldadas por bases de datos relacionales.
+
+El producto permite construir un modelo de clases mediante distintos mecanismos de entrada, mantenerlo sincronizado entre varios usuarios y utilizarlo como fuente de verdad para generar automáticamente:
+
+- un backend en Spring Boot;
+- persistencia mediante JPA/Hibernate;
+- una API REST documentada con OpenAPI;
+- una colección de Postman;
+- un frontend web;
+- un frontend móvil;
+- una interfaz de lenguaje natural y voz capaz de consumir el backend generado.
+
+La aplicación debe funcionar **sin depender de Internet** para sus capacidades esenciales. La IA y el Speech-to-Text utilizados por el producto deben poder ejecutarse localmente.
+
+---
+
+## 2. Principio arquitectónico central
+
+Todo ClassForge gira alrededor de un **modelo canónico propio** del dominio UML.
+
+Ningún mecanismo de entrada debe manipular directamente el canvas, el código generado o la base de datos.
+
+Todas las entradas convergen primero al mismo modelo interno:
+
+```text
+Diagramación manual ───────┐
+                           │
+Fotografía ────────────────┤
+                           │
+Audio + STT + IA ──────────┼──► CanonicalUmlModel
+                           │
+Enterprise Architect/XMI ──┘
+```
+
+Y todos los artefactos salen desde esa misma representación:
+
+```text
+CanonicalUmlModel
+       │
+       ├──► Canvas UML
+       ├──► XMI / Enterprise Architect
+       ├──► Modelo relacional
+       ├──► Spring Boot + JPA
+       ├──► OpenAPI
+       ├──► Postman
+       ├──► Frontend Web
+       ├──► Frontend Mobile
+       └──► Domain Manifest para asistente IA
+```
+
+Este modelo canónico debe ser la **fuente de verdad del proyecto**.
+
+---
+
+## 3. Aplicación principal
+
+La aplicación principal de ClassForge será **web**.
+
+### Stack previsto
+
+- Angular 22
+- TypeScript
+- Angular Material
+- JointJS Community para diagramación
+- ELK.js para auto-layout
+- Angular Signals
+- RxJS
+- STOMP/WebSocket para colaboración
+
+La interfaz deberá ser responsive, pero no es requisito que la aplicación principal sea una app móvil nativa.
+
+---
+
+## 4. Diagramador UML
+
+ClassForge debe permitir crear y editar diagramas de clases utilizando notación UML 2.5 o superior, tomando UML 2.5.1 como referencia concreta.
+
+El dominio interno debe contemplar al menos:
+
+- clases;
+- atributos;
+- operaciones cuando correspondan;
+- visibilidad;
+- tipos de datos;
+- asociaciones;
+- multiplicidades;
+- generalización/herencia;
+- agregación;
+- composición;
+- enums;
+- paquetes si son necesarios;
+- metadatos de generación.
+
+El canvas es únicamente una representación visual del modelo canónico.
+
+La posición de los nodos y otros datos visuales deben almacenarse por separado de la semántica UML cuando sea posible.
+
+---
+
+## 5. Formas de crear un diagrama
+
+### 5.1. Diagramación manual
+
+El usuario podrá:
+
+- crear clases;
+- editar clases;
+- eliminar clases;
+- añadir/eliminar/modificar atributos;
+- crear relaciones;
+- definir multiplicidades;
+- definir herencia;
+- mover los elementos visualmente;
+- editar propiedades desde paneles o diálogos;
+- utilizar undo/redo.
+
+Las acciones de edición deberán implementarse mediante comandos reutilizables.
+
+Ejemplos:
+
+```text
+CreateClassCommand
+DeleteClassCommand
+RenameClassCommand
+AddAttributeCommand
+RemoveAttributeCommand
+CreateAssociationCommand
+SetMultiplicityCommand
+MoveNodeCommand
+```
+
+Los mismos comandos serán reutilizados por la interfaz manual, la colaboración y el asistente IA.
+
+---
+
+### 5.2. Creación a partir de fotografía
+
+El usuario podrá proporcionar una fotografía o imagen de un diagrama de clases.
+
+El flujo esperado será:
+
+```text
+Imagen
+  ↓
+Preprocesamiento opcional
+  ↓
+Modelo multimodal local
+  ↓
+Representación estructurada
+  ↓
+Validador UML
+  ↓
+CanonicalUmlModel
+```
+
+El resultado debe convertirse en elementos editables, no simplemente mostrarse como una imagen.
+
+El reconocimiento debe intentar identificar:
+
+- clases;
+- atributos;
+- relaciones;
+- multiplicidades;
+- herencia;
+- otros elementos UML soportados.
+
+Se podrá utilizar OpenCV/JavaCV únicamente como apoyo para tareas como:
+
+- recorte;
+- rotación;
+- corrección de perspectiva;
+- contraste;
+- reducción de ruido.
+
+La interpretación semántica podrá delegarse a un modelo multimodal local.
+
+---
+
+### 5.3. Creación mediante audio
+
+El usuario podrá crear o modificar el diagrama mediante voz.
+
+El flujo será:
+
+```text
+Micrófono
+  ↓
+Speech-to-Text local
+  ↓
+Texto
+  ↓
+Asistente IA local
+  ↓
+Comando estructurado
+  ↓
+Validador
+  ↓
+Command Bus
+  ↓
+CanonicalUmlModel
+```
+
+La IA nunca debe modificar directamente el diagrama.
+
+Debe producir operaciones estructuradas pertenecientes a un conjunto cerrado de comandos.
+
+Ejemplo:
+
+```json
+{
+  "command": "ADD_ATTRIBUTE",
+  "classId": "class-123",
+  "attribute": {
+    "name": "email",
+    "type": "String",
+    "visibility": "PRIVATE"
+  }
+}
+```
+
+---
+
+### 5.4. Enterprise Architect
+
+ClassForge deberá poder interoperar con **Sparx Systems Enterprise Architect**.
+
+Formato principal previsto:
+
+**XMI 2.1**
+
+Flujos:
+
+```text
+Enterprise Architect
+        ↓
+      XMI 2.1
+        ↓
+    XmiImporter
+        ↓
+CanonicalUmlModel
+```
+
+```text
+CanonicalUmlModel
+        ↓
+    XmiExporter
+        ↓
+      XMI 2.1
+        ↓
+Enterprise Architect
+```
+
+El primer objetivo será soportar correctamente el subconjunto UML utilizado por ClassForge en lugar de intentar cubrir todo XMI desde el primer día.
+
+Tecnologías previstas:
+
+- Jackson XML;
+- StAX;
+- adaptador específico para XMI de Enterprise Architect.
+
+Eclipse UML2 se considerará únicamente si el soporte XMI propio resulta insuficiente.
+
+---
+
+## 6. Colaboración en tiempo real
+
+ClassForge debe ser una aplicación colaborativa.
+
+Varios usuarios podrán abrir el mismo proyecto y visualizar los cambios de los demás en tiempo real.
+
+### Transporte
+
+- Spring WebSocket
+- STOMP
+- `@stomp/stompjs` en Angular
+
+### Modelo de colaboración
+
+El servidor Spring Boot será **autoritativo**.
+
+Los clientes no enviarán continuamente el documento completo. Enviarán operaciones.
+
+Ejemplo:
+
+```json
+{
+  "operationId": "uuid",
+  "projectId": "project-123",
+  "userId": "user-7",
+  "baseRevision": 42,
+  "type": "ADD_ATTRIBUTE",
+  "payload": {
+    "classId": "animal",
+    "name": "nombre",
+    "dataType": "String"
+  }
+}
+```
+
+Flujo:
+
+```text
+Cliente
+  ↓
+WebSocket
+  ↓
+Servidor
+  ↓
+Validación
+  ↓
+Aplicación del comando
+  ↓
+Nueva revisión
+  ↓
+Persistencia
+  ↓
+Broadcast
+  ↓
+Todos los clientes
+```
+
+El proyecto podrá incorporar:
+
+- presencia de usuarios;
+- usuario conectado/desconectado;
+- elemento seleccionado;
+- indicador de quién está editando;
+- cursores remotos opcionales;
+- última modificación;
+- revisionado del documento.
+
+Para el alcance inicial no se requiere un CRDT completo como Yjs.
+
+La primera estrategia será:
+
+- servidor autoritativo;
+- comandos;
+- número de revisión;
+- detección de operaciones obsoletas;
+- resolución sencilla de conflictos;
+- last-write-wins únicamente donde sea seguro.
+
+---
+
+## 7. Funcionamiento offline y en red local
+
+"Offline" significa que ClassForge no deberá depender de Internet para funcionar.
+
+Esto no impide utilizar una red local.
+
+Escenario esperado:
+
+```text
+Laptop anfitriona
+├── ClassForge backend
+├── IA local
+├── STT local
+└── colaboración
+       │
+       │ Wi-Fi / hotspot / LAN
+       │ SIN INTERNET
+       ▼
+otros navegadores / móviles / laptops
+```
+
+Por tanto:
+
+- la colaboración puede funcionar en una LAN sin Internet;
+- un equipo puede actuar como host;
+- los demás dispositivos se conectan a ese host;
+- los modelos de IA y STT pueden ejecutarse centralmente en la laptop anfitriona.
+
+---
+
+## 8. Transformación UML → modelo relacional
+
+La transformación desde UML hacia base de datos debe ser **determinista** y no depender de IA.
+
+Flujo:
+
+```text
+CanonicalUmlModel
+       ↓
+RelationalMapper
+       ↓
+RelationalModel
+```
+
+El modelo relacional deberá representar al menos:
+
+```text
+DatabaseModel
+ ├── Tables
+ │    ├── Columns
+ │    ├── PrimaryKeys
+ │    ├── ForeignKeys
+ │    ├── UniqueConstraints
+ │    └── Indexes cuando corresponda
+ └── Relations
+```
+
+Se deberán documentar reglas para:
+
+- clase → tabla;
+- atributo → columna;
+- identificador → primary key;
+- asociación 1:1;
+- asociación 1:N;
+- asociación N:M;
+- composición;
+- herencia;
+- enums;
+- nulabilidad;
+- restricciones.
+
+Las reglas deberán estar sustentadas por la bibliografía utilizada para la transformación orientado a objetos → modelo relacional.
+
+---
+
+## 9. Generación de backend Spring Boot
+
+A partir del modelo relacional y del dominio se generará un proyecto Spring Boot completo.
+
+### Stack objetivo
+
+- Java 21 LTS como versión base recomendada
+- Spring Boot 4.x
+- Gradle
+- Spring Web MVC
+- Spring Data JPA
+- Hibernate
+- Jakarta Validation
+- Jackson
+- springdoc-openapi
+- PostgreSQL
+- H2 opcional para demos rápidas
+
+Aunque el entorno de desarrollo disponga de Java 25, el código generado tendrá Java 21 como target inicial por estabilidad y compatibilidad.
+
+### Estructura generada
+
+```text
+src/main/java/.../
+├── controller/
+├── service/
+├── repository/
+├── entity/
+├── dto/
+├── mapper/
+├── exception/
+└── config/
+```
+
+### Generación mediante plantillas
+
+Se utilizará **Apache FreeMarker**.
+
+Ejemplo:
+
+```text
+templates/
+├── build.gradle.ftl
+├── application.yml.ftl
+├── entity.java.ftl
+├── repository.java.ftl
+├── service.java.ftl
+├── controller.java.ftl
+├── dto.java.ftl
+└── exception-handler.java.ftl
+```
+
+No se debe generar código complejo mediante concatenación manual de strings.
+
+---
+
+## 10. Capacidades estándar generadas
+
+Cada entidad generada deberá incluir, cuando corresponda:
+
+- CREATE;
+- READ by id;
+- UPDATE;
+- DELETE;
+- LIST;
+- paginación;
+- ordenamiento;
+- filtros;
+- búsquedas por propiedades;
+- conteo;
+- navegación de relaciones.
+
+La API debe ser suficientemente expresiva para permitir que el asistente de lenguaje natural opere sobre ella sin requerir un endpoint especial para cada frase posible.
+
+Ejemplos de consultas deseadas:
+
+```text
+"Muéstrame los últimos 5 animales"
+"Busca los animales llamados Luna"
+"Enséñame las citas de hoy"
+"Crea un animal llamado Firulais"
+"Cambia el nombre de Luna a Lunita"
+"Elimina la cita de mañana"
+"Muéstrame las citas de Luna"
+```
+
+---
+
+## 11. Auditoría estándar
+
+Para que expresiones como "últimos", "recientes" o "modificados recientemente" tengan una semántica estable, ClassForge deberá permitir generar campos de auditoría.
+
+Ejemplo mediante metadato/estereotipo:
+
+```text
+<<auditable>>
+Animal
+```
+
+Generación esperada:
+
+```text
+createdAt
+updatedAt
+```
+
+Esto puede mapearse a Spring Data Auditing.
+
+---
+
+## 12. OpenAPI y Postman
+
+El backend generado deberá publicar una especificación OpenAPI.
+
+Flujo:
+
+```text
+Spring Boot generado
+       ↓
+springdoc-openapi
+       ↓
+OpenAPI 3
+       ↓
+openapi-to-postman
+       ↓
+Postman Collection
+```
+
+La colección de Postman no deberá mantenerse manualmente de forma independiente del backend.
+
+OpenAPI será la fuente para generar:
+
+- documentación de API;
+- colección Postman;
+- cliente TypeScript del frontend.
+
+---
+
+## 13. Generación de frontend
+
+El frontend generado es distinto de la aplicación web principal ClassForge.
+
+ClassForge debe poder generar una interfaz para utilizar el backend generado.
+
+El docente podrá solicitar un frontend web o móvil, por lo que el generador debe contemplar ambas salidas.
+
+### Estrategia elegida
+
+Mantener **una sola base tecnológica**:
+
+- Angular para Web;
+- Angular + Capacitor para Mobile/Android.
+
+Flujo:
+
+```text
+Domain/Application Model
+       ↓
+Angular Frontend Generator
+       ↓
+Angular application
+       │
+       ├──► Web build
+       │
+       └──► Capacitor → Android
+```
+
+No se mantendrán generadores independientes para Flutter, React Native, Vue, etc. durante el alcance inicial.
+
+---
+
+## 14. Frontend CRUD generado
+
+A partir de una entidad como:
+
+```text
+Animal
+- id: Long
+- nombre: String
+- fechaNacimiento: Date
+- vacunado: Boolean
+- especie: Especie
+```
+
+ClassForge podrá inferir controles de formulario.
+
+Ejemplo de reglas:
+
+| Tipo de dominio | Componente UI |
+|---|---|
+| String | input text |
+| Integer / Long | input number |
+| Decimal | input number |
+| Boolean | checkbox / switch |
+| Date | date picker |
+| DateTime | datetime picker |
+| Enum | select |
+| N:1 | select / autocomplete |
+| 1:N | listado / tabla relacionada |
+| Text | textarea |
+
+Cada entidad podrá generar de forma estándar:
+
+- listado;
+- detalle;
+- creación;
+- edición;
+- eliminación;
+- búsqueda;
+- filtros;
+- navegación de relaciones.
+
+El resultado será prioritariamente un frontend CRUD funcional, no una UI específica de negocio diseñada manualmente.
+
+---
+
+## 15. Template frontend reutilizable
+
+Para reducir la cantidad de código generado, el frontend podrá basarse en un template reutilizable.
+
+Ejemplo:
+
+```text
+generated-app-template/
+├── assistant/
+├── crud/
+├── forms/
+├── tables/
+├── routing/
+├── api/
+└── domain/
+```
+
+El generador producirá principalmente:
+
+- configuración;
+- Domain Manifest;
+- modelos;
+- rutas;
+- cliente de API;
+- metadatos de formularios/tablas.
+
+Una veterinaria y una biblioteca podrán compartir el mismo motor de frontend cambiando únicamente el dominio generado.
+
+---
+
+## 16. Domain Manifest
+
+Junto con cada aplicación generada se deberá crear un **Domain Manifest**.
+
+Este archivo describe el dominio de forma compacta para el frontend y el asistente IA.
+
+Ejemplo:
+
+```json
+{
+  "entities": [
+    {
+      "name": "Animal",
+      "displayName": "animal",
+      "plural": "animales",
+      "aliases": ["mascota", "mascotas"],
+      "endpoint": "/api/animals",
+      "attributes": [
+        {
+          "name": "nombre",
+          "type": "String",
+          "searchable": true
+        },
+        {
+          "name": "fechaRegistro",
+          "type": "DateTime",
+          "sortable": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+El manifiesto deberá contener al menos:
+
+- entidades;
+- atributos;
+- tipos;
+- endpoints;
+- relaciones;
+- aliases;
+- propiedades buscables;
+- propiedades ordenables;
+- operaciones permitidas;
+- validaciones básicas;
+- capacidades CRUD.
+
+El manifiesto será generado desde el modelo canónico y/o OpenAPI.
+
+---
+
+## 17. Asistente de lenguaje natural en la aplicación generada
+
+La característica central del frontend generado será la posibilidad de controlar el backend mediante lenguaje natural y voz.
+
+Ejemplo del dominio veterinario:
+
+```text
+Animal
+Cita
+Veterinario
+```
+
+El usuario podrá decir:
+
+```text
+"Quiero ver los últimos cinco animales."
+```
+
+El flujo será:
+
+```text
+Audio
+  ↓
+STT
+  ↓
+Texto
+  ↓
+LLM + Domain Manifest
+  ↓
+AssistantCommand
+  ↓
+Validador
+  ↓
+API Executor
+  ↓
+Spring Boot generado
+  ↓
+Resultado
+```
+
+El LLM no deberá generar URLs arbitrarias ni ejecutar código.
+
+---
+
+## 18. Lenguaje intermedio del asistente
+
+Se definirá un lenguaje cerrado de operaciones.
+
+Operaciones iniciales:
+
+```text
+LIST
+GET
+SEARCH
+CREATE
+UPDATE
+DELETE
+COUNT
+```
+
+Estructura aproximada:
+
+```json
+{
+  "operation": "LIST",
+  "entity": "Animal",
+  "filters": [],
+  "sort": {
+    "field": "createdAt",
+    "direction": "DESC"
+  },
+  "limit": 5
+}
+```
+
+El frontend/backend deberá validar:
+
+- que la entidad exista;
+- que la operación esté permitida;
+- que los campos existan;
+- que los tipos coincidan;
+- que los filtros sean válidos;
+- que no se soliciten operaciones fuera del manifiesto.
+
+Solo después se ejecutará la petición REST correspondiente.
+
+---
+
+## 19. Operaciones compuestas
+
+El asistente podrá generar pequeños planes compuestos cuando una operación dependa de otra.
+
+Ejemplo:
+
+```text
+"Añade una cita para Luna mañana a las 4 de la tarde."
+```
+
+Posible representación:
+
+```json
+{
+  "steps": [
+    {
+      "operation": "SEARCH",
+      "entity": "Animal",
+      "filters": [
+        {
+          "field": "nombre",
+          "operator": "EQ",
+          "value": "Luna"
+        }
+      ]
+    },
+    {
+      "operation": "CREATE",
+      "entity": "Cita",
+      "data": {
+        "animalId": "$step1.result.id",
+        "fecha": "2026-08-28T16:00:00"
+      }
+    }
+  ]
+}
+```
+
+El motor de ejecución deberá validar cada paso antes de ejecutarlo.
+
+---
+
+## 20. Alcance semántico de la generación
+
+ClassForge puede generar automáticamente de forma razonable:
+
+| Funcionalidad | Alcance |
+|---|---:|
+| Entidades JPA | Sí |
+| Tablas y relaciones | Sí |
+| Repositories | Sí |
+| Servicios CRUD | Sí |
+| Controllers REST | Sí |
+| DTOs | Sí |
+| Validaciones básicas | Sí |
+| OpenAPI | Sí |
+| Postman | Sí |
+| Cliente TypeScript | Sí |
+| Listados frontend | Sí |
+| Formularios CRUD | Sí |
+| Navegación | Sí |
+| Web | Sí |
+| Android mediante Capacitor | Sí |
+| Consultas por voz | Sí |
+| Filtrado/ordenación | Sí |
+| Consultas sobre relaciones | Sí |
+| Lógica empresarial arbitraria no modelada | No |
+| Reglas de negocio inexistentes en el modelo | No |
+
+Un diagrama de clases no contiene suficiente información para generar automáticamente cualquier comportamiento empresarial imaginable.
+
+ClassForge se enfocará inicialmente en **operaciones estructurales derivables del modelo de dominio**.
+
+---
+
+## 21. Metadatos de generación y perfil UML
+
+Para ampliar la capacidad del generador sin abandonar UML, ClassForge podrá soportar metadatos y/o un perfil UML propio.
+
+Ejemplos:
+
+```text
+<<entity>>
+<<auditable>>
+<<readOnly>>
+<<searchable>>
+<<crud>>
+```
+
+Propiedades:
+
+```text
+{ searchable = true }
+{ sortable = true }
+{ defaultSort = DESC }
+{ required = true }
+{ unique = true }
+```
+
+Estos metadatos podrán utilizarse para controlar:
+
+- generación backend;
+- generación frontend;
+- búsqueda;
+- auditoría;
+- validaciones;
+- comportamiento del asistente.
+
+---
+
+## 22. IA local
+
+La IA debe ser local y desacoplada del frontend principal.
+
+### Runtime previsto
+
+- llama.cpp
+
+### Estrategia de modelos
+
+Modelo pequeño para operaciones frecuentes:
+
+- Gemma 3 1B Q4 o equivalente;
+- encargado de transformar lenguaje natural a comandos estructurados.
+
+Modelo multimodal opcional de mayor tamaño:
+
+- Gemma 3 4B u otro VLM compatible;
+- utilizado bajo demanda para fotografía → UML.
+
+El modelo pequeño podrá permanecer cargado.
+
+El modelo multimodal podrá cargarse únicamente cuando sea necesario.
+
+---
+
+## 23. Speech-to-Text local
+
+Tecnología prevista:
+
+- whisper.cpp
+
+Configuraciones iniciales:
+
+- laptop: `base` o `small`;
+- dispositivos móviles: `tiny` o `base` si se decide ejecutar on-device.
+
+El objetivo principal no es realizar transcripción profesional extensa, sino interpretar comandos cortos y claros.
+
+---
+
+## 24. Estrategia de ejecución de IA
+
+El modo principal será **workstation/local server**.
+
+```text
+Laptop anfitriona
+├── Spring Boot
+├── llama.cpp
+├── whisper.cpp
+└── backend generado
+      │
+      │ LAN / hotspot
+      ▼
+Web / Android
+```
+
+Esto permite:
+
+- operar sin Internet;
+- centralizar modelos pesados;
+- utilizar móviles de recursos medios como clientes;
+- mantener una única implementación del asistente.
+
+### On-device mobile
+
+Será una mejora opcional.
+
+En móvil se podrá investigar:
+
+- whisper.cpp tiny/base;
+- llama.cpp Android;
+- modelos alrededor de 1B cuantizados.
+
+No se considerará requisito que un teléfono de gama media ejecute el modelo multimodal pesado.
+
+---
+
+## 25. Backend del asistente generado
+
+Cada backend generado podrá incorporar endpoints estándar para el asistente.
+
+Ejemplo:
+
+```text
+POST /api/assistant/execute
+POST /api/assistant/voice
+```
+
+`/execute` podrá recibir texto:
+
+```json
+{
+  "text": "muéstrame los últimos cinco animales"
+}
+```
+
+`/voice` podrá recibir audio y ejecutar:
+
+```text
+Audio
+  ↓
+whisper.cpp
+  ↓
+LLM
+  ↓
+AssistantCommand
+  ↓
+CommandValidator
+  ↓
+API/domain services
+  ↓
+resultado
+```
+
+El asistente deberá consumir únicamente capacidades declaradas por el dominio generado.
+
+---
+
+## 26. Seguridad y validación del asistente
+
+La IA nunca será considerada una fuente confiable de instrucciones ejecutables.
+
+Toda salida del modelo deberá pasar por validación estructural.
+
+Principios:
+
+1. Salida estructurada.
+2. Esquema cerrado.
+3. Allow-list de operaciones.
+4. Allow-list de entidades y campos.
+5. Validación de tipos.
+6. Validación de relaciones.
+7. Confirmación opcional para acciones destructivas.
+8. Sin SQL generado directamente por el LLM.
+9. Sin ejecución de código generado por el LLM.
+10. Sin URLs arbitrarias suministradas por el LLM.
+
+---
+
+## 27. Persistencia de proyectos ClassForge
+
+La propia herramienta podrá utilizar inicialmente almacenamiento basado en archivos para proyectos.
+
+Formato conceptual:
+
+```text
+*.classforge
+```
+
+Internamente podrá ser JSON.
+
+Contenido posible:
+
+```json
+{
+  "formatVersion": "1.0",
+  "project": {},
+  "umlModel": {},
+  "layout": {},
+  "generationMetadata": {},
+  "revision": 42
+}
+```
+
+Esto facilita:
+
+- guardar;
+- abrir;
+- versionar;
+- exportar;
+- realizar backups;
+- depurar;
+- trabajar offline.
+
+Más adelante podrá añadirse una base de datos para proyectos colaborativos si resulta necesario.
+
+---
+
+## 28. Stack consolidado
+
+### Aplicación ClassForge
+
+```text
+Frontend
+- Angular 22
+- TypeScript
+- Angular Material
+- JointJS Community
+- ELK.js
+- Signals
+- RxJS
+- @stomp/stompjs
+
+Backend
+- Java 21
+- Spring Boot 4.x
+- Gradle
+- Spring Web MVC
+- Spring WebSocket
+- STOMP
+- Jackson
+- Jackson XML
+- StAX
+- FreeMarker
+
+IA / STT
+- llama.cpp
+- Gemma 3 1B Q4 o equivalente
+- VLM 4B opcional para imagen
+- whisper.cpp
+
+Interoperabilidad
+- UML 2.5.1
+- XMI 2.1
+- Enterprise Architect
+```
+
+### Aplicaciones generadas
+
+```text
+Backend
+- Java 21
+- Spring Boot 4.x
+- Spring Data JPA
+- Hibernate
+- Jakarta Validation
+- PostgreSQL
+- H2 opcional
+- springdoc-openapi
+
+Frontend
+- Angular
+- Angular Material
+- cliente TypeScript generado desde OpenAPI
+
+Mobile
+- mismo Angular
+- Capacitor
+- Android
+
+Artefactos
+- OpenAPI 3
+- Postman Collection
+- Domain Manifest
+```
+
+---
+
+## 29. Testing previsto
+
+### Backend
+
+- JUnit 5
+- Mockito
+- Spring Boot Test
+
+### Frontend
+
+- tooling de testing de Angular
+
+### End-to-end
+
+- Playwright
+
+### Generadores
+
+Los generadores deberán disponer de pruebas que verifiquen al menos:
+
+- archivo generado;
+- sintaxis esperada;
+- compilación del proyecto generado;
+- relaciones correctas;
+- OpenAPI generado;
+- cliente Angular generado;
+- comandos del asistente válidos.
+
+---
+
+## 30. Flujo de demostración objetivo
+
+Ejemplo: veterinaria.
+
+### 1. Modelado
+
+```text
+Animal
+Cita
+Veterinario
+```
+
+### 2. Generación
+
+El usuario pulsa **Generar**.
+
+ClassForge produce:
+
+```text
+output/
+├── backend/
+├── frontend-web/
+├── frontend-mobile/
+├── openapi.yaml
+├── postman_collection.json
+└── domain-manifest.json
+```
+
+### 3. Ejecución
+
+Se inicia el backend Spring Boot generado.
+
+Se abre:
+
+- frontend web; o
+- frontend Android.
+
+### 4. Operación por voz
+
+Usuario:
+
+```text
+"Crea un animal llamado Luna, especie perro."
+```
+
+Resultado:
+
+```text
+Animal creado correctamente.
+```
+
+Después:
+
+```text
+"Muéstrame los últimos cinco animales."
+```
+
+La aplicación consulta el backend y presenta los resultados.
+
+Después:
+
+```text
+"Añade una cita para Luna mañana a las cuatro de la tarde."
+```
+
+El asistente:
+
+1. localiza a Luna;
+2. obtiene su id;
+3. crea la cita relacionada;
+4. muestra el resultado.
+
+Todo esto debe ser posible sin escribir manualmente endpoints específicos para Luna, animales o citas: el comportamiento se deriva del modelo y de las capacidades estándar generadas.
+
+---
+
+## 31. MVP prioritario
+
+El MVP debe demostrar de extremo a extremo:
+
+1. Crear clases manualmente.
+2. Crear atributos y relaciones.
+3. Mantener un modelo canónico.
+4. Colaboración en tiempo real entre dos clientes.
+5. Guardar/abrir proyecto.
+6. Transformar UML → modelo relacional.
+7. Generar Spring Boot + JPA.
+8. Generar CRUD REST.
+9. Generar paginación, filtros y sorting.
+10. Generar OpenAPI.
+11. Generar colección Postman.
+12. Generar Domain Manifest.
+13. Generar frontend Angular CRUD.
+14. Empaquetar el frontend como Android mediante Capacitor.
+15. Ejecutar un comando textual sobre el backend generado.
+16. Ejecutar el mismo comando mediante voz + STT.
+17. Operar el backend generado mediante lenguaje natural.
+18. Importar/exportar un subconjunto XMI compatible con Enterprise Architect.
+19. Funcionar sin Internet.
+
+La generación desde fotografía puede desarrollarse después de que este pipeline sea estable, ya que presenta más incertidumbre que la generación determinista.
+
+---
+
+## 32. Orden de implementación recomendado
+
+```text
+1. CanonicalUmlModel
+2. Command Bus
+3. Angular canvas manual
+4. Persistencia local de proyectos
+5. WebSocket collaboration
+6. UML → RelationalModel
+7. Spring Boot generator
+8. Backend generado compilable
+9. OpenAPI
+10. Postman
+11. Domain Manifest
+12. Angular frontend generator
+13. Generic CRUD UI
+14. AssistantCommand schema
+15. Text → AssistantCommand
+16. Assistant execution engine
+17. whisper.cpp
+18. Voice → command
+19. Capacitor / Android
+20. Enterprise Architect XMI
+21. Imagen → UML
+```
+
+No se debe comenzar por IA, visión o frontend generado antes de disponer de un modelo canónico sólido.
+
+---
+
+## 33. Definición resumida del producto
+
+**ClassForge** es una herramienta CASE colaborativa y offline-first que permite diseñar modelos UML de clases mediante edición manual, voz, imágenes o Enterprise Architect, y transformar esos modelos en aplicaciones funcionales compuestas por un backend Spring Boot/JPA, una API REST/OpenAPI, una colección Postman y un frontend Angular exportable tanto a web como a Android mediante Capacitor.
+
+Las aplicaciones generadas incorporan un asistente de lenguaje natural y voz capaz de realizar operaciones sobre el dominio generado —como crear, consultar, actualizar, eliminar, filtrar, ordenar y navegar relaciones— sin requerir que dichas operaciones hayan sido programadas manualmente para cada dominio.
+
+La generación se limita deliberadamente a comportamiento que pueda derivarse del modelo y de metadatos declarativos. La lógica empresarial no expresada en el modelo no se inventará automáticamente.
+
+---
+
+## 34. Nombre
+
+**ClassForge**
+
+### Significado
+
+- **Class**: el modelo parte de diagramas de clases UML.
+- **Forge**: el sistema transforma ese modelo en software ejecutable.
+
+Tagline opcional:
+
+> **Model it. Generate it. Talk to it.**
+
