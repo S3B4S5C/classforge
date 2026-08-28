@@ -2162,3 +2162,92 @@ Completar funcionalidades incrementalmente.
 Demostrar que el sistema completo funciona de extremo a extremo.
 
 La prioridad no será acumular pantallas o funcionalidades aisladas. La prioridad será mantener un **incremento ejecutable** que atraviese cada vez más partes del flujo completo de ClassForge.
+
+<!-- AUTH-USE-CASES-V1 -->
+# Addendum PUDS — Autenticacion y ownership
+
+A partir de este incremento, el actor Modelador se interpreta como Usuario autenticado cuando accede a proyectos persistentes.
+
+## Revision de CU-01 — Crear proyecto de modelado
+
+### Precondicion nueva
+
+- El usuario se encuentra autenticado.
+
+### Postcondicion nueva
+
+- El proyecto queda asociado persistentemente al `ownerId` del usuario autenticado.
+- El proyecto no aparece en la biblioteca de otros usuarios salvo futura membresia aceptada.
+
+### Regla
+
+La propiedad se resuelve en backend. `localStorage` no almacena la lista de proyectos ni determina ownership.
+
+## CU-28 — Registrar cuenta
+
+**Actor principal:** Visitante  
+**Prioridad:** Critica  
+**Fase PUDS:** Elaboracion
+
+### Objetivo
+
+Crear una identidad local que pueda ser propietaria de proyectos.
+
+### Flujo
+
+1. Visitante abre landing.
+2. Selecciona Crear cuenta.
+3. Introduce nombre, correo y contrasena.
+4. Backend valida.
+5. Backend normaliza correo.
+6. Contrasena se codifica con BCrypt.
+7. Usuario se persiste.
+8. Backend emite JWT.
+9. Frontend establece sesion.
+10. Usuario navega a sus proyectos.
+
+## CU-29 — Iniciar sesion
+
+**Actor principal:** Usuario registrado  
+**Prioridad:** Critica  
+**Fase PUDS:** Elaboracion
+
+1. Usuario introduce correo y contrasena.
+2. Backend localiza cuenta.
+3. BCrypt valida contrasena.
+4. Backend emite JWT.
+5. Frontend almacena token de sesion.
+6. Usuario accede a su biblioteca.
+
+## CU-30 — Acceder a proyectos propios
+
+**Actor:** Usuario autenticado  
+**Prioridad:** Critica  
+**Fase PUDS:** Elaboracion
+
+1. Frontend envia JWT.
+2. Spring Security valida firma y expiracion.
+3. Se obtiene `currentUser.id`.
+4. ProjectService consulta por owner.
+5. Solo esos proyectos son devueltos.
+
+Solicitar un UUID de otro usuario devuelve 404.
+
+## CU-31 — Invitar colaborador mediante link (futuro)
+
+**Actor principal:** Propietario  
+**Actor secundario:** Usuario invitado  
+**Prioridad:** Alta  
+**Fase prevista:** Construccion
+
+1. Propietario solicita invitacion.
+2. Backend genera token seguro y expirable.
+3. Se construye URL.
+4. Invitado abre URL.
+5. Inicia sesion o se registra.
+6. Acepta.
+7. Backend crea `ProjectMembership`.
+8. Proyecto aparece en su biblioteca.
+9. WebSocket autoriza sesion colaborativa mediante membresia.
+
+Este caso queda documentado pero no implementado en este incremento.

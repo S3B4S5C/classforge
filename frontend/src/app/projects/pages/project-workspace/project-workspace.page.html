@@ -1,0 +1,87 @@
+<section class="workspace-shell">
+  <nav class="breadcrumbs" aria-label="Navegacion">
+    <a mat-button class="cf-button-secondary" routerLink="/projects">Proyectos</a>
+    <span aria-hidden="true">/</span>
+    <span>{{ project()?.name ?? 'Cargando...' }}</span>
+  </nav>
+
+  @if (errorMessage()) {
+    <div class="feedback-panel error-panel" role="alert">
+      <p>{{ errorMessage() }}</p>
+      <div class="feedback-actions">
+        <button mat-button class="cf-button-secondary" type="button" (click)="retry()">Reintentar</button>
+        <a mat-button class="cf-button-secondary" routerLink="/projects">Volver a proyectos</a>
+      </div>
+    </div>
+  } @else if (loading()) {
+    <div class="feedback-panel" aria-live="polite">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Abriendo proyecto...</p>
+    </div>
+  } @else if (project(); as currentProject) {
+    <header class="workspace-heading">
+      <div>
+        <p class="eyebrow">WORKSPACE</p>
+        <h1>{{ currentProject.name }}</h1>
+        <p>
+          Revision {{ currentProject.revision }} · UML
+          {{ currentProject.umlModel.schemaVersion }}
+        </p>
+      </div>
+    </header>
+
+    <div class="workspace-layout">
+      <mat-card class="canvas-placeholder" appearance="outlined">
+        <mat-card-content>
+          <div class="placeholder-content">
+            <span class="placeholder-kicker">MODELO UML</span>
+            <h2>El proyecto esta listo para diagramar.</h2>
+            <p>
+              El modelo canonico fue inicializado vacio. El canvas UML se
+              incorporara en la siguiente iteracion sin cambiar este contrato
+              de proyecto.
+            </p>
+
+            <div class="model-state">
+              <span>Elementos actuales</span>
+              <strong>{{ currentProject.umlModel.elements.length }}</strong>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <aside class="details-panel">
+        <mat-card appearance="outlined">
+          <mat-card-header>
+            <mat-card-title>Detalles del proyecto</mat-card-title>
+          </mat-card-header>
+
+          <mat-card-content>
+            <dl class="details-list">
+              <div>
+                <dt>ID</dt>
+                <dd>{{ currentProject.id }}</dd>
+              </div>
+              <div>
+                <dt>Revision</dt>
+                <dd>{{ currentProject.revision }}</dd>
+              </div>
+              <div>
+                <dt>Schema UML</dt>
+                <dd>{{ currentProject.umlModel.schemaVersion }}</dd>
+              </div>
+              <div>
+                <dt>Creado</dt>
+                <dd>{{ currentProject.createdAt | date:'medium' }}</dd>
+              </div>
+              <div>
+                <dt>Actualizado</dt>
+                <dd>{{ currentProject.updatedAt | date:'medium' }}</dd>
+              </div>
+            </dl>
+          </mat-card-content>
+        </mat-card>
+      </aside>
+    </div>
+  }
+</section>

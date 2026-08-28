@@ -20,3 +20,8 @@ spring:
 
 server:
   port: 8082
+classforge:
+  security:
+    jwt:
+      secret: ${CLASSFORGE_JWT_SECRET:classforge-development-secret-change-before-production-2026}
+      expiration-minutes: 480

@@ -1,0 +1,63 @@
+<section class="auth-page">
+  <div class="auth-copy">
+    <a class="back-link" routerLink="/">← Volver a ClassForge</a>
+    <p class="eyebrow">EMPIEZA A MODELAR</p>
+    <h1>Una cuenta, tus proyectos, cualquier navegador.</h1>
+    <p>
+      La propiedad vive en el backend, no en el almacenamiento del navegador.
+      Mas adelante podras invitar colaboradores a proyectos concretos mediante
+      enlaces de invitacion.
+    </p>
+  </div>
+
+  <mat-card class="auth-card" appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Crear cuenta</mat-card-title>
+      <mat-card-subtitle>Registro local de ClassForge.</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
+        <mat-form-field appearance="outline">
+          <mat-label>Nombre</mat-label>
+          <input matInput autocomplete="name" [formControl]="form.controls.displayName" />
+          @if (form.controls.displayName.invalid && form.controls.displayName.touched) {
+            <mat-error>Introduce tu nombre.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Correo</mat-label>
+          <input matInput type="email" autocomplete="email" [formControl]="form.controls.email" />
+          @if (form.controls.email.invalid && form.controls.email.touched) {
+            <mat-error>Introduce un correo valido.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Contrasena</mat-label>
+          <input matInput type="password" autocomplete="new-password" [formControl]="form.controls.password" />
+          @if (form.controls.password.hasError('minlength') && form.controls.password.touched) {
+            <mat-error>Usa al menos 8 caracteres.</mat-error>
+          }
+          @if (form.controls.password.hasError('maxlength')) {
+            <mat-error>Usa como maximo 72 caracteres.</mat-error>
+          }
+        </mat-form-field>
+
+        @if (errorMessage()) {
+          <p class="form-error" role="alert">{{ errorMessage() }}</p>
+        }
+
+        <button mat-flat-button class="cf-button-primary" type="submit" [disabled]="submitting()">
+          {{ submitting() ? 'Creando cuenta...' : 'Crear cuenta' }}
+        </button>
+      </form>
+    </mat-card-content>
+
+    <mat-card-actions>
+      <span>Ya tienes cuenta?</span>
+      <a mat-button class="cf-button-secondary" routerLink="/login">Iniciar sesion</a>
+    </mat-card-actions>
+  </mat-card>
+</section>

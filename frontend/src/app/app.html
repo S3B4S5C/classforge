@@ -1,16 +1,36 @@
-<main class="shell">
-  <section class="hero">
-    <p class="eyebrow">CASE · UML · GENERACIÓN</p>
-    <h1>ClassForge</h1>
-    <p class="tagline">Model it. Generate it. Talk to it.</p>
+<div class="app-shell">
+  <mat-toolbar class="topbar">
+    <a class="brand" routerLink="/" aria-label="ClassForge">
+      <span class="brand-mark" aria-hidden="true">CF</span>
+      <span class="brand-copy">
+        <strong>ClassForge</strong>
+        <small>Model it. Generate it. Talk to it.</small>
+      </span>
+    </a>
 
-    <div class="status-card">
-      <span>Backend</span>
-      <strong>{{ backendStatus() }}</strong>
+    <span class="toolbar-spacer"></span>
+
+    <nav class="primary-nav" aria-label="Principal">
+      @if (auth.isAuthenticated()) {
+        <a mat-button class="cf-button-secondary" routerLink="/projects">Mis proyectos</a>
+        <span class="user-name">{{ auth.user()?.displayName }}</span>
+        <button mat-button class="cf-button-secondary" type="button" (click)="logout()">Salir</button>
+      } @else {
+        <a mat-button class="cf-button-secondary" routerLink="/login">Ingresar</a>
+        <a mat-flat-button class="cf-button-primary" routerLink="/register">Crear cuenta</a>
+      }
+    </nav>
+
+    <div
+      class="backend-status"
+      [class.online]="backendOnline() === true"
+      [class.offline]="backendOnline() === false"
+    >
+      <span class="status-dot" aria-hidden="true"></span>
     </div>
+  </mat-toolbar>
 
-    <p class="next-step">
-      Base del monorepo lista. El siguiente hito es implementar el modelo canónico UML.
-    </p>
-  </section>
-</main>
+  <main class="app-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

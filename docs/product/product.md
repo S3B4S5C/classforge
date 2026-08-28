@@ -1357,3 +1357,60 @@ Tagline opcional:
 
 > **Model it. Generate it. Talk to it.**
 
+<!-- AUTH-OWNERSHIP-V1 -->
+# Actualizacion de producto — Autenticacion, propiedad y colaboracion
+
+## Identidad de usuario
+
+ClassForge incorpora cuentas locales de usuario mediante registro e inicio de sesion.
+
+Cada cuenta posee UUID, nombre visible, correo unico, hash de contrasena y fecha de creacion.
+
+Las contrasenas nunca se almacenan en texto plano. El backend utiliza Spring Security y BCrypt.
+
+## Sesion
+
+La API utiliza autenticacion Bearer mediante JWT firmado por el backend.
+
+El frontend puede persistir el access token en `localStorage`. Este almacenamiento representa exclusivamente la sesion del navegador; no determina la propiedad ni la existencia de proyectos.
+
+Borrar `localStorage` implica cerrar la sesion local. Al autenticarse nuevamente con la misma cuenta, el backend vuelve a entregar los proyectos del usuario.
+
+## Propiedad de proyectos
+
+Cada proyecto nuevo posee un `ownerId` persistido en la base de datos.
+
+`GET /api/projects` solo devuelve proyectos cuyo propietario sea el usuario autenticado.
+
+Un usuario no puede recuperar un proyecto perteneciente a otra cuenta mediante su UUID.
+
+## Colaboracion futura mediante invitaciones
+
+La evolucion prevista es:
+
+1. El propietario genera una invitacion para un proyecto.
+2. ClassForge crea un token de invitacion de un solo uso o con expiracion.
+3. El propietario comparte un enlace.
+4. El receptor inicia sesion o crea una cuenta.
+5. Acepta la invitacion.
+6. Se crea una membresia de proyecto.
+7. El proyecto aparece tanto al propietario como al colaborador segun sus permisos.
+
+Modelo conceptual futuro:
+
+- `Project -> ownerId`
+- `ProjectMembership -> projectId + userId + role`
+- `ProjectInvitation -> projectId + token + expiresAt + invitedBy`
+
+## Endpoints iniciales
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `GET /api/projects` autenticado
+- `POST /api/projects` autenticado
+- `GET /api/projects/{id}` autenticado y limitado por ownership
+
+## Landing publica
+
+La ruta raiz de ClassForge es publica y presenta las capacidades centrales del producto y enlaza a registro e inicio de sesion.

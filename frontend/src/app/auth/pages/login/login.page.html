@@ -1,0 +1,51 @@
+<section class="auth-page">
+  <div class="auth-copy">
+    <a class="back-link" routerLink="/">← Volver a ClassForge</a>
+    <p class="eyebrow">BIENVENIDO</p>
+    <h1>Continua construyendo tus modelos.</h1>
+    <p>
+      Tus proyectos pertenecen a tu cuenta. Puedes abrir ClassForge desde otro
+      navegador, iniciar sesion y continuar desde el mismo backend.
+    </p>
+  </div>
+
+  <mat-card class="auth-card" appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Iniciar sesion</mat-card-title>
+      <mat-card-subtitle>Accede a tus proyectos de ClassForge.</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
+        <mat-form-field appearance="outline">
+          <mat-label>Correo</mat-label>
+          <input matInput type="email" autocomplete="email" [formControl]="form.controls.email" />
+          @if (form.controls.email.invalid && form.controls.email.touched) {
+            <mat-error>Introduce un correo valido.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Contrasena</mat-label>
+          <input matInput type="password" autocomplete="current-password" [formControl]="form.controls.password" />
+          @if (form.controls.password.invalid && form.controls.password.touched) {
+            <mat-error>La contrasena es obligatoria.</mat-error>
+          }
+        </mat-form-field>
+
+        @if (errorMessage()) {
+          <p class="form-error" role="alert">{{ errorMessage() }}</p>
+        }
+
+        <button mat-flat-button class="cf-button-primary" type="submit" [disabled]="submitting()">
+          {{ submitting() ? 'Ingresando...' : 'Iniciar sesion' }}
+        </button>
+      </form>
+    </mat-card-content>
+
+    <mat-card-actions>
+      <span>No tienes cuenta?</span>
+      <a mat-button class="cf-button-secondary" routerLink="/register">Crear cuenta</a>
+    </mat-card-actions>
+  </mat-card>
+</section>

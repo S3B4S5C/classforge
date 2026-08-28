@@ -1,0 +1,128 @@
+<section class="page-shell">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">PROYECTOS</p>
+      <h1>Modela una idea y conviertela en una aplicacion.</h1>
+      <p class="lead">
+        Estos son los proyectos asociados a tu cuenta. Su propiedad se conserva en el backend.
+      </p>
+    </div>
+  </header>
+
+  <div class="projects-layout">
+    <mat-card class="create-card" appearance="outlined">
+      <mat-card-header>
+        <mat-card-title>Nuevo proyecto</mat-card-title>
+        <mat-card-subtitle>
+          Crea el contenedor del modelo antes de empezar a diagramar.
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <form class="create-form" [formGroup]="form" (ngSubmit)="createProject()">
+          <mat-form-field appearance="outline">
+            <mat-label>Nombre del proyecto</mat-label>
+            <input
+              matInput
+              [formControl]="nameControl"
+              maxlength="120"
+              autocomplete="off"
+              placeholder="Ej. Veterinaria"
+            />
+
+            @if (nameControl.hasError('required') && nameControl.touched) {
+              <mat-error>El nombre es obligatorio.</mat-error>
+            }
+
+            @if (nameControl.hasError('maxlength')) {
+              <mat-error>Usa como maximo 120 caracteres.</mat-error>
+            }
+          </mat-form-field>
+
+          <button
+            mat-flat-button
+            class="cf-button-primary"
+            type="submit"
+            [disabled]="creating()"
+          >
+            {{ creating() ? 'Creando...' : 'Crear proyecto' }}
+          </button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <section class="project-library" aria-labelledby="project-library-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">BIBLIOTECA</p>
+          <h2 id="project-library-title">Mis proyectos</h2>
+        </div>
+
+        @if (!loading()) {
+          <span class="project-count">
+            {{ projects().length }}
+            {{ projects().length === 1 ? 'proyecto' : 'proyectos' }}
+          </span>
+        }
+      </div>
+
+      @if (errorMessage()) {
+        <div class="feedback-panel error-panel" role="alert">
+          <p>{{ errorMessage() }}</p>
+          <button mat-button class="cf-button-secondary" type="button" (click)="retry()">
+            Reintentar
+          </button>
+        </div>
+      } @else if (loading()) {
+        <div class="feedback-panel loading-panel" aria-live="polite">
+          <mat-spinner diameter="36"></mat-spinner>
+          <p>Cargando proyectos...</p>
+        </div>
+      } @else if (projects().length === 0) {
+        <div class="feedback-panel empty-panel">
+          <strong>Aun no hay proyectos.</strong>
+          <p>
+            Crea el primero desde el formulario. El proyecto quedara persistido
+            y listo para recibir el modelo UML.
+          </p>
+        </div>
+      } @else {
+        <div class="project-grid">
+          @for (project of projects(); track project.id) {
+            <mat-card class="project-card" appearance="outlined">
+              <mat-card-header>
+                <mat-card-title>{{ project.name }}</mat-card-title>
+                <mat-card-subtitle>
+                  Revision {{ project.revision }}
+                </mat-card-subtitle>
+              </mat-card-header>
+
+              <mat-card-content>
+                <dl class="project-meta">
+                  <div>
+                    <dt>Modelo</dt>
+                    <dd>UML {{ project.umlModel.schemaVersion }}</dd>
+                  </div>
+                  <div>
+                    <dt>Actualizado</dt>
+                    <dd>{{ project.updatedAt | date:'medium' }}</dd>
+                  </div>
+                </dl>
+              </mat-card-content>
+
+              <mat-card-actions align="end">
+                <a
+                  mat-button
+                  class="cf-button-secondary"
+                  [routerLink]="['/projects', project.id]"
+                >
+                  Abrir proyecto
+                </a>
+              </mat-card-actions>
+            </mat-card>
+          }
+        </div>
+      }
+    </section>
+  </div>
+</section>

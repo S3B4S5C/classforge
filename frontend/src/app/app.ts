@@ -1,31 +1,33 @@
 import { Component, inject, signal } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
+
+import { AuthService } from './auth/data/auth.service';
 import { HealthService } from './core/api/health.service';
 
 @Component({
   selector: 'app-root',
+  imports: [MatButtonModule, MatToolbarModule, RouterLink, RouterOutlet],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrl: './app.scss',
 })
 export class App {
   private readonly healthService = inject(HealthService);
+  private readonly router = inject(Router);
 
-  readonly backendStatus = signal('Comprobando backend...');
+  readonly auth = inject(AuthService);
+  readonly backendOnline = signal<boolean | null>(null);
 
   constructor() {
-    console.log('[ClassForge] App iniciada');
-    console.log('[ClassForge] Consultando /api/health');
-
     this.healthService.getHealth().subscribe({
-      next: response => {
-        console.log('[ClassForge] Backend respondió:', response);
-        this.backendStatus.set(
-          `${response.application}: ${response.status}`
-        );
-      },
-      error: error => {
-        console.error('[ClassForge] Error consultando backend:', error);
-        this.backendStatus.set('Backend no disponible');
-      }
+      next: () => this.backendOnline.set(true),
+      error: () => this.backendOnline.set(false),
     });
+  }
+
+  logout(): void {
+    this.auth.logout();
+    void this.router.navigate(['/']);
   }
 }

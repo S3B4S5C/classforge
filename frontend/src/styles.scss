@@ -1,12 +1,150 @@
-html,
-body {
-  margin: 0;
+:root {
+  --cf-page: #f7f8fb;
+  --cf-surface: #ffffff;
+  --cf-text: #172033;
+  --cf-muted: #667085;
+  --cf-border: #dfe3ea;
+}
+
+html {
   min-height: 100%;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #f6f7f9;
-  color: #18181b;
+  background: var(--cf-page);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgb(99 102 241 / 5%), transparent 30rem),
+    var(--cf-page);
+  color: var(--cf-text);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: inherit;
 }
 
 * {
   box-sizing: border-box;
+}
+
+::selection {
+  background: rgb(99 102 241 / 20%);
+}
+
+/* CLASSFORGE-BUTTON-VARIANTS-V1
+   Variantes globales para mantener contraste sobre fondos claros. */
+
+:root {
+  --cf-primary: #4f46e5;
+  --cf-primary-hover: #4338ca;
+  --cf-primary-active: #3730a3;
+  --cf-primary-text: #ffffff;
+
+  --cf-secondary-bg: #eef2ff;
+  --cf-secondary-hover: #e0e7ff;
+  --cf-secondary-active: #c7d2fe;
+  --cf-secondary-text: #3730a3;
+  --cf-secondary-border: #a5b4fc;
+
+  --cf-button-focus: rgb(79 70 229 / 35%);
+}
+
+.cf-button-primary.mat-mdc-button-base,
+.cf-button-secondary.mat-mdc-button-base {
+  min-height: 42px;
+  border-radius: 0.7rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.005em;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.cf-button-primary.mat-mdc-button-base {
+  border: 1px solid var(--cf-primary) !important;
+  background: var(--cf-primary) !important;
+  color: var(--cf-primary-text) !important;
+  box-shadow: 0 5px 14px rgb(79 70 229 / 20%);
+}
+
+.cf-button-primary.mat-mdc-button-base:hover:not(:disabled) {
+  border-color: var(--cf-primary-hover) !important;
+  background: var(--cf-primary-hover) !important;
+  box-shadow: 0 8px 20px rgb(79 70 229 / 27%);
+  transform: translateY(-1px);
+}
+
+.cf-button-primary.mat-mdc-button-base:active:not(:disabled) {
+  border-color: var(--cf-primary-active) !important;
+  background: var(--cf-primary-active) !important;
+  box-shadow: 0 3px 9px rgb(79 70 229 / 20%);
+  transform: translateY(0);
+}
+
+.cf-button-secondary.mat-mdc-button-base {
+  border: 1px solid var(--cf-secondary-border) !important;
+  background: var(--cf-secondary-bg) !important;
+  color: var(--cf-secondary-text) !important;
+  box-shadow: 0 2px 8px rgb(55 48 163 / 7%);
+}
+
+.cf-button-secondary.mat-mdc-button-base:hover:not(:disabled) {
+  border-color: #818cf8 !important;
+  background: var(--cf-secondary-hover) !important;
+  color: #312e81 !important;
+  transform: translateY(-1px);
+}
+
+.cf-button-secondary.mat-mdc-button-base:active:not(:disabled) {
+  background: var(--cf-secondary-active) !important;
+  transform: translateY(0);
+}
+
+.cf-button-primary.mat-mdc-button-base:focus-visible,
+.cf-button-secondary.mat-mdc-button-base:focus-visible {
+  outline: 3px solid var(--cf-button-focus);
+  outline-offset: 2px;
+}
+
+.cf-button-primary.mat-mdc-button-base:disabled,
+.cf-button-secondary.mat-mdc-button-base:disabled {
+  border-color: #d0d5dd !important;
+  background: #eaecf0 !important;
+  color: #98a2b3 !important;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Material agrega capas de estado internas. La capa no debe lavar
+   los colores definidos por las variantes de ClassForge. */
+.cf-button-primary .mat-mdc-button-persistent-ripple::before,
+.cf-button-secondary .mat-mdc-button-persistent-ripple::before {
+  opacity: 0 !important;
+}
+
+@media (max-width: 520px) {
+  .cf-button-primary.mat-mdc-button-base,
+  .cf-button-secondary.mat-mdc-button-base {
+    min-height: 44px;
+  }
 }
