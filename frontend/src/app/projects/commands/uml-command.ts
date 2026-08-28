@@ -37,6 +37,15 @@ export type UmlCommand =
   | (
       UmlCommandBase
       & {
+        type: 'RESTORE_CLASS';
+        umlClass: UmlClass;
+        layout: DiagramNodeLayout | null;
+        relationships: UmlRelationship[];
+      }
+    )
+  | (
+      UmlCommandBase
+      & {
         type: 'ADD_ATTRIBUTE';
         classId: string;
         attribute: UmlAttribute;

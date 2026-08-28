@@ -77,3 +77,56 @@ No se interceptan dentro de formularios o dialogs.
 CU-06 podrá transportar comandos/operaciones en vez de documentos JointJS completos.
 
 El backend seguirá siendo autoritativo.
+
+<!-- COLLABORATIVE-HISTORY-CU06-003-V1 -->
+## Undo/Redo colaborativo desde CU06-003
+
+El historial conserva para cada entrada:
+
+```text
+forwardCommand
+inverseCommand
+before
+after
+```
+
+Los snapshots `before/after` siguen siendo ayuda local y no se transmiten para deshacer.
+
+Cuando realtime está activo:
+
+```text
+Undo
+ ↓
+inverseCommand con commandId nuevo
+ ↓
+ProjectOperation
+ ↓
+Spring
+ ↓
+validar + persistir + revision + 1
+ ↓
+broadcast
+```
+
+Redo utiliza una nueva instancia del `forwardCommand`.
+
+Los IDs de dominio de la operación restaurada se conservan. Los IDs de comando se regeneran para cada ejecución de Undo/Redo.
+
+### RESTORE_CLASS
+
+Borrar una clase elimina de forma atómica:
+
+- clase;
+- atributos contenidos;
+- relaciones conectadas;
+- layout.
+
+Su inverso `RESTORE_CLASS` transporta exactamente esos elementos y los recupera como una sola nueva operación colaborativa.
+
+No transporta el `ProjectDocument` completo.
+
+### Historial remoto
+
+Si llega una operación perteneciente a otro cliente, el historial local se limpia.
+
+Esta regla evita aplicar una intención histórica sobre cambios remotos posteriores mientras ClassForge no utiliza OT/CRDT.

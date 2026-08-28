@@ -1602,3 +1602,61 @@ No deben presentarse academicamente como propiedades UML 2.5.1 puras.
 - layout separado.
 
 Operaciones, enums y packages siguen pendientes.
+
+<!-- REALTIME-COLLABORATION-CU06-001-V1 -->
+# Actualizacion de producto — CU06-001
+
+ClassForge incorpora el servidor de colaboración STOMP.
+
+Las operaciones remotas reutilizan conceptualmente el contrato Command de CU-05 y se aplican sobre el mismo `ProjectDocument` canónico.
+
+El servidor:
+
+1. autentica JWT;
+2. verifica acceso al proyecto;
+3. bloquea la fila del proyecto;
+4. compara `baseRevision`;
+5. ejecuta el comando;
+6. valida el documento;
+7. persiste;
+8. incrementa revisión;
+9. difunde el comando aceptado.
+
+No se intercambia JSON de JointJS y no se introduce CRDT en esta etapa.
+
+La integración automática Angular pertenece a CU06-002.
+
+<!-- REALTIME-COLLABORATION-CU06-002-V1 -->
+# Actualizacion de producto — CU06-002
+
+El workspace Angular mantiene sincronización realtime con Spring mediante STOMP.
+
+La edición es optimista: el usuario ve su cambio inmediatamente y el servidor confirma la revisión mediante broadcast.
+
+El cliente conserva por separado:
+
+- draft visible;
+- documento confirmado;
+- revisión confirmada;
+- operaciones pending.
+
+Ante gap, rechazo o intercalación conflictiva se recupera el estado autoritativo por REST en lugar de realizar merge implícito.
+
+Si WebSocket no está disponible, la edición local y el guardado REST de CU-02 continúan disponibles.
+
+Undo/Redo colaborativo permanece para CU06-003.
+
+<!-- REALTIME-COLLABORATION-CU06-CLOSED-V1 -->
+# Actualización de producto — CU-06 cerrado
+
+ClassForge dispone de colaboración realtime autoritativa sobre STOMP.
+
+El editor sincroniza operaciones `UmlCommand`, persiste cada operación aceptada y usa revisión explícita.
+
+CU06-003 completa Undo/Redo colaborativo mediante comandos inversos.
+
+El borrado de una clase utiliza `RESTORE_CLASS` como comando compensatorio atómico para recuperar su agregado visual/relacional sin transmitir `ProjectDocument` completo.
+
+Las operaciones remotas invalidan el historial local para evitar deshacer intenciones antiguas sobre trabajo de terceros.
+
+CU-07 agregará presencia efímera; la presencia no modificará la revisión ni el modelo UML.

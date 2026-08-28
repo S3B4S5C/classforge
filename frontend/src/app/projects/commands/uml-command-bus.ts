@@ -2,14 +2,19 @@ import {
   ProjectDocument,
 } from '../model/project';
 import {
+  commandMetadata,
   UmlCommand,
 } from './uml-command';
 import {
   UmlCommandExecutor,
 } from './uml-command-executor';
+import {
+  UmlCommandInverter,
+} from './uml-command-inverter';
 
 export interface UmlHistoryEntry {
-  command: UmlCommand;
+  forwardCommand: UmlCommand;
+  inverseCommand: UmlCommand;
   before: ProjectDocument;
   after: ProjectDocument;
 }
@@ -29,6 +34,8 @@ export class UmlCommandBus {
   constructor(
     private readonly executor =
       new UmlCommandExecutor(),
+    private readonly inverter =
+      new UmlCommandInverter(),
     private readonly maxHistory = 100,
   ) {}
 
@@ -54,6 +61,12 @@ export class UmlCommandBus {
     const before =
       structuredClone(current);
 
+    const inverseCommand =
+      this.inverter.invert(
+        before,
+        command,
+      );
+
     const after =
       this.executor.execute(
         before,
@@ -68,13 +81,18 @@ export class UmlCommandBus {
     }
 
     this.undoStack.push({
-      command,
+      forwardCommand:
+        structuredClone(command),
+      inverseCommand:
+        structuredClone(
+          inverseCommand,
+        ),
       before,
-      after: structuredClone(after),
+      after:
+        structuredClone(after),
     });
 
     this.trimUndoStack();
-
     this.redoStack.length = 0;
 
     this.currentDocument =
@@ -83,37 +101,76 @@ export class UmlCommandBus {
     return true;
   }
 
-  undo(): boolean {
+  undoCommand():
+    UmlCommand | null {
     const entry =
       this.undoStack.pop();
 
     if (!entry) {
-      return false;
+      return null;
     }
 
+    const command =
+      this.remint(
+        entry.inverseCommand,
+      );
+
+    const current =
+      this.requireCurrent();
+
     this.currentDocument =
-      structuredClone(entry.before);
+      this.executor.execute(
+        current,
+        command,
+      );
 
-    this.redoStack.push(entry);
+    this.redoStack.push(
+      entry,
+    );
 
-    return true;
+    return command;
   }
 
-  redo(): boolean {
+  redoCommand():
+    UmlCommand | null {
     const entry =
       this.redoStack.pop();
 
     if (!entry) {
-      return false;
+      return null;
     }
 
-    this.currentDocument =
-      structuredClone(entry.after);
+    const command =
+      this.remint(
+        entry.forwardCommand,
+      );
 
-    this.undoStack.push(entry);
+    const current =
+      this.requireCurrent();
+
+    this.currentDocument =
+      this.executor.execute(
+        current,
+        command,
+      );
+
+    this.undoStack.push(
+      entry,
+    );
+
     this.trimUndoStack();
 
-    return true;
+    return command;
+  }
+
+  undo(): boolean {
+    return this.undoCommand()
+      !== null;
+  }
+
+  redo(): boolean {
+    return this.redoCommand()
+      !== null;
   }
 
   markSaved(
@@ -166,6 +223,15 @@ export class UmlCommandBus {
   clearHistory(): void {
     this.undoStack.length = 0;
     this.redoStack.length = 0;
+  }
+
+  private remint(
+    command: UmlCommand,
+  ): UmlCommand {
+    return {
+      ...structuredClone(command),
+      ...commandMetadata(),
+    } as UmlCommand;
   }
 
   private requireCurrent():

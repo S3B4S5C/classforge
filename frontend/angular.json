@@ -23,6 +23,9 @@
             ],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
+            "allowedCommonJsDependencies": [
+              "@stomp/stompjs"
+            ],
             "assets": [
               {
                 "glob": "**/*",

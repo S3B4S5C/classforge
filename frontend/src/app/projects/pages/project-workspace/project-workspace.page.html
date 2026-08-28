@@ -81,7 +81,7 @@
     <header class="workspace-heading">
       <div class="title-block">
         <p class="eyebrow">
-          WORKSPACE · CU03-003
+          WORKSPACE · CU06-003
         </p>
 
         @if (editingName()) {
@@ -161,6 +161,54 @@
 
       <div class="save-toolbar">
         <div
+          class="collaboration-status"
+          [class.is-connected]="
+            store.collaborationStatus() === 'connected'
+          "
+          [class.is-syncing]="
+            store.collaborationStatus() === 'syncing'
+            || store.collaborationStatus() === 'connecting'
+            || store.collaborationStatus() === 'resyncing'
+          "
+          [class.is-warning]="
+            store.collaborationStatus() === 'local_changes'
+            || store.collaborationStatus() === 'conflict'
+          "
+          [class.is-error]="
+            store.collaborationStatus() === 'error'
+          "
+          aria-live="polite"
+          [title]="
+            store.collaborationMessage()
+            ?? store.collaborationStatusText()
+          "
+        >
+          <span
+            class="material-symbols-rounded"
+            [class.is-spinning]="
+              store.collaborationStatus() === 'syncing'
+              || store.collaborationStatus() === 'connecting'
+              || store.collaborationStatus() === 'resyncing'
+            "
+            aria-hidden="true"
+          >
+            {{ store.collaborationStatusIcon() }}
+          </span>
+
+          <span>
+            {{ store.collaborationStatusText() }}
+          </span>
+
+          @if (
+            store.pendingOperationCount() > 0
+          ) {
+            <strong>
+              {{ store.pendingOperationCount() }}
+            </strong>
+          }
+        </div>
+
+        <div
           class="save-status"
           [class.is-dirty]="
             store.saveState() === 'dirty'
@@ -206,6 +254,7 @@
           [disabled]="
             !store.dirty()
             || store.saving()
+            || store.realtimeActive()
           "
           (click)="save()"
         >
@@ -219,6 +268,60 @@
         </button>
       </div>
     </header>
+
+    @if (
+      store.collaborationMessage();
+      as collaborationMessage
+    ) {
+      <div
+        class="collaboration-banner"
+        [class.is-warning]="
+          store.collaborationStatus() === 'local_changes'
+          || store.collaborationStatus() === 'conflict'
+        "
+        [class.is-error]="
+          store.collaborationStatus() === 'error'
+        "
+        role="status"
+      >
+        <span
+          class="material-symbols-rounded"
+          aria-hidden="true"
+        >
+          {{ store.collaborationStatusIcon() }}
+        </span>
+
+        <div>
+          <strong>
+            Colaboracion
+          </strong>
+          <p>
+            {{ collaborationMessage }}
+          </p>
+        </div>
+
+        @if (
+          store.collaborationStatus() === 'disconnected'
+          || store.collaborationStatus() === 'error'
+        ) {
+          <button
+            mat-button
+            class="cf-button-secondary"
+            type="button"
+            [disabled]="store.dirty()"
+            (click)="store.reconnectCollaboration()"
+          >
+            <span
+              class="material-symbols-rounded"
+              aria-hidden="true"
+            >
+              sync
+            </span>
+            Reconectar
+          </button>
+        }
+      </div>
+    }
 
     @if (store.errorMessage()) {
       <div

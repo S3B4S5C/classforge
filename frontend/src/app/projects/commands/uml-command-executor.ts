@@ -49,6 +49,15 @@ export class UmlCommandExecutor {
         );
         break;
 
+      case 'RESTORE_CLASS':
+        this.restoreClass(
+          document,
+          command.umlClass,
+          command.layout,
+          command.relationships,
+        );
+        break;
+
       case 'ADD_ATTRIBUTE':
         this.addAttribute(
           document,
@@ -144,6 +153,121 @@ export class UmlCommandExecutor {
         layout,
         umlClass.attributes.length,
       );
+  }
+
+  private restoreClass(
+    document: ProjectDocument,
+    umlClass: UmlClass,
+    layout: DiagramNodeLayout | null,
+    relationships: UmlRelationship[],
+  ): void {
+    this.assertClassName(
+      document,
+      umlClass.name,
+      null,
+    );
+
+    if (
+      document.umlModel.classes.some(
+        (candidate) =>
+          candidate.id === umlClass.id,
+      )
+    ) {
+      throw new UmlCommandError(
+        'DUPLICATE_CLASS_ID',
+        'El identificador de la clase ya existe.',
+        umlClass.id,
+      );
+    }
+
+    for (
+      const attribute
+      of umlClass.attributes
+    ) {
+      const duplicateAttributeId =
+        document.umlModel.classes.some(
+          (candidateClass) =>
+            candidateClass.attributes.some(
+              (candidate) =>
+                candidate.id
+                  === attribute.id,
+            ),
+        );
+
+      if (duplicateAttributeId) {
+        throw new UmlCommandError(
+          'DUPLICATE_ATTRIBUTE_ID',
+          'Uno de los atributos restaurados ya existe.',
+          umlClass.id,
+        );
+      }
+    }
+
+    document.umlModel.classes.push(
+      structuredClone(umlClass),
+    );
+
+    if (layout) {
+      this.assertFiniteLayout(
+        layout,
+        umlClass.id,
+      );
+
+      document.layout.nodes[umlClass.id] =
+        normalizeUmlClassLayout(
+          layout,
+          umlClass.attributes.length,
+        );
+    }
+
+    for (
+      const relationship
+      of relationships
+    ) {
+      if (
+        relationship.sourceClassId
+          !== umlClass.id
+        && relationship.targetClassId
+          !== umlClass.id
+      ) {
+        throw new UmlCommandError(
+          'RESTORE_RELATIONSHIP_NOT_CONNECTED',
+          'RESTORE_CLASS solo puede recuperar relaciones conectadas a la clase.',
+          relationship.id,
+        );
+      }
+
+      if (
+        document.umlModel.relationships
+          .some(
+            (candidate) =>
+              candidate.id
+                === relationship.id,
+          )
+      ) {
+        throw new UmlCommandError(
+          'DUPLICATE_RELATIONSHIP_ID',
+          'Una de las relaciones restauradas ya existe.',
+          relationship.id,
+        );
+      }
+
+      this.assertRelationship(
+        document,
+        relationship,
+      );
+
+      document.umlModel.relationships.push(
+        this.normalizedRelationship(
+          relationship,
+        ),
+      );
+    }
+
+    this.assertNoGeneralizationCycle(
+      document,
+      umlClass.id,
+    );
   }
 
   private renameClass(

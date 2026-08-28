@@ -2487,3 +2487,80 @@ La auditoria confirma:
 - diagramas UML excluidos deliberadamente.
 
 El orden ejecutado difirio del orden inicial, pero CU-05 cerro la principal desviacion al migrar las mutaciones manuales al Command Bus antes de colaboracion e IA.
+
+<!-- CU06-001-BACKEND-STOMP-AUTHORITY-V1 -->
+# Implementacion parcial de CU-06 — CU06-001
+
+Se implementa la primera parte de CU-06: servidor STOMP autoritativo.
+
+Disponible:
+
+- endpoint `/ws`;
+- JWT Bearer en STOMP CONNECT;
+- autorización por ownership en SEND y SUBSCRIBE;
+- `/app/projects/{id}/operations`;
+- `/topic/projects/{id}/operations`;
+- `/user/queue/projects/{id}/operations`;
+- transporte de `UmlCommand`;
+- validación de `baseRevision`;
+- ejecución Java del comando;
+- validación del `ProjectDocument` resultante;
+- persistencia inmediata;
+- incremento de revisión;
+- broadcast;
+- rechazo privado;
+- integración real con dos clientes STOMP en tests.
+
+CU-06 todavía no se considera cerrado. Angular se conecta en CU06-002 y Undo/Redo colaborativo se endurece en CU06-003.
+
+<!-- CU06-002-ANGULAR-REALTIME-SYNC-V1 -->
+# Implementacion parcial de CU-06 — CU06-002
+
+Angular se conecta al servidor STOMP de CU06-001 mediante `@stomp/stompjs`.
+
+Implementado:
+
+- conexión automática;
+- JWT en CONNECT;
+- operación local optimista;
+- `pendingOperations`;
+- correlación por `operationId`;
+- ACK propio sin aplicar dos veces;
+- comandos remotos sobre el modelo canónico;
+- revisión confirmada;
+- detección de gaps;
+- resync REST;
+- buffering durante resync;
+- fallback offline a Guardar REST;
+- indicadores responsive de conexión.
+
+Mientras realtime está activo, Undo/Redo queda deshabilitado. CU06-003 lo implementará mediante comandos inversos.
+
+CU-06 todavía no se considera cerrado hasta CU06-003.
+
+<!-- CU06-003-COLLABORATIVE-UNDO-REDO-CLOSED-V1 -->
+# Cierre de CU-06 — CU06-003
+
+CU-06 queda cerrado.
+
+CU06-003 incorpora Undo/Redo colaborativo mediante comandos compensatorios.
+
+`RESTORE_CLASS` permite deshacer el borrado de una clase recuperando clase, atributos, layout y relaciones conectadas como una única operación versionada.
+
+Undo y Redo generan nuevas operaciones STOMP; no restauran snapshots completos sobre el servidor.
+
+La seguridad de concurrencia continúa basada en:
+
+- servidor autoritativo;
+- `baseRevision`;
+- lock de persistencia;
+- validación del comando;
+- `ProjectDocumentValidator`;
+- resync ante conflicto/gap;
+- invalidación de historial local ante cambios remotos.
+
+No se introduce OT ni CRDT.
+
+Estado final: **CU-06 CERRADO**.
+
+Siguiente caso de uso: **CU-07 Presencia de colaboradores**.
