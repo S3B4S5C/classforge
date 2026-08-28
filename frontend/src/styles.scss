@@ -635,3 +635,153 @@ a {
     justify-self: end;
   }
 }
+
+/* CLASSFORGE-CU07-PRESENCE-GLOBAL */
+
+.presence-panel {
+  position: relative;
+  z-index: 20;
+}
+
+.presence-summary {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #d0d5dd;
+  border-radius: 0.7rem;
+  background: #ffffff;
+  color: #344054;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.78rem;
+  font-weight: 750;
+  user-select: none;
+}
+
+.presence-summary::-webkit-details-marker {
+  display: none;
+}
+
+.presence-summary strong {
+  min-width: 1.35rem;
+  height: 1.35rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 0.68rem;
+}
+
+.presence-popover {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  width: min(86vw, 320px);
+  overflow: hidden;
+  border: 1px solid #e4e7ec;
+  border-radius: 0.85rem;
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgb(15 23 42 / 14%);
+}
+
+.presence-popover header {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.85rem 0.9rem;
+  border-bottom: 1px solid #eaecf0;
+  background: #f9fafb;
+}
+
+.presence-popover header small,
+.presence-list small {
+  color: #667085;
+}
+
+.presence-list {
+  max-height: 300px;
+  overflow: auto;
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+}
+
+.presence-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem;
+  border-radius: 0.6rem;
+}
+
+.presence-list li:hover {
+  background: #f9fafb;
+}
+
+.presence-list li > .material-symbols-rounded {
+  color: #4f46e5;
+}
+
+.presence-list li div {
+  min-width: 0;
+  display: grid;
+  gap: 0.05rem;
+}
+
+.presence-list strong,
+.presence-list small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presence-empty {
+  margin: 0;
+  padding: 1rem;
+  color: #667085;
+  font-size: 0.8rem;
+}
+
+.element-presence {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0.25rem 0 0.65rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.element-presence .material-symbols-rounded {
+  flex: 0 0 auto;
+  font-size: 1rem;
+}
+
+@media (max-width: 760px) {
+  .presence-summary-label {
+    display: none;
+  }
+
+  .presence-summary {
+    justify-content: center;
+  }
+
+  .presence-popover {
+    position: fixed;
+    top: auto;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+    max-height: min(70vh, 520px);
+  }
+}

@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
 import {
   Component,
+  DestroyRef,
   computed,
   effect,
   inject,
@@ -35,6 +36,7 @@ import {
 } from '../../dialogs/relationship-dialog/relationship-dialog.component';
 import {
   UmlCanvasComponent,
+  UmlCanvasCursorEvent,
   UmlCanvasSelection,
   UmlClassMovedEvent,
   UmlRelationshipEndpoints,
@@ -55,6 +57,12 @@ import {
   ProjectSaveState,
   ProjectWorkspaceStore,
 } from '../../state/project-workspace.store';
+import {
+  ProjectAssistantPanelComponent,
+} from '../../assistant/project-assistant-panel.component';
+import {
+  ProjectPresenceService,
+} from '../../presence/project-presence.service';
 
 @Component({
   selector: 'app-project-workspace-page',
@@ -67,6 +75,7 @@ import {
     MatProgressSpinnerModule,
     ReactiveFormsModule,
     RouterLink,
+    ProjectAssistantPanelComponent,
     UmlCanvasComponent,
   ],
   providers: [ProjectWorkspaceStore],
@@ -79,6 +88,12 @@ export class ProjectWorkspacePage {
 
   private readonly dialog =
     inject(MatDialog);
+
+  private readonly destroyRef =
+    inject(DestroyRef);
+
+  readonly presence =
+    inject(ProjectPresenceService);
 
   readonly store =
     inject(ProjectWorkspaceStore);
@@ -158,12 +173,28 @@ export class ProjectWorkspacePage {
     });
 
   constructor() {
+    this.destroyRef.onDestroy(
+      () =>
+        this.presence.detachProject(),
+    );
+
     const projectId =
       this.route.snapshot.paramMap.get('id');
 
     if (projectId) {
       this.store.load(projectId);
     }
+
+    effect(() => {
+      const project =
+        this.store.project();
+
+      if (project) {
+        this.presence.attachProject(
+          project.id,
+        );
+      }
+    });
 
     effect(() => {
       const project =
@@ -451,6 +482,18 @@ export class ProjectWorkspacePage {
   ): void {
     this.diagramSelection.set(
       selection,
+    );
+
+    this.presence.selectElement(
+      selection,
+    );
+  }
+
+  movePresenceCursor(
+    cursor: UmlCanvasCursorEvent,
+  ): void {
+    this.presence.moveCursor(
+      cursor,
     );
   }
 

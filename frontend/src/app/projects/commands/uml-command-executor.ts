@@ -110,9 +110,50 @@ export class UmlCommandExecutor {
           command.layout,
         );
         break;
+
+      case 'BATCH':
+        return this.executeBatch(
+          document,
+          command.commands,
+        );
     }
 
     return document;
+  }
+
+  private executeBatch(
+    document: ProjectDocument,
+    commands: UmlCommand[],
+  ): ProjectDocument {
+    if (
+      commands.length === 0
+      || commands.length > 50
+    ) {
+      throw new UmlCommandError(
+        'BATCH_SIZE_INVALID',
+        'Un BATCH debe contener entre 1 y 50 comandos.',
+      );
+    }
+
+    let next =
+      structuredClone(document);
+
+    for (const command of commands) {
+      if (command.type === 'BATCH') {
+        throw new UmlCommandError(
+          'NESTED_BATCH_NOT_ALLOWED',
+          'No se permiten BATCH anidados.',
+        );
+      }
+
+      next =
+        this.execute(
+          next,
+          command,
+        );
+    }
+
+    return next;
   }
 
   private createClass(

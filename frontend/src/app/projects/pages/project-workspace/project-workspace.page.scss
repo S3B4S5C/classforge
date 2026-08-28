@@ -722,9 +722,24 @@
   margin-bottom: 0;
 }
 
-.context-inspector {
+.diagram-sidecar {
   position: sticky;
   top: 5.5rem;
+  min-width: 0;
+  display: grid;
+  gap: 1rem;
+  align-self: start;
+}
+
+.context-inspector,
+.assistant-workbench-panel {
+  min-width: 0;
+}
+
+.assistant-workbench-panel app-project-assistant-panel {
+  display: block;
+  width: 100%;
+  min-width: 0;
 }
 
 .context-inspector mat-card-content {
@@ -981,8 +996,13 @@
     grid-template-columns: 1fr;
   }
 
-  .context-inspector {
+  .diagram-sidecar {
     position: static;
+  }
+
+  .context-inspector mat-card,
+  .assistant-workbench-panel {
+    width: 100%;
   }
 
   .context-inspector mat-card {

@@ -20,6 +20,9 @@ import {
   ProjectDocument,
 } from '../../model/project';
 import {
+  PresenceParticipant,
+} from '../../presence/presence-protocol';
+import {
   classForgeCellNamespace,
   createUmlClassCell,
 } from '../uml-class-shape';
@@ -32,6 +35,11 @@ import {
 export interface UmlClassMovedEvent {
   classId: string;
   layout: DiagramNodeLayout;
+}
+
+export interface UmlCanvasCursorEvent {
+  x: number;
+  y: number;
 }
 
 export interface UmlRelationshipEndpoints {
@@ -67,6 +75,10 @@ export class UmlCanvasComponent
 
   @Input()
   validating = false;
+
+  @Input()
+  remoteParticipants:
+    PresenceParticipant[] = [];
 
   @Input()
   canUndo = false;
@@ -110,6 +122,10 @@ export class UmlCanvasComponent
   readonly classMoved =
     new EventEmitter<UmlClassMovedEvent>();
 
+  @Output()
+  readonly cursorMoved =
+    new EventEmitter<UmlCanvasCursorEvent>();
+
   @ViewChild('paperHost', { static: true })
   private readonly paperHost!: ElementRef<HTMLDivElement>;
 
@@ -120,6 +136,9 @@ export class UmlCanvasComponent
   readonly relationshipMode = signal(false);
   readonly relationshipSourceId =
     signal<string | null>(null);
+
+  readonly remoteOverlayRevision =
+    signal(0);
 
   private readonly graph = new dia.Graph(
     {},
@@ -317,6 +336,63 @@ export class UmlCanvasComponent
     }
   }
 
+  handlePointerMove(
+    event: PointerEvent,
+  ): void {
+    if (!this.paper) {
+      return;
+    }
+
+    const point =
+      this.paper.clientToLocalPoint(
+        event.clientX,
+        event.clientY,
+      );
+
+    if (
+      !Number.isFinite(point.x)
+      || !Number.isFinite(point.y)
+    ) {
+      return;
+    }
+
+    this.cursorMoved.emit({
+      x:
+        Math.round(
+          point.x * 10,
+        ) / 10,
+      y:
+        Math.round(
+          point.y * 10,
+        ) / 10,
+    });
+  }
+
+  remoteCursorTransform(
+    participant: PresenceParticipant,
+  ): string {
+    this.remoteOverlayRevision();
+
+    if (
+      !this.paper
+      || !participant.cursor
+    ) {
+      return 'translate(-10000px, -10000px)';
+    }
+
+    const clientPoint =
+      this.paper.localToClientPoint(
+        participant.cursor.x,
+        participant.cursor.y,
+      );
+
+    const rect =
+      this.viewport.nativeElement
+        .getBoundingClientRect();
+
+    return `translate(${clientPoint.x - rect.left}px, ${clientPoint.y - rect.top}px)`;
+  }
+
   startRelationshipMode(): void {
     if (
       !this.document
@@ -391,6 +467,19 @@ export class UmlCanvasComponent
       (sx: number) => {
         this.zoomPercent.set(
           Math.round(sx * 100),
+        );
+
+        this.remoteOverlayRevision.update(
+          (value) => value + 1,
+        );
+      },
+    );
+
+    this.paper.on(
+      'translate',
+      () => {
+        this.remoteOverlayRevision.update(
+          (value) => value + 1,
         );
       },
     );

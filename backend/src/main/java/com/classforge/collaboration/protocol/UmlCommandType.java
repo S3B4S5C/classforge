@@ -11,5 +11,6 @@ public enum UmlCommandType {
     CREATE_RELATIONSHIP,
     UPDATE_RELATIONSHIP,
     DELETE_RELATIONSHIP,
-    MOVE_CLASS
+    MOVE_CLASS,
+    BATCH
 }

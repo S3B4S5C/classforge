@@ -81,7 +81,7 @@
     <header class="workspace-heading">
       <div class="title-block">
         <p class="eyebrow">
-          WORKSPACE · CU06-003
+          WORKSPACE · CU07-001
         </p>
 
         @if (editingName()) {
@@ -158,6 +158,94 @@
           {{ currentProject.revision }}
         </p>
       </div>
+
+      <details class="presence-panel">
+        <summary
+          class="presence-summary"
+          title="Colaboradores conectados"
+        >
+          <span
+            class="material-symbols-rounded"
+            aria-hidden="true"
+          >
+            group
+          </span>
+
+          <span class="presence-summary-label">
+            Colaboradores
+          </span>
+
+          <strong>
+            {{ presence.participantCount() }}
+          </strong>
+        </summary>
+
+        <div class="presence-popover">
+          <header>
+            <strong>
+              Colaboradores conectados
+            </strong>
+            <small>
+              Presencia efimera · CU-07
+            </small>
+          </header>
+
+          @if (
+            presence.participants().length
+              === 0
+          ) {
+            <p class="presence-empty">
+              Esperando presencia STOMP...
+            </p>
+          } @else {
+            <ul class="presence-list">
+              @for (
+                participant
+                  of presence.participants();
+                track participant.clientId
+              ) {
+                <li>
+                  <span
+                    class="material-symbols-rounded"
+                    aria-hidden="true"
+                  >
+                    person
+                  </span>
+
+                  <div>
+                    <strong>
+                      {{
+                        presence.displayLabel(
+                          participant
+                        )
+                      }}
+                    </strong>
+
+                    @if (
+                      participant.selectedElement
+                    ) {
+                      <small>
+                        {{
+                          participant.selectedElement
+                            .elementType
+                            === 'CLASS'
+                            ? 'Clase'
+                            : 'Relacion'
+                        }}
+                        seleccionada
+                      </small>
+                    } @else {
+                      <small>
+                        En el proyecto
+                      </small>
+                    }
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </details>
 
       <div class="save-toolbar">
         <div
@@ -412,6 +500,9 @@
           [validating]="store.validating()"
           [canUndo]="store.canUndo()"
           [canRedo]="store.canRedo()"
+          [remoteParticipants]="
+            presence.remoteParticipants()
+          "
           (createClassRequested)="createClass()"
           (undoRequested)="store.undo()"
           (redoRequested)="store.redo()"
@@ -429,10 +520,15 @@
             selectDiagramElement($event)
           "
           (classMoved)="moveClass($event)"
+          (cursorMoved)="
+            movePresenceCursor($event)
+          "
         />
       </section>
 
-      <aside
+      <div class="diagram-sidecar">
+        <div class="diagram-sidecar">
+        <aside
         class="context-inspector"
         aria-label="Inspector UML"
       >
@@ -463,7 +559,30 @@
 
                 <h3>{{ umlClass.name }}</h3>
 
-                <dl class="inspector-facts">
+                                @if (
+                  presence.participantsOnElement(
+                    umlClass.id
+                  ).length > 0
+                ) {
+                  <div class="element-presence">
+                    <span
+                      class="material-symbols-rounded"
+                      aria-hidden="true"
+                    >
+                      person
+                    </span>
+
+                    <span>
+                      {{
+                        presence.participantsOnElement(
+                          umlClass.id
+                        )[0].actor.displayName
+                      }}
+                      esta trabajando aqui
+                    </span>
+                  </div>
+                }
+<dl class="inspector-facts">
                   <div>
                     <dt>Atributos</dt>
                     <dd>
@@ -552,7 +671,30 @@
                   }}
                 </h3>
 
-                <div class="relationship-endpoints">
+                                @if (
+                  presence.participantsOnElement(
+                    relationship.id
+                  ).length > 0
+                ) {
+                  <div class="element-presence">
+                    <span
+                      class="material-symbols-rounded"
+                      aria-hidden="true"
+                    >
+                      person
+                    </span>
+
+                    <span>
+                      {{
+                        presence.participantsOnElement(
+                          relationship.id
+                        )[0].actor.displayName
+                      }}
+                      esta trabajando aqui
+                    </span>
+                  </div>
+                }
+<div class="relationship-endpoints">
                   <div>
                     <span>Origen</span>
                     <strong>
@@ -679,6 +821,16 @@
           </mat-card-content>
         </mat-card>
       </aside>
+
+        <div class="assistant-workbench-panel">
+          <app-project-assistant-panel />
+        </div>
+      </div>
+
+        <div class="assistant-workbench-panel">
+          
+        </div>
+      </div>
     </div>
 
     @if (store.validationRequestError()) {
@@ -1491,6 +1643,8 @@
             </div>
           </mat-card-content>
         </mat-card>
+
+        
       </aside>
     </div>
   }

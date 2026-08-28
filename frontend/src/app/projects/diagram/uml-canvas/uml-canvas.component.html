@@ -203,12 +203,47 @@
       || document.umlModel.classes.length === 0
     "
     [class.is-linking]="relationshipMode()"
+    (pointermove)="handlePointerMove($event)"
   >
     <div
       #paperHost
       class="paper-host"
       aria-label="Canvas de diagrama UML"
     ></div>
+
+    <div
+      class="remote-cursor-layer"
+      aria-hidden="true"
+    >
+      @for (
+        participant
+          of remoteParticipants;
+        track participant.clientId
+      ) {
+        @if (participant.cursor) {
+          <div
+            class="remote-cursor"
+            [style.transform]="
+              remoteCursorTransform(
+                participant
+              )
+            "
+          >
+            <span
+              class="material-symbols-rounded remote-cursor-icon"
+            >
+              near_me
+            </span>
+
+            <span class="remote-cursor-label">
+              {{
+                participant.actor.displayName
+              }}
+            </span>
+          </div>
+        }
+      }
+    </div>
 
     @if (relationshipMode()) {
       <div

@@ -1,6 +1,7 @@
 package com.classforge.collaboration.application;
 
 import com.classforge.collaboration.protocol.UmlCommandPayload;
+import com.classforge.collaboration.protocol.UmlCommandType;
 import com.classforge.project.domain.document.DiagramLayout;
 import com.classforge.project.domain.document.DiagramNodeLayout;
 import com.classforge.project.domain.document.ProjectDocument;
@@ -114,7 +115,52 @@ public class ProjectCommandExecutor {
                             current,
                             command
                     );
+
+            case BATCH ->
+                    executeBatch(
+                            current,
+                            command
+                    );
         };
+    }
+
+    private ProjectDocument executeBatch(
+            ProjectDocument current,
+            UmlCommandPayload command
+    ) {
+        List<UmlCommandPayload> commands =
+                command.safeCommands();
+
+        require(
+                !commands.isEmpty()
+                        && commands.size() <= 50,
+                "BATCH_SIZE_INVALID",
+                "A BATCH must contain between 1 and 50 commands"
+        );
+
+        ProjectDocument next =
+                current;
+
+        for (
+                UmlCommandPayload child
+                : commands
+        ) {
+            require(
+                    child != null
+                            && child.type()
+                            != UmlCommandType.BATCH,
+                    "NESTED_BATCH_NOT_ALLOWED",
+                    "Nested BATCH commands are not allowed"
+            );
+
+            next =
+                    execute(
+                            next,
+                            child
+                    );
+        }
+
+        return next;
     }
 
     private ProjectDocument createClass(

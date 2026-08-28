@@ -1,0 +1,353 @@
+<section class="assistant-panel">
+  <header class="assistant-header">
+    <div class="assistant-title">
+      <span
+        class="material-symbols-rounded"
+        aria-hidden="true"
+      >
+        smart_toy
+      </span>
+
+      <div>
+        <strong>Asistente UML</strong>
+      </div>
+    </div>
+
+    <span class="assistant-local">
+      LOCAL
+    </span>
+  </header>
+
+  <div
+    class="assistant-runtimes"
+    aria-label="Estado de runtimes locales"
+  >
+    @if (
+      runtimeHealth();
+      as health
+    ) {
+      <span
+        class="runtime-chip"
+        [class.is-ready]="
+          health.llama.available
+        "
+        [class.is-down]="
+          !health.llama.available
+        "
+        [title]="
+          health.llama.message
+        "
+      >
+        <span
+          class="material-symbols-rounded"
+          aria-hidden="true"
+        >
+          memory
+        </span>
+        {{ runtimeLabel(health.llama) }}
+      </span>
+
+      <span
+        class="runtime-chip"
+        [class.is-ready]="
+          health.whisper.available
+        "
+        [class.is-down]="
+          !health.whisper.available
+        "
+        [title]="
+          health.whisper.message
+        "
+      >
+        <span
+          class="material-symbols-rounded"
+          aria-hidden="true"
+        >
+          graphic_eq
+        </span>
+        {{ runtimeLabel(health.whisper) }}
+      </span>
+    } @else {
+      <span class="runtime-chip">
+        @if (healthLoading()) {
+          <mat-spinner diameter="14"></mat-spinner>
+          Comprobando runtimes...
+        } @else {
+          Estado no comprobado
+        }
+      </span>
+    }
+
+    <button
+      mat-button
+      type="button"
+      class="runtime-refresh"
+      [disabled]="healthLoading()"
+      title="Actualizar estado de runtimes"
+      (click)="refreshRuntimeHealth()"
+    >
+      <span
+        class="material-symbols-rounded"
+        aria-hidden="true"
+      >
+        refresh
+      </span>
+    </button>
+  </div>
+
+  @if (runtimeError()) {
+    <small
+      class="runtime-error"
+      role="status"
+    >
+      {{ runtimeError() }}
+    </small>
+  }
+
+  <div
+    class="assistant-chat"
+    aria-live="polite"
+  >
+    @if (messages().length === 0) {
+      <div class="assistant-empty">
+        <span
+          class="material-symbols-rounded"
+          aria-hidden="true"
+        >
+          chat
+        </span>
+
+        <p>
+          Prueba:
+          <strong>
+            “Crea una clase Animal con id Long y nombre String”.
+          </strong>
+        </p>
+      </div>
+    }
+
+    @for (
+      message of messages();
+      track $index
+    ) {
+      <div
+        class="assistant-message"
+        [class.is-user]="
+          message.role === 'user'
+        "
+      >
+        {{ message.text }}
+      </div>
+    }
+
+    @if (
+      voiceState() === 'transcribing'
+    ) {
+      <div class="assistant-thinking">
+        <mat-spinner diameter="18"></mat-spinner>
+        Transcribiendo e interpretando...
+      </div>
+    } @else if (planning()) {
+      <div class="assistant-thinking">
+        <mat-spinner diameter="18"></mat-spinner>
+        Interpretando...
+      </div>
+    }
+  </div>
+
+  @if (plan(); as currentPlan) {
+    <div class="assistant-preview">
+      <div class="preview-title">
+        <span
+          class="material-symbols-rounded"
+          aria-hidden="true"
+        >
+          rule
+        </span>
+
+        <div>
+          <strong>Plan listo</strong>
+          <small>
+            {{
+              actionCount(currentPlan)
+            }}
+            acciones · revision
+            {{ currentPlan.baseRevision }}
+          </small>
+        </div>
+      </div>
+
+      <p>
+        {{ currentPlan.summary }}
+      </p>
+
+      <div class="assistant-intents">
+        @for (
+          action of currentPlan.plan.actions;
+          track $index
+        ) {
+          <div class="assistant-intent">
+            <strong>
+              {{ actionLabel(action) }}
+            </strong>
+
+            @if (
+              action.attributes.length > 0
+            ) {
+              <ul>
+                @for (
+                  attribute of action.attributes;
+                  track $index
+                ) {
+                  <li>
+                    {{ attributeLabel(attribute) }}
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="preview-actions">
+        <button
+          mat-button
+          class="cf-button-secondary"
+          type="button"
+          (click)="discard()"
+        >
+          <span
+            class="material-symbols-rounded"
+            aria-hidden="true"
+          >
+            close
+          </span>
+          Descartar
+        </button>
+
+        <button
+          mat-flat-button
+          class="cf-button-primary"
+          type="button"
+          [disabled]="
+            !canApplyPlan(currentPlan)
+          "
+          (click)="apply()"
+        >
+          <span
+            class="material-symbols-rounded"
+            aria-hidden="true"
+          >
+            check
+          </span>
+          Aplicar
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (error()) {
+    <div
+      class="assistant-error"
+      role="alert"
+    >
+      <span
+        class="material-symbols-rounded"
+        aria-hidden="true"
+      >
+        error
+      </span>
+      {{ error() }}
+    </div>
+  }
+
+  <div class="assistant-composer">
+    <textarea
+      [formControl]="prompt"
+      rows="3"
+      maxlength="1000"
+      placeholder="Describe el cambio UML..."
+      aria-label="Orden para el asistente UML"
+      (keydown.control.enter)="send()"
+      (keydown.meta.enter)="send()"
+    ></textarea>
+
+    <div class="composer-actions">
+      <button
+        mat-button
+        type="button"
+        class="assistant-mic"
+        [class.is-recording]="
+          voiceState() === 'recording'
+        "
+        [disabled]="
+          voiceState() === 'transcribing'
+          || (
+            planning()
+            && voiceState() !== 'recording'
+          )
+          || (
+            voiceState() !== 'recording'
+            && !runtimeReadyForVoice()
+          )
+        "
+        [title]="
+          voiceState() === 'recording'
+            ? 'Detener grabacion'
+            : 'Hablar con whisper.cpp'
+        "
+        (click)="toggleVoice()"
+      >
+        <span
+          class="material-symbols-rounded"
+          aria-hidden="true"
+        >
+          {{
+            voiceState() === 'recording'
+              ? 'stop_circle'
+              : 'mic'
+          }}
+        </span>
+        {{ voiceLabel() }}
+      </button>
+
+      <button
+        mat-flat-button
+        class="cf-button-primary"
+        type="button"
+        [disabled]="
+          planning()
+          || voiceBusy()
+          || !runtimeReadyForText()
+          || !!store.assistantPlanningBlockReason()
+          || prompt.invalid
+          || !prompt.value.trim()
+        "
+        (click)="send()"
+      >
+        <span
+          class="material-symbols-rounded"
+          aria-hidden="true"
+        >
+          send
+        </span>
+        Enviar
+      </button>
+    </div>
+
+    @if (
+      voiceState() === 'recording'
+    ) {
+      <small
+        class="assistant-voice-status"
+        role="status"
+      >
+        <span
+          class="voice-dot"
+          aria-hidden="true"
+        ></span>
+        Grabando · pulsa Detener o espera 20 s
+      </small>
+    }
+  </div>
+</section>

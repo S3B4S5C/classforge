@@ -114,7 +114,7 @@ export class ProjectWorkspaceStore {
   private resyncGeneration = 0;
 
   private readonly clientId =
-    crypto.randomUUID();
+    this.collaboration.clientId;
 
   readonly project =
     this.projectState.asReadonly();
@@ -833,6 +833,72 @@ export class ProjectWorkspaceStore {
           );
         },
       });
+  }
+
+  assistantPlanningBlockReason():
+    string | null {
+    const status =
+      this.collaborationStatus();
+
+    if (
+      this.pendingOperationCount() > 0
+    ) {
+      return 'Espera a que terminen de sincronizarse las operaciones pendientes.';
+    }
+
+    if (
+      status === 'connecting'
+      || status === 'syncing'
+      || status === 'resyncing'
+      || status === 'conflict'
+    ) {
+      return 'El proyecto se esta sincronizando. Espera antes de usar el Asistente.';
+    }
+
+    if (
+      this.dirty()
+      && !this.realtimeActive()
+    ) {
+      return 'Hay cambios locales sin guardar. Guardalos antes de pedir un plan al Asistente.';
+    }
+
+    return null;
+  }
+
+  applyAssistantCommand(
+    command: UmlCommand,
+    expectedRevision: number,
+  ): {
+    applied: boolean;
+    reason: string | null;
+  } {
+    if (
+      this.revision()
+        !== expectedRevision
+    ) {
+      return {
+        applied: false,
+        reason:
+          'El proyecto cambio desde que se genero el plan. Genera el plan nuevamente.',
+      };
+    }
+
+    const blockReason =
+      this.assistantPlanningBlockReason();
+
+    if (blockReason) {
+      return {
+        applied: false,
+        reason: blockReason,
+      };
+    }
+
+    this.dispatch(command);
+
+    return {
+      applied: true,
+      reason: null,
+    };
   }
 
   reconnectCollaboration(): void {

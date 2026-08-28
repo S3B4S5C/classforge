@@ -21,7 +21,9 @@ public record UmlCommandPayload(
         UUID attributeId,
         UmlRelationship relationship,
         UUID relationshipId,
-        List<UmlRelationship> relationships
+        List<UmlRelationship> relationships,
+        List<UmlCommandPayload> commands,
+        String label
 ) {
     public UmlCommandPayload(
             UUID commandId,
@@ -48,7 +50,41 @@ public record UmlCommandPayload(
                 attributeId,
                 relationship,
                 relationshipId,
-                List.of()
+                List.of(),
+                List.of(),
+                null
+        );
+    }
+
+    public UmlCommandPayload(
+            UUID commandId,
+            Instant issuedAt,
+            UmlCommandType type,
+            UUID classId,
+            String name,
+            UmlClass umlClass,
+            DiagramNodeLayout layout,
+            UmlAttribute attribute,
+            UUID attributeId,
+            UmlRelationship relationship,
+            UUID relationshipId,
+            List<UmlRelationship> relationships
+    ) {
+        this(
+                commandId,
+                issuedAt,
+                type,
+                classId,
+                name,
+                umlClass,
+                layout,
+                attribute,
+                attributeId,
+                relationship,
+                relationshipId,
+                relationships,
+                List.of(),
+                null
         );
     }
 
@@ -56,5 +92,33 @@ public record UmlCommandPayload(
         return relationships == null
                 ? List.of()
                 : List.copyOf(relationships);
+    }
+
+    public List<UmlCommandPayload> safeCommands() {
+        return commands == null
+                ? List.of()
+                : List.copyOf(commands);
+    }
+
+    public static UmlCommandPayload batch(
+            String label,
+            List<UmlCommandPayload> commands
+    ) {
+        return new UmlCommandPayload(
+                UUID.randomUUID(),
+                Instant.now(),
+                UmlCommandType.BATCH,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of(),
+                commands,
+                label
+        );
     }
 }

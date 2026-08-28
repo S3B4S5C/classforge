@@ -228,8 +228,23 @@ export class UmlCommandBus {
   private remint(
     command: UmlCommand,
   ): UmlCommand {
+    const cloned =
+      structuredClone(command);
+
+    if (cloned.type === 'BATCH') {
+      return {
+        ...cloned,
+        ...commandMetadata(),
+        commands:
+          cloned.commands.map(
+            (child) =>
+              this.remint(child),
+          ),
+      };
+    }
+
     return {
-      ...structuredClone(command),
+      ...cloned,
       ...commandMetadata(),
     } as UmlCommand;
   }

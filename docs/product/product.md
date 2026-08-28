@@ -1660,3 +1660,44 @@ El borrado de una clase utiliza `RESTORE_CLASS` como comando compensatorio atóm
 Las operaciones remotas invalidan el historial local para evitar deshacer intenciones antiguas sobre trabajo de terceros.
 
 CU-07 agregará presencia efímera; la presencia no modificará la revisión ni el modelo UML.
+
+<!-- REALTIME-PRESENCE-CU07-CLOSED-V1 -->
+# Actualización de producto — CU-07 cerrado
+
+ClassForge diferencia colaboración persistente de presencia efímera.
+
+Las operaciones UML siguen Command Bus → Spring → revisión → JPA.
+
+La presencia utiliza `ProjectPresenceRegistry` en memoria y no modifica `ProjectDocument`.
+
+El workspace muestra sesiones conectadas, selección remota y cursores remotos sobre el canvas.
+
+Los cursores son overlays y nunca JointJS cells.
+
+El acceso multiusuario real al mismo proyecto dependerá de ProjectMembership; CU-07 ya está preparado para múltiples actores autenticados.
+
+<!-- ASSISTANT-CU08-001-V1 -->
+# Actualización producto — CU08-001
+
+El workspace incorpora un chat del Assistant UML debajo del Inspector.
+
+Texto libre se interpreta localmente con llama.cpp, se transforma a un plan semántico y Java lo resuelve a un BATCH validado.
+
+El usuario revisa el plan antes de Aplicar.
+
+Una intención compleja produce una sola operación colaborativa y una sola entrada de Undo/Redo.
+
+La captura real de voz se añade en CU08-002.
+
+<!-- ASSISTANT-CU08-001-RICH-INTENT -->
+## Assistant UML — intención rica
+
+El Assistant interpreta lenguaje natural en una estructura semántica independiente de la forma exacta de la frase.
+
+Los atributos de una clase forman parte de la intención `CREATE_CLASS`; Java los expande después a comandos de dominio.
+
+El preview muestra si el tipo de cada atributo fue explícito, inferido o predeterminado.
+
+El runtime recomendado para la estación de trabajo de referencia es Gemma 3 4B Instruct Q4_K_M mediante llama.cpp.
+
+MCP no forma parte de CU08-001.

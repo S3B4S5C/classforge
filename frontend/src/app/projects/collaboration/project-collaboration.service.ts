@@ -15,11 +15,19 @@ import {
   ProjectOperationApplied,
   ProjectOperationRejected,
 } from './collaboration-protocol';
+import {
+  PresenceEventRequest,
+  ProjectPresenceEvent,
+  ProjectPresenceSnapshot,
+} from '../presence/presence-protocol';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ProjectCollaborationService {
+  readonly clientId =
+    crypto.randomUUID();
+
   private client: Client | null = null;
   private projectId: string | null = null;
   private intentionallyDisconnected = false;
@@ -32,6 +40,12 @@ export class ProjectCollaborationService {
 
   readonly rejectedOperations$ =
     new Subject<ProjectOperationRejected>();
+
+  readonly presenceEvents$ =
+    new Subject<ProjectPresenceEvent>();
+
+  readonly presenceSnapshots$ =
+    new Subject<ProjectPresenceSnapshot>();
 
   connect(
     projectId: string,
@@ -82,6 +96,18 @@ export class ProjectCollaborationService {
         `/user/queue/projects/${projectId}/operations`,
         (message) =>
           this.handleRejected(message),
+      );
+
+      client.subscribe(
+        `/topic/projects/${projectId}/presence`,
+        (message) =>
+          this.handlePresenceEvent(message),
+      );
+
+      client.subscribe(
+        `/user/queue/projects/${projectId}/presence`,
+        (message) =>
+          this.handlePresenceSnapshot(message),
       );
 
       this.connectionEvents$.next({
@@ -169,6 +195,71 @@ export class ProjectCollaborationService {
     } catch {
       return false;
     }
+  }
+
+  publishPresence(
+    projectId: string,
+    request: PresenceEventRequest,
+  ): boolean {
+    const client =
+      this.client;
+
+    if (
+      !client
+      || !client.connected
+    ) {
+      return false;
+    }
+
+    try {
+      client.publish({
+        destination:
+          `/app/projects/${projectId}/presence`,
+        body: JSON.stringify(request),
+      });
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private handlePresenceEvent(
+    message: IMessage,
+  ): void {
+    const parsed =
+      this.parseJson<ProjectPresenceEvent>(
+        message.body,
+      );
+
+    if (!parsed) {
+      return;
+    }
+
+    this.presenceEvents$.next(
+      parsed,
+    );
+  }
+
+  private handlePresenceSnapshot(
+    message: IMessage,
+  ): void {
+    const parsed =
+      this.parseJson<ProjectPresenceSnapshot>(
+        message.body,
+      );
+
+    if (
+      !parsed
+      || parsed.type
+        !== 'PRESENCE_SNAPSHOT'
+    ) {
+      return;
+    }
+
+    this.presenceSnapshots$.next(
+      parsed,
+    );
   }
 
   private handleApplied(

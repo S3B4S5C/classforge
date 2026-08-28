@@ -24,7 +24,7 @@ public class ProjectStompAuthorizationInterceptor
                     "^/(?:app|topic|user/queue)/projects/"
                             + "([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-"
                             + "[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
-                            + "[0-9a-fA-F]{12})/operations$"
+                            + "[0-9a-fA-F]{12})/(?:operations|presence)$"
             );
 
     private final ProjectAccessService projectAccessService;

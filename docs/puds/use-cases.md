@@ -2564,3 +2564,220 @@ No se introduce OT ni CRDT.
 Estado final: **CU-06 CERRADO**.
 
 Siguiente caso de uso: **CU-07 Presencia de colaboradores**.
+
+<!-- CU07-001-PRESENCE-CLOSED-V1 -->
+# Cierre de CU-07 — Presencia de colaboradores
+
+CU-07 queda cerrado mediante CU07-001.
+
+La presencia utiliza la misma conexión STOMP de CU-06 pero un protocolo separado del modelo UML.
+
+Eventos: USER_JOINED, USER_LEFT, USER_SELECTED_ELEMENT, USER_MOVED_CURSOR y PRESENCE_SNAPSHOT.
+
+`ProjectPresenceRegistry` es exclusivamente en memoria.
+
+Los eventos no persisten ni incrementan la revisión.
+
+El cursor usa coordenadas locales JointJS y se limita aproximadamente a 15 eventos por segundo.
+
+`SessionDisconnectEvent` elimina sesiones desaparecidas sin depender de USER_LEFT.
+
+La UI muestra sesiones conectadas, cursores remotos e indicación del elemento seleccionado por otro cliente.
+
+Limitación actual: ProjectAccessService sigue autorizando solamente al owner. La demostración es multisesión del propietario hasta incorporar ProjectMembership/invitaciones.
+
+Estado final: **CU-07 CERRADO**.
+
+<!-- CU08-001-ASSISTANT-BATCH-TEXT-V1 -->
+# Implementación parcial CU-08 — CU08-001
+
+Implementado:
+
+- Composite Command BATCH TS/Java;
+- atomicidad;
+- inverso BATCH para Undo/Redo;
+- AssistantSemanticPlan;
+- llama.cpp con JSON Schema;
+- resolver por nombres;
+- UUIDs fuera del LLM;
+- dry-run y validación;
+- POST /api/projects/{projectId}/assistant/plan;
+- preview antes de aplicar;
+- protección por baseRevision;
+- chat compacto debajo del Inspector;
+- botón de voz reservado para CU08-002.
+
+CU-08 permanece abierto.
+
+<!-- CU08-001-FIX-003-RICH-INTENT-TRACE -->
+## Ajuste CU08-001 — lenguaje natural independiente de sintaxis
+
+CU08-001 deja de depender de detección por expresiones como `con/with`.
+
+El LLM produce intenciones ricas con atributos anidados y Java las expande a BATCH.
+
+Esto permite que expresiones equivalentes como:
+
+```text
+Crea Veterinario con id UUID y nombre.
+Crea Veterinario y ponle id UUID y nombre.
+Necesito una clase Veterinario que tenga id UUID y nombre.
+```
+
+converjan al mismo significado semántico.
+
+CU-08 permanece abierto hasta completar voz y hardening posteriores.
+
+<!-- CU08-001-FIX-004-RUNTIME-BUDGET -->
+## Evidencia CU08-001 — presupuesto de inferencia local
+
+Las pruebas de aceptación de CU08-001 contemplan hardware sin GPU dedicada.
+
+El cliente de llama.cpp usa un timeout de 90 segundos, distingue timeout de indisponibilidad y limita la respuesta estructurada a 384 tokens.
+
+El plan no se aplica cuando la inferencia expira o cuando la salida queda truncada.
+
+<!-- CU08-001-FIX-005-GROUNDING-SAFETY-TRACE -->
+## Evidencia CU08-001 — grounding de acciones generadas
+
+El plan producido por IA se considera una propuesta no confiable.
+
+Antes de resolverla a `UmlCommand`, ClassForge elimina acciones que afecten entidades no mencionadas por el usuario.
+
+La prueba de regresión principal es:
+
+```text
+Conecta Animal con Veterinario
+```
+
+Una acción alucinada sobre `Animal.edad` no puede llegar al modelo porque `edad` no está anclada a la instrucción.
+
+Las relaciones sin tipo explícito continúan usando `ASSOCIATION` como default determinístico del resolver y multiplicidad `1..1` cuando el usuario no expresó cardinalidad.
+
+<!-- CU08-001-FIX-006-CONTEXT-GROUNDING-TRACE -->
+## Evidencia CU08-001 — referencias a clases existentes
+
+Cuando una instrucción usa clases que ya están en el modelo para crear relaciones, el Assistant no puede volver a crearlas.
+
+Prueba de regresión:
+
+```text
+Crea una asociación uno a uno entre Veterinario y Animal,
+y una composición desde Animal hacia Mascota.
+```
+
+Precondición:
+
+```text
+Veterinario, Animal y Mascota ya existen.
+```
+
+Resultado requerido:
+
+```text
+CREATE_RELATIONSHIP Veterinario -> Animal
+CREATE_RELATIONSHIP Animal -> Mascota
+```
+
+No deben aparecer comandos `CREATE_CLASS` para las tres clases existentes.
+
+<!-- CU08-001-OPT-001-PERFORMANCE-TRACE -->
+## Evidencia CU08-001 — optimización de latencia del planner
+
+CU08-001 incorpora selección de contexto focal antes de invocar al modelo local.
+
+El comportamiento funcional no cambia: el LLM continúa proponiendo `AssistantSemanticPlan` y Java conserva grounding, normalización, resolución, preview y validación.
+
+La optimización busca reducir tokens de entrada y salida para mantener tiempos interactivos razonables en equipos de 16 GB de RAM sin GPU dedicada.
+
+Criterio de prueba:
+
+- misma instrucción antes/después;
+- mismo significado UML;
+- menor `prompt processing` observado en llama-server;
+- ausencia de regresiones en grounding y BATCH.
+
+<!-- CU08-001-FIX-007-RELATIONSHIP-UPDATE-TRACE -->
+## Evidencia CU08-001 — modificar/eliminar asociación sin depender de orientación incidental
+
+Precondición:
+
+```text
+ASSOCIATION Animal -> Veterinario
+```
+
+Petición:
+
+```text
+Cambia la relación de Veterinario hacia Animal a composición.
+```
+
+Resultado esperado:
+
+```text
+UPDATE_RELATIONSHIP
+same relationshipId
+Veterinario -> Animal
+COMPOSITION
+```
+
+También se permite DELETE sobre la misma asociación aunque el LLM nombre el par en el sentido inverso.
+
+Para COMPOSITION, AGGREGATION y GENERALIZATION ya existentes, una petición en sentido contrario se rechaza para evitar invertir semántica UML accidentalmente.
+
+<!-- CU08-002-VOICE-TRACE -->
+## CU08-002 — capturar voz y preparar cambio UML
+
+**Actor principal:** usuario autenticado.
+
+**Precondiciones:** proyecto abierto; `whisper-server` y `llama-server` locales disponibles.
+
+**Flujo principal:**
+
+1. El usuario pulsa `Hablar`.
+2. El navegador solicita acceso al microfono.
+3. ClassForge captura audio local y lo codifica como WAV mono 16 kHz.
+4. El usuario pulsa `Detener` o se alcanza el limite de 20 segundos.
+5. Spring envia el WAV a `whisper-server`.
+6. Whisper devuelve un transcript.
+7. El transcript entra al mismo planner semantico de CU08-001 con `source=VOICE`.
+8. ClassForge aplica grounding, safety, resolucion deterministica y validacion sobre un preview.
+9. La UI muestra transcript, resumen e intenciones.
+10. Solo `Aplicar` despacha el BATCH al Command Bus.
+
+**Flujos alternos:** permiso de microfono denegado, grabacion demasiado corta, whisper no disponible, transcript vacio, timeout de STT, plan invalido o revision obsoleta. Ninguno modifica el modelo.
+
+**Postcondicion:** existe un plan de voz pendiente de confirmacion o no existe cambio alguno.
+
+<!-- CU08-002-FIX-001-DIAGNOSTIC-TRACE -->
+## Evidencia CU08-002 — trazabilidad de errores de voz
+
+Una respuesta fallida permite distinguir:
+
+```text
+que entendio Whisper
+que plan produjo Gemma
+en que etapa lo rechazo ClassForge
+```
+
+La informacion es de solo lectura y no modifica revision, ProjectDocument ni Command Bus.
+
+<!-- CU08-003-CLOSURE-TRACE -->
+## CU08-003 — criterios de salida de CU08
+
+CU08 se considera cerrado cuando se verifican los siguientes criterios:
+
+- texto y voz producen el mismo contrato `AssistantSemanticPlan`;
+- Whisper solo transcribe y Gemma solo propone intenciones;
+- Java genera UUID, resuelve nombres y aplica reglas deterministicas;
+- grounding y normalizacion bloquean acciones no respaldadas o UML inseguro;
+- el preview no cambia revision ni persistencia;
+- `Aplicar` usa un BATCH atomico;
+- un BATCH aceptado produce una sola revision colaborativa;
+- un cambio remoto invalida un plan generado sobre otra revision;
+- draft local divergente y operaciones pendientes bloquean temporalmente el Assistant;
+- llama.cpp y whisper.cpp exponen health visible en la UI;
+- los errores pueden reportar etapa, transcript y attemptedPlan;
+- Undo/Redo continua operando sobre el BATCH como una sola accion de usuario.
+
+Fuera de CU08 permanecen imagen -> UML, XMI, generacion relacional y generacion de aplicaciones.

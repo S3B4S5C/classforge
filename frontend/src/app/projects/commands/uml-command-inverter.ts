@@ -11,8 +11,13 @@ import {
 import {
   UmlCommandError,
 } from './uml-command-error';
+import {
+  UmlCommandExecutor,
+} from './uml-command-executor';
 
 export class UmlCommandInverter {
+  private readonly executor =
+    new UmlCommandExecutor();
   invert(
     before: ProjectDocument,
     command: UmlCommand,
@@ -201,6 +206,37 @@ export class UmlCommandInverter {
             structuredClone(
               layout,
             ),
+        };
+      }
+
+      case 'BATCH': {
+        let current =
+          structuredClone(before);
+
+        const inverses: UmlCommand[] = [];
+
+        for (const child of command.commands) {
+          inverses.push(
+            this.invert(
+              current,
+              child,
+            ),
+          );
+
+          current =
+            this.executor.execute(
+              current,
+              child,
+            );
+        }
+
+        return {
+          ...commandMetadata(),
+          type: 'BATCH',
+          label:
+            `Deshacer: ${command.label}`,
+          commands:
+            inverses.reverse(),
         };
       }
     }
