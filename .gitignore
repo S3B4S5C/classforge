@@ -22,6 +22,8 @@ backend/data/
 # Generated ClassForge outputs
 generated/
 workspace/generated/
+.patch-backups/
+classforge.zip
 
 # Environment / secrets
 .env
