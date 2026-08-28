@@ -5,6 +5,7 @@ import com.classforge.project.domain.document.ProjectDocument;
 import com.classforge.project.persistence.ProjectEntity;
 import com.classforge.project.persistence.ProjectMapper;
 import com.classforge.project.persistence.ProjectRepository;
+import com.classforge.project.validation.ProjectDocumentValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,19 +17,21 @@ public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final ProjectMapper projectMapper;
+    private final ProjectDocumentValidator projectDocumentValidator;
 
     public ProjectService(
             ProjectRepository projectRepository,
-            ProjectMapper projectMapper
+            ProjectMapper projectMapper,
+            ProjectDocumentValidator projectDocumentValidator
     ) {
         this.projectRepository = projectRepository;
         this.projectMapper = projectMapper;
+        this.projectDocumentValidator = projectDocumentValidator;
     }
 
     @Transactional
     public Project create(UUID ownerId, String name) {
         Project project = Project.create(ownerId, name);
-
         return projectMapper.toDomain(
                 projectRepository.save(projectMapper.toEntity(project))
         );
@@ -51,19 +54,12 @@ public class ProjectService {
     }
 
     @Transactional
-    public Project rename(
-            UUID ownerId,
-            UUID projectId,
-            String name
-    ) {
+    public Project rename(UUID ownerId, UUID projectId, String name) {
         ProjectEntity entity = projectRepository
                 .findForUpdate(projectId, ownerId)
                 .orElseThrow(() -> new ProjectNotFoundException(projectId));
 
-        Project renamed = projectMapper
-                .toDomain(entity)
-                .rename(name);
-
+        Project renamed = projectMapper.toDomain(entity).rename(name);
         return projectMapper.toDomain(
                 projectRepository.save(projectMapper.toEntity(renamed))
         );
@@ -76,6 +72,8 @@ public class ProjectService {
             long baseRevision,
             ProjectDocument document
     ) {
+        projectDocumentValidator.validate(document);
+
         ProjectEntity entity = projectRepository
                 .findForUpdate(projectId, ownerId)
                 .orElseThrow(() -> new ProjectNotFoundException(projectId));
@@ -90,7 +88,6 @@ public class ProjectService {
         }
 
         Project saved = current.saveDocument(document);
-
         return projectMapper.toDomain(
                 projectRepository.save(projectMapper.toEntity(saved))
         );

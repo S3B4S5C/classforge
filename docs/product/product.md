@@ -1436,3 +1436,53 @@ Esta separacion garantiza que:
 Cada guardado del documento utiliza revision optimista y puede detectar modificaciones concurrentes.
 
 La iconografia de ClassForge utiliza Material Symbols Rounded self-hosted mediante npm para mantener disponibilidad offline.
+
+<!-- TYPED-UML-DOMAIN-V1 -->
+# Actualizacion de producto — Modelo UML tipado
+
+ClassForge deja de representar clases y atributos como objetos JSON genericos.
+
+El modelo canonico incorpora tipos explicitos para clases, atributos, tipos de datos, visibilidad, identificadores, relaciones, multiplicidades y layout.
+
+CU03-001 ofrece un editor estructurado Angular para clases y atributos. CU03-002 agregara JointJS como proyeccion del mismo ProjectDocument.
+
+Las respuestas HTTP 400 del backend son estructuradas y contienen violations apropiadas para UI, pruebas y trazabilidad.
+
+<!-- JOINTJS-CANVAS-V1 -->
+# Actualizacion de producto — Canvas UML
+
+CU03-002 incorpora un canvas JointJS open-source (`@joint/core`) como representacion interactiva del modelo UML canonico.
+
+La aplicacion permite:
+
+- visualizar clases y atributos;
+- crear clases desde el canvas;
+- editar clases mediante doble interaccion;
+- mover elementos;
+- zoom;
+- pan;
+- ajustar el contenido a la vista.
+
+El layout se persiste de forma independiente a la semantica UML.
+
+Las transformaciones de viewport no se guardan.
+
+JointJS nunca sustituye a ProjectDocument como fuente de verdad.
+
+<!-- UML-RELATIONSHIPS-INSPECTOR-V1 -->
+# Actualizacion de producto — Relaciones UML manuales
+
+ClassForge completa el editor manual de diagramas con:
+
+- asociaciones;
+- agregaciones;
+- composiciones;
+- generalizaciones;
+- multiplicidades;
+- inspector contextual.
+
+La creacion de relaciones se realiza seleccionando origen y destino directamente sobre el canvas y configurando despues su semantica en Angular Material.
+
+JointJS proyecta los links y labels, mientras ProjectDocument continua siendo la fuente de verdad.
+
+El backend protege la integridad del modelo, incluyendo deteccion de ciclos de generalizacion.

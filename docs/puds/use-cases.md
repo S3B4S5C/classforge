@@ -2297,3 +2297,120 @@ JointJS no se utiliza como formato persistido.
 - El documento sobrevive recarga y reinicio del backend.
 - La revision almacenada representa la version del documento.
 - El proyecto continua aislado por ownership.
+
+<!-- CU03-001-UML-DOMAIN-V1 -->
+# Implementacion incremental de CU-03 — CU03-001
+
+## Objetivo
+
+Permitir construir la estructura semantica inicial de un diagrama de clases antes de integrar el canvas.
+
+## Flujo
+
+1. Usuario abre un proyecto.
+2. Selecciona Nueva clase.
+3. Introduce un nombre code-ready.
+4. Angular genera UUID y layout inicial.
+5. La clase se agrega al ProjectDocument.
+6. El documento se marca como modificado.
+7. Usuario agrega atributos.
+8. Configura tipo, visibilidad, identifier y nullable.
+9. Usuario guarda.
+10. Backend valida el documento completo.
+11. Si es valido, incrementa revision y persiste.
+12. Si es invalido, devuelve 400 con violations legibles.
+
+Eliminar una clase elimina tambien sus atributos, su layout y cualquier relacion asociada.
+
+La postcondicion es un documento suficiente para que CU03-002 lo represente con JointJS sin cambiar el formato de dominio.
+
+<!-- CU03-002-JOINTJS-CANVAS-V1 -->
+# Implementacion incremental de CU-03 — CU03-002
+
+## Canvas visual
+
+CU03-002 incorpora JointJS como vista del modelo canonico.
+
+### Flujo de apertura
+
+1. Usuario abre el proyecto.
+2. Backend entrega ProjectDocument.
+3. Angular construye el estado del workspace.
+4. UmlCanvasComponent crea un `dia.Graph`.
+5. Cada `UmlClass` se proyecta a un shape UML.
+6. Cada `DiagramNodeLayout` determina posicion y dimensiones.
+
+### Crear clase
+
+1. Usuario pulsa Nueva clase en el canvas.
+2. Angular abre el dialog de CU03-001.
+3. Se crea UmlClass + UUID.
+4. Se crea layout inicial.
+5. JointJS reconstruye la proyeccion.
+6. Documento queda dirty.
+
+### Editar clase
+
+1. Usuario hace doble clic sobre el shape.
+2. Se abre el dialog Angular.
+3. Se modifica UmlClass.
+4. JointJS vuelve a proyectar el documento.
+
+### Mover clase
+
+1. Usuario arrastra el shape.
+2. JointJS gestiona el movimiento visual.
+3. Al soltar, ClassForge captura posicion y tamano.
+4. Se actualiza DiagramLayout.
+5. UmlModel permanece sin cambios.
+6. Documento queda dirty.
+
+### Navegacion
+
+Zoom, pan, fit y reset modifican solo el viewport y nunca el ProjectDocument.
+
+### Postcondicion
+
+El diagrama puede cerrarse, volver a abrirse y reconstruirse exclusivamente desde el ProjectDocument persistido.
+
+<!-- CU03-003-RELATIONSHIPS-V1 -->
+# Implementacion incremental de CU-03 — CU03-003
+
+## Relaciones manuales
+
+El usuario puede iniciar el modo Relacion desde el canvas.
+
+1. Selecciona la clase origen.
+2. La clase origen se resalta.
+3. Selecciona la clase destino.
+4. Angular abre el dialog de relacion.
+5. Define tipo UML.
+6. Cuando corresponde, define multiplicidades.
+7. Se crea UmlRelationship con UUID.
+8. JointJS proyecta el link.
+9. El documento queda dirty.
+10. Guardar utiliza CU-02.
+
+## Tipos
+
+- Association.
+- Aggregation.
+- Composition.
+- Generalization.
+
+## Inspector
+
+Seleccionar una clase o una relacion muestra acciones contextuales fuera del SVG.
+
+## Backend
+
+La validacion del documento rechaza:
+
+- relaciones huerfanas;
+- multiplicidades invalidas;
+- auto-generalizacion;
+- ciclos de generalizacion.
+
+## Postcondicion
+
+CU-03 queda completo: el usuario puede construir manualmente un diagrama UML de clases persistible sin depender de formatos internos de JointJS.

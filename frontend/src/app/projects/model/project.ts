@@ -1,10 +1,70 @@
+export type UmlVisibility =
+  | 'PUBLIC'
+  | 'PRIVATE'
+  | 'PROTECTED'
+  | 'PACKAGE';
+
+export type UmlDataType =
+  | 'STRING'
+  | 'INTEGER'
+  | 'LONG'
+  | 'DECIMAL'
+  | 'BOOLEAN'
+  | 'DATE'
+  | 'DATETIME'
+  | 'UUID'
+  | 'CUSTOM';
+
+export type UmlRelationshipType =
+  | 'ASSOCIATION'
+  | 'AGGREGATION'
+  | 'COMPOSITION'
+  | 'GENERALIZATION';
+
+export interface UmlAttribute {
+  id: string;
+  name: string;
+  dataType: UmlDataType;
+  customTypeName: string | null;
+  visibility: UmlVisibility;
+  nullable: boolean;
+  identifier: boolean;
+}
+
+export interface UmlClass {
+  id: string;
+  name: string;
+  attributes: UmlAttribute[];
+}
+
+export interface Multiplicity {
+  lower: number;
+  upper: number | null;
+}
+
+export interface UmlRelationship {
+  id: string;
+  sourceClassId: string;
+  targetClassId: string;
+  type: UmlRelationshipType;
+  sourceMultiplicity: Multiplicity | null;
+  targetMultiplicity: Multiplicity | null;
+}
+
 export interface UmlModel {
-  classes: Record<string, unknown>[];
-  relationships: Record<string, unknown>[];
+  classes: UmlClass[];
+  relationships: UmlRelationship[];
+}
+
+export interface DiagramNodeLayout {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface DiagramLayout {
-  nodes: Record<string, Record<string, unknown>>;
+  nodes: Record<string, DiagramNodeLayout>;
 }
 
 export interface ProjectDocument {
@@ -33,4 +93,16 @@ export interface UpdateProjectRequest {
 export interface SaveProjectDocumentRequest {
   baseRevision: number;
   document: ProjectDocument;
+}
+
+export interface BackendValidationViolation {
+  field: string;
+  code: string;
+  message: string;
+}
+
+export interface BackendValidationError {
+  error: string;
+  message: string;
+  violations: BackendValidationViolation[];
 }

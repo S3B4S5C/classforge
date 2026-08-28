@@ -1,0 +1,361 @@
+:host {
+  display: block;
+}
+
+.canvas-shell {
+  overflow: hidden;
+  border: 1px solid var(--cf-border);
+  border-radius: 1rem;
+  background: white;
+  box-shadow: 0 12px 36px rgb(15 23 42 / 5%);
+}
+
+.canvas-toolbar {
+  min-height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--cf-border);
+  background: rgb(255 255 255 / 96%);
+}
+
+.canvas-heading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  strong {
+    display: block;
+    margin-top: 0.15rem;
+  }
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--cf-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.zoom-indicator {
+  min-width: 3.4rem;
+  padding: 0.3rem 0.48rem;
+  border: 1px solid var(--cf-border);
+  border-radius: 999px;
+  background: #f9fafb;
+  color: #475467;
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.canvas-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.create-button {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.view-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.canvas-icon-button.mat-mdc-button-base {
+  min-width: 2.6rem;
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0 !important;
+
+  .material-symbols-rounded {
+    font-size: 1.2rem;
+  }
+}
+
+.canvas-viewport {
+  position: relative;
+  height: clamp(500px, 64vh, 760px);
+  overflow: hidden;
+  background: #fcfcfd;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+
+  &.is-panning {
+    cursor: grabbing;
+  }
+
+  &.is-empty {
+    min-height: 440px;
+  }
+}
+
+.paper-host {
+  width: 100%;
+  height: 100%;
+}
+
+:host ::ng-deep .joint-paper {
+  display: block;
+}
+
+:host ::ng-deep .joint-element {
+  cursor: move;
+  filter:
+    drop-shadow(
+      0 8px 12px rgb(15 23 42 / 10%)
+    );
+}
+
+:host ::ng-deep .joint-element:hover [joint-selector='body'] {
+  stroke: #667085;
+}
+
+.canvas-empty-state {
+  position: absolute;
+  z-index: 4;
+  inset: 50% auto auto 50%;
+  width: min(90%, 520px);
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border: 1px solid rgb(165 180 252 / 55%);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 18px 50px rgb(15 23 42 / 8%);
+  text-align: center;
+  pointer-events: auto;
+
+  strong {
+    font-size: 1.35rem;
+  }
+
+  p {
+    max-width: 430px;
+    margin: 0;
+    color: var(--cf-muted);
+    line-height: 1.65;
+  }
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+}
+
+.empty-icon {
+  color: #4f46e5;
+  font-size: 3rem;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 48;
+}
+
+.canvas-help {
+  position: absolute;
+  z-index: 3;
+  left: 0.8rem;
+  bottom: 0.8rem;
+  max-width: calc(100% - 1.6rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.62rem;
+  border: 1px solid rgb(208 213 221 / 80%);
+  border-radius: 0.65rem;
+  background: rgb(255 255 255 / 88%);
+  color: #667085;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+
+  .material-symbols-rounded {
+    flex: 0 0 auto;
+    font-size: 1rem;
+  }
+}
+
+.mobile-help {
+  display: none;
+}
+
+@media (max-width: 820px) {
+  .canvas-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .canvas-actions {
+    justify-content: space-between;
+  }
+
+  .canvas-viewport {
+    height: clamp(460px, 60vh, 640px);
+  }
+}
+
+@media (max-width: 600px) {
+  .canvas-toolbar {
+    padding: 0.75rem;
+  }
+
+  .canvas-actions {
+    display: grid;
+    grid-template-columns: 1fr auto;
+  }
+
+  .create-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .canvas-viewport {
+    height: min(64vh, 540px);
+    min-height: 420px;
+  }
+
+  .desktop-help {
+    display: none;
+  }
+
+  .mobile-help {
+    display: inline;
+  }
+}
+
+@media (max-width: 420px) {
+  .canvas-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .view-controls {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .canvas-icon-button.mat-mdc-button-base {
+    width: 100%;
+  }
+
+  .zoom-indicator {
+    display: none;
+  }
+}
+
+/* CLASSFORGE-CU03-003-RELATIONSHIPS */
+
+.relationship-button {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.relation-active {
+  border-color: #f59e0b !important;
+  background: #fffbeb !important;
+  color: #92400e !important;
+}
+
+.canvas-viewport.is-linking {
+  cursor: crosshair;
+}
+
+.relationship-guide {
+  position: absolute;
+  z-index: 6;
+  top: 0.8rem;
+  left: 50%;
+  width: min(92%, 440px);
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #fcd34d;
+  border-radius: 0.8rem;
+  background: rgb(255 251 235 / 96%);
+  color: #92400e;
+  box-shadow: 0 12px 30px rgb(146 64 14 / 10%);
+  pointer-events: none;
+
+  > .material-symbols-rounded {
+    font-size: 1.4rem;
+  }
+
+  div {
+    display: grid;
+    gap: 0.1rem;
+  }
+
+  strong {
+    font-size: 0.85rem;
+  }
+
+  span:not(.material-symbols-rounded) {
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+}
+
+:host ::ng-deep .joint-link {
+  cursor: pointer;
+}
+
+:host ::ng-deep .joint-link .connection-wrap {
+  stroke-linecap: round;
+}
+
+@media (max-width: 820px) {
+  .canvas-actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 600px) {
+  .canvas-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .create-button,
+  .relationship-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .view-controls {
+    grid-column: 1 / -1;
+  }
+
+  .relationship-guide {
+    top: 0.65rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .canvas-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .view-controls {
+    grid-column: auto;
+  }
+}

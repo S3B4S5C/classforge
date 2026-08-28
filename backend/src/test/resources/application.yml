@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: classforge-test
+
+  datasource:
+    url: jdbc:h2:mem:classforge-default-test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+
+  h2:
+    console:
+      enabled: false
+
+server:
+  port: 0
+
+classforge:
+  security:
+    jwt:
+      secret: classforge-test-secret-isolated-from-development-database-2026
+      expiration-minutes: 60

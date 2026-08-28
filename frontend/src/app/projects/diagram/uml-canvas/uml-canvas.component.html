@@ -1,0 +1,254 @@
+<section class="canvas-shell">
+  <header class="canvas-toolbar">
+    <div class="canvas-heading">
+      <div>
+        <p class="eyebrow">
+          DIAGRAMA UML
+        </p>
+
+        <strong>
+          Canvas JointJS
+        </strong>
+      </div>
+
+      <span class="zoom-indicator">
+        {{ zoomPercent() }}%
+      </span>
+    </div>
+
+    <div class="canvas-actions">
+      <button
+        mat-flat-button
+        class="cf-button-primary create-button"
+        type="button"
+        (click)="createClassRequested.emit()"
+      >
+        <span
+          class="material-symbols-rounded"
+          aria-hidden="true"
+        >
+          add_box
+        </span>
+        Nueva clase
+      </button>
+
+      @if (!relationshipMode()) {
+        <button
+          mat-button
+          class="cf-button-secondary relationship-button"
+          type="button"
+          [disabled]="
+            !document
+            || document.umlModel.classes.length
+              === 0
+          "
+          (click)="startRelationshipMode()"
+        >
+          <span
+            class="material-symbols-rounded"
+            aria-hidden="true"
+          >
+            add_link
+          </span>
+          Relacion
+        </button>
+      } @else {
+        <button
+          mat-button
+          class="cf-button-secondary relationship-button relation-active"
+          type="button"
+          (click)="cancelRelationshipMode()"
+        >
+          <span
+            class="material-symbols-rounded"
+            aria-hidden="true"
+          >
+            close
+          </span>
+          Cancelar relacion
+        </button>
+      }
+
+      <div
+        class="view-controls"
+        aria-label="Controles de vista"
+      >
+        <button
+          mat-button
+          class="cf-button-secondary canvas-icon-button"
+          type="button"
+          title="Alejar"
+          aria-label="Alejar"
+          (click)="zoomOut()"
+        >
+          <span
+            class="material-symbols-rounded"
+            aria-hidden="true"
+          >
+            zoom_out
+          </span>
+        </button>
+
+        <button
+          mat-button
+          class="cf-button-secondary canvas-icon-button"
+          type="button"
+          title="Acercar"
+          aria-label="Acercar"
+          (click)="zoomIn()"
+        >
+          <span
+            class="material-symbols-rounded"
+            aria-hidden="true"
+          >
+            zoom_in
+          </span>
+        </button>
+
+        <button
+          mat-button
+          class="cf-button-secondary canvas-icon-button"
+          type="button"
+          title="Ajustar al contenido"
+          aria-label="Ajustar al contenido"
+          (click)="fitToContent()"
+        >
+          <span
+            class="material-symbols-rounded"
+            aria-hidden="true"
+          >
+            fit_screen
+          </span>
+        </button>
+
+        <button
+          mat-button
+          class="cf-button-secondary canvas-icon-button"
+          type="button"
+          title="Restablecer vista"
+          aria-label="Restablecer vista"
+          (click)="resetView()"
+        >
+          <span
+            class="material-symbols-rounded"
+            aria-hidden="true"
+          >
+            center_focus_strong
+          </span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div
+    #viewport
+    class="canvas-viewport"
+    [class.is-empty]="
+      !document
+      || document.umlModel.classes.length === 0
+    "
+    [class.is-linking]="relationshipMode()"
+  >
+    <div
+      #paperHost
+      class="paper-host"
+      aria-label="Canvas de diagrama UML"
+    ></div>
+
+    @if (relationshipMode()) {
+      <div
+        class="relationship-guide"
+        aria-live="polite"
+      >
+        <span
+          class="material-symbols-rounded"
+          aria-hidden="true"
+        >
+          {{
+            relationshipSourceId()
+              ? 'ads_click'
+              : 'touch_app'
+          }}
+        </span>
+
+        <div>
+          <strong>
+            {{
+              relationshipSourceId()
+                ? 'Ahora selecciona el destino'
+                : 'Selecciona la clase origen'
+            }}
+          </strong>
+
+          <span>
+            {{
+              relationshipSourceId()
+                ? 'El origen esta marcado en naranja.'
+                : 'Despues seleccionaras la clase destino.'
+            }}
+          </span>
+        </div>
+      </div>
+    }
+
+    @if (
+      !document
+      || document.umlModel.classes.length === 0
+    ) {
+      <div class="canvas-empty-state">
+        <span
+          class="material-symbols-rounded empty-icon"
+          aria-hidden="true"
+        >
+          account_tree
+        </span>
+
+        <strong>
+          El canvas esta listo.
+        </strong>
+
+        <p>
+          Crea una clase para comenzar el
+          diagrama. El modelo seguira viviendo
+          en ProjectDocument, no dentro de
+          JointJS.
+        </p>
+
+        <button
+          mat-flat-button
+          class="cf-button-primary"
+          type="button"
+          (click)="createClassRequested.emit()"
+        >
+          <span
+            class="material-symbols-rounded"
+            aria-hidden="true"
+          >
+            add_box
+          </span>
+          Crear primera clase
+        </button>
+      </div>
+    }
+
+    <div class="canvas-help">
+      <span
+        class="material-symbols-rounded"
+        aria-hidden="true"
+      >
+        info
+      </span>
+
+      <span class="desktop-help">
+        Arrastra clases · doble clic para editar ·
+        clic en links para inspeccionar ·
+        arrastra el fondo para navegar
+      </span>
+
+      <span class="mobile-help">
+        Arrastra clases · doble toque para editar ·
+        toca links para inspeccionar
+      </span>
+    </div>
+  </div>
+</section>
