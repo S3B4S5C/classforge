@@ -1066,3 +1066,440 @@
     justify-content: flex-end;
   }
 }
+
+/* CLASSFORGE-UI-COMPACT-V5
+   Compactacion visual segura:
+   no reparenta section/aside ni toca Assistant.
+*/
+
+.workspace-shell:has(.workspace-heading) {
+  position: relative;
+}
+
+.workspace-shell:has(.workspace-heading)
+  > .breadcrumbs {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  margin: 0;
+}
+
+.workspace-heading {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto;
+  grid-template-rows:
+    auto
+    auto;
+  column-gap: 1rem;
+  row-gap: 0.35rem;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+.workspace-heading .title-block {
+  min-width: 0;
+  display: grid;
+  grid-template-columns:
+    auto
+    minmax(0, 1fr);
+  grid-template-rows:
+    auto
+    auto;
+  column-gap: 0.8rem;
+  row-gap: 0.25rem;
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+.workspace-heading .title-row,
+.workspace-heading .rename-row {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  min-width: 0;
+  padding-left: 8.5rem;
+  margin: 0;
+}
+
+.workspace-heading
+  .title-row
+  h1 {
+  margin: 0;
+  font-size:
+    clamp(1.75rem, 2.8vw, 2.6rem);
+  line-height: 1;
+}
+
+.workspace-heading
+  .title-block
+  > .eyebrow {
+  grid-column: 1;
+  grid-row: 2;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.workspace-heading
+  .workspace-subtitle {
+  grid-column: 2;
+  grid-row: 2;
+  margin: 0;
+  align-self: center;
+  white-space: nowrap;
+}
+
+.workspace-heading
+  .save-toolbar {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: center;
+  margin: 0;
+}
+
+.section-heading {
+  position: relative;
+}
+
+.section-collapse-button {
+  flex: 0 0 auto;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.section-collapse-button
+  .material-symbols-rounded {
+  font-size: 1.15rem;
+}
+
+#class-model-content,
+#relationships-content {
+  min-width: 0;
+}
+
+.relationship-list {
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.relationship-row {
+  min-width: 0;
+}
+
+.details-list {
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 0.7rem 0.9rem;
+}
+
+.details-list > div {
+  min-width: 0;
+}
+
+@media (max-width: 1180px) {
+  .relationship-list {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 920px) {
+  .workspace-heading {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-heading
+    .title-block {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .workspace-heading
+    .save-toolbar {
+    grid-column: 1;
+    grid-row: 3;
+    justify-self: start;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 700px) {
+  .workspace-shell:has(.workspace-heading)
+    > .breadcrumbs {
+    position: static;
+    margin-bottom: 0.7rem;
+  }
+
+  .workspace-heading
+    .title-row,
+  .workspace-heading
+    .rename-row {
+    padding-left: 0;
+  }
+
+  .workspace-heading
+    .title-block {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-heading
+    .title-block
+    > .eyebrow,
+  .workspace-heading
+    .workspace-subtitle {
+    grid-column: 1;
+  }
+
+  .workspace-heading
+    .title-block
+    > .eyebrow {
+    grid-row: 2;
+  }
+
+  .workspace-heading
+    .workspace-subtitle {
+    grid-row: 3;
+  }
+
+  .workspace-heading
+    .save-toolbar {
+    grid-row: 4;
+  }
+
+  .relationship-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .details-list {
+    grid-template-columns: 1fr;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .section-collapse-button {
+    margin-left: 0;
+  }
+}
+/* CLASSFORGE-UI-HEADER-V6
+   Cabecera conceptual:
+   [ Proyectos / proyecto ] [ titulo + metadata ] [ estados/acciones ]
+
+   Solo CSS: no cambia estructura HTML ni Assistant.
+*/
+
+.workspace-shell:has(> .workspace-heading) {
+  display: grid;
+  grid-template-columns:
+    max-content
+    minmax(240px, 1fr)
+    max-content;
+  column-gap: 1rem;
+  row-gap: 1rem;
+  align-items: center;
+}
+
+/*
+ * Breadcrumb existente: primer bloque de la fila.
+ * Neutraliza la posicion absoluta del cleanup anterior.
+ */
+.workspace-shell:has(> .workspace-heading)
+  > .breadcrumbs {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  margin: 0;
+}
+
+/*
+ * El header no necesita una caja propia.
+ * title-block y save-toolbar pasan a participar
+ * directamente en la grilla de workspace-shell.
+ */
+.workspace-shell:has(> .workspace-heading)
+  > .workspace-heading {
+  display: contents;
+}
+
+.workspace-shell:has(> .workspace-heading)
+  > .workspace-heading
+  > .title-block {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns:
+    max-content
+    minmax(0, max-content);
+  grid-template-rows:
+    auto
+    auto;
+  column-gap: 0.8rem;
+  row-gap: 0.2rem;
+  align-items: center;
+}
+
+/* Titulo + Renombrar: primera linea del bloque central. */
+.workspace-shell:has(> .workspace-heading)
+  > .workspace-heading
+  > .title-block
+  > .title-row,
+.workspace-shell:has(> .workspace-heading)
+  > .workspace-heading
+  > .title-block
+  > .rename-row {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  min-width: 0;
+  margin: 0;
+  padding-left: 0;
+}
+
+.workspace-shell:has(> .workspace-heading)
+  .title-row h1 {
+  margin: 0;
+  font-size: clamp(1.65rem, 2.2vw, 2.35rem);
+  line-height: 1;
+}
+
+/* WORKSPACE y UML/revision: segunda linea del bloque central. */
+.workspace-shell:has(> .workspace-heading)
+  > .workspace-heading
+  > .title-block
+  > .eyebrow {
+  grid-column: 1;
+  grid-row: 2;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.workspace-shell:has(> .workspace-heading)
+  > .workspace-heading
+  > .title-block
+  > .workspace-subtitle {
+  grid-column: 2;
+  grid-row: 2;
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* Etiquetas/acciones: tercer bloque, derecha. */
+.workspace-shell:has(> .workspace-heading)
+  > .workspace-heading
+  > .save-toolbar {
+  grid-column: 3;
+  grid-row: 1;
+  width: auto;
+  margin: 0;
+  justify-self: end;
+  align-self: center;
+  justify-content: flex-end;
+}
+
+/*
+ * Todo lo que viene despues de la cabecera
+ * vuelve a ocupar el ancho completo.
+ */
+.workspace-shell:has(> .workspace-heading)
+  > :not(.breadcrumbs):not(.workspace-heading) {
+  grid-column: 1 / -1;
+}
+
+/*
+ * Clases y atributos / Relaciones:
+ * mismo tamano visual.
+ * La regla tiene mas especificidad que .compact-heading h2.
+ */
+.model-editor .section-heading h2 {
+  font-size: 1.4rem;
+}
+
+/* Tablet: conserva breadcrumb + titulo; estados bajan una fila. */
+@media (max-width: 1100px) {
+  .workspace-shell:has(> .workspace-heading) {
+    grid-template-columns:
+      max-content
+      minmax(0, 1fr);
+  }
+
+  .workspace-shell:has(> .workspace-heading)
+    > .workspace-heading
+    > .save-toolbar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: end;
+    flex-wrap: wrap;
+  }
+}
+
+/* Movil: apila sin alterar el DOM. */
+@media (max-width: 700px) {
+  .workspace-shell:has(> .workspace-heading) {
+    grid-template-columns: 1fr;
+    row-gap: 0.75rem;
+  }
+
+  .workspace-shell:has(> .workspace-heading)
+    > .breadcrumbs {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .workspace-shell:has(> .workspace-heading)
+    > .workspace-heading
+    > .title-block {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .workspace-shell:has(> .workspace-heading)
+    > .workspace-heading
+    > .save-toolbar {
+    grid-column: 1;
+    grid-row: 3;
+    justify-self: stretch;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .workspace-shell:has(> .workspace-heading)
+    > .workspace-heading
+    > .title-block {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-shell:has(> .workspace-heading)
+    > .workspace-heading
+    > .title-block
+    > .eyebrow,
+  .workspace-shell:has(> .workspace-heading)
+    > .workspace-heading
+    > .title-block
+    > .workspace-subtitle {
+    grid-column: 1;
+  }
+
+  .workspace-shell:has(> .workspace-heading)
+    > .workspace-heading
+    > .title-block
+    > .eyebrow {
+    grid-row: 2;
+  }
+
+  .workspace-shell:has(> .workspace-heading)
+    > .workspace-heading
+    > .title-block
+    > .workspace-subtitle {
+    grid-row: 3;
+  }
+}

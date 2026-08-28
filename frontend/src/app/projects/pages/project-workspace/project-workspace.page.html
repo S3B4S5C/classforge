@@ -151,12 +151,6 @@
           </div>
         }
 
-        <p class="workspace-subtitle">
-          UML
-          {{ currentProject.document.schemaVersion }}
-          · Revision
-          {{ currentProject.revision }}
-        </p>
       </div>
 
       <details class="presence-panel">
@@ -589,13 +583,6 @@
                       {{
                         umlClass.attributes.length
                       }}
-                    </dd>
-                  </div>
-
-                  <div>
-                    <dt>ID estable</dt>
-                    <dd class="mono">
-                      {{ umlClass.id }}
                     </dd>
                   </div>
                 </dl>
@@ -1081,7 +1068,37 @@
               }}
             </span>
           </div>
-        </div>
+        
+          <button
+            mat-button
+            type="button"
+            class="section-collapse-button"
+            [attr.aria-expanded]="classesExpanded()"
+            aria-controls="class-model-content"
+            (click)="
+              classesExpanded.set(
+                !classesExpanded()
+              )
+            "
+          >
+            <span
+              class="material-symbols-rounded"
+              aria-hidden="true"
+            >
+              {{
+                classesExpanded()
+                  ? 'expand_less'
+                  : 'expand_more'
+              }}
+            </span>
+            {{
+              classesExpanded()
+                ? 'Contraer'
+                : 'Desplegar'
+            }}
+          </button></div>
+        @if (classesExpanded()) {
+          <div id="class-model-content">
 
         @if (
           store.classes().length === 0
@@ -1358,7 +1375,9 @@
           </div>
         }
 
-        <section
+                  </div>
+        }
+<section
           class="relationships-section"
           aria-labelledby="relationships-title"
         >
@@ -1376,7 +1395,37 @@
             <span class="relationship-count">
               {{ store.relationships().length }}
             </span>
-          </div>
+          
+            <button
+              mat-button
+              type="button"
+              class="section-collapse-button"
+              [attr.aria-expanded]="relationshipsExpanded()"
+              aria-controls="relationships-content"
+              (click)="
+                relationshipsExpanded.set(
+                  !relationshipsExpanded()
+                )
+              "
+            >
+              <span
+                class="material-symbols-rounded"
+                aria-hidden="true"
+              >
+                {{
+                  relationshipsExpanded()
+                    ? 'expand_less'
+                    : 'expand_more'
+                }}
+              </span>
+              {{
+                relationshipsExpanded()
+                  ? 'Contraer'
+                  : 'Desplegar'
+              }}
+            </button></div>
+          @if (relationshipsExpanded()) {
+            <div id="relationships-content">
 
           @if (
             store.relationships().length === 0
@@ -1514,7 +1563,9 @@
               }
             </div>
           }
-        </section>
+                    </div>
+          }
+</section>
       </section>
 
       <aside class="details-panel">
@@ -1586,61 +1637,6 @@
                 </dd>
               </div>
             </dl>
-          </mat-card-content>
-        </mat-card>
-
-        <mat-card
-          class="architecture-card"
-          appearance="outlined"
-        >
-          <mat-card-content>
-            <span
-              class="material-symbols-rounded"
-              aria-hidden="true"
-            >
-              schema
-            </span>
-
-            <div>
-              <strong>
-                UML manual completo
-              </strong>
-
-              <p>
-                Clases, atributos, asociaciones,
-                agregaciones, composiciones,
-                generalizaciones y
-                multiplicidades ya viven en el
-                modelo canonico.
-              </p>
-            </div>
-          </mat-card-content>
-        </mat-card>
-
-        <mat-card
-          class="architecture-card"
-          appearance="outlined"
-        >
-          <mat-card-content>
-            <span
-              class="material-symbols-rounded"
-              aria-hidden="true"
-            >
-              verified
-            </span>
-
-            <div>
-              <strong>
-                Backend autoritativo
-              </strong>
-
-              <p>
-                Antes de persistir se validan
-                referencias, multiplicidades,
-                auto-generalizacion y ciclos de
-                herencia.
-              </p>
-            </div>
           </mat-card-content>
         </mat-card>
 

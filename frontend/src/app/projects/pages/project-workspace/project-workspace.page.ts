@@ -100,6 +100,12 @@ export class ProjectWorkspacePage {
 
   readonly editingName = signal(false);
 
+  readonly classesExpanded =
+    signal(false);
+
+  readonly relationshipsExpanded =
+    signal(false);
+
   readonly diagramSelection =
     signal<UmlCanvasSelection>(null);
 
