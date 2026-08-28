@@ -3,6 +3,7 @@ import {
   Component,
   ElementRef,
   EventEmitter,
+  HostListener,
   Input,
   OnChanges,
   OnDestroy,
@@ -67,12 +68,26 @@ export class UmlCanvasComponent
   @Input()
   validating = false;
 
+  @Input()
+  canUndo = false;
+
+  @Input()
+  canRedo = false;
+
   @Output()
   readonly createClassRequested =
     new EventEmitter<void>();
 
   @Output()
   readonly validateRequested =
+    new EventEmitter<void>();
+
+  @Output()
+  readonly undoRequested =
+    new EventEmitter<void>();
+
+  @Output()
+  readonly redoRequested =
     new EventEmitter<void>();
 
   @Output()
@@ -177,6 +192,56 @@ export class UmlCanvasComponent
     );
   };
 
+  @HostListener(
+    'window:keydown',
+    ['$event'],
+  )
+  handleHistoryShortcut(
+    event: KeyboardEvent,
+  ): void {
+    if (
+      !(
+        event.ctrlKey
+        || event.metaKey
+      )
+      || this.isEditableTarget(
+        event.target,
+      )
+    ) {
+      return;
+    }
+
+    const key =
+      event.key.toLowerCase();
+
+    if (
+      key === 'z'
+      && event.shiftKey
+      && this.canRedo
+    ) {
+      event.preventDefault();
+      this.redoRequested.emit();
+      return;
+    }
+
+    if (
+      key === 'z'
+      && !event.shiftKey
+      && this.canUndo
+    ) {
+      event.preventDefault();
+      this.undoRequested.emit();
+      return;
+    }
+
+    if (
+      key === 'y'
+      && this.canRedo
+    ) {
+      event.preventDefault();
+      this.redoRequested.emit();
+    }
+  }
   ngAfterViewInit(): void {
     this.paper = new dia.Paper({
       el: this.paperHost.nativeElement,
@@ -888,6 +953,19 @@ export class UmlCanvasComponent
     );
   }
 
+  private isEditableTarget(
+    target: EventTarget | null,
+  ): boolean {
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
+
+    return Boolean(
+      target.closest(
+        'input, textarea, select, [contenteditable="true"], [role="dialog"]',
+      ),
+    );
+  }
   private clampScale(
     value: number,
   ): number {

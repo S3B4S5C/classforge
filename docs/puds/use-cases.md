@@ -2453,3 +2453,37 @@ Al seleccionar un diagnostico, el frontend selecciona el elemento correspondient
 Guardar y Validar comparten `ProjectDocumentValidator.analyze()`.
 
 No se mantienen reglas duplicadas entre el endpoint de validacion y el guardado.
+
+<!-- CU05-001-COMMAND-BUS-UNDO-REDO-V1 -->
+# Implementacion de CU-05 — Deshacer y rehacer
+
+CU-05 introduce el Command Bus previsto por CU-03 y CU-04.
+
+Las mutaciones manuales pasan por comandos tipados antes de modificar `ProjectDocument`.
+
+El historial conserva hasta 100 operaciones.
+
+- Undo restaura el estado anterior.
+- Redo restaura el posterior.
+- un comando nuevo después de Undo limpia Redo.
+- Guardar conserva historial.
+- reload crea un historial nuevo.
+- Move Class se registra una vez al terminar el drag.
+- resultados CU-04 se invalidan al ejecutar Undo/Redo o un nuevo comando.
+- el backend continúa siendo autoridad de validación al persistir.
+
+El contrato queda preparado para CU-06 colaboración.
+
+<!-- DOCUMENTATION-AUDIT-AFTER-CU05-V2 -->
+# Nota de trazabilidad documental posterior a CU-05
+
+La auditoria confirma:
+
+- CU-01 a CU-05 cerrados;
+- Command Bus implementado;
+- persistencia vigente JPA/Hibernate + H2;
+- backend de desarrollo en 8082;
+- proximo caso CU-06;
+- diagramas UML excluidos deliberadamente.
+
+El orden ejecutado difirio del orden inicial, pero CU-05 cerro la principal desviacion al migrar las mutaciones manuales al Command Bus antes de colaboracion e IA.

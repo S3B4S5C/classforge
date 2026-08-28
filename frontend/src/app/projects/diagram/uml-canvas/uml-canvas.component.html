@@ -69,6 +69,44 @@
         </button>
       }
 
+      <div
+        class="history-controls"
+        aria-label="Historial de cambios"
+      >
+        <button
+          mat-button
+          class="cf-button-secondary canvas-icon-button"
+          type="button"
+          title="Deshacer (Ctrl+Z)"
+          aria-label="Deshacer"
+          [disabled]="!canUndo"
+          (click)="undoRequested.emit()"
+        >
+          <span
+            class="material-symbols-rounded"
+            aria-hidden="true"
+          >
+            undo
+          </span>
+        </button>
+
+        <button
+          mat-button
+          class="cf-button-secondary canvas-icon-button"
+          type="button"
+          title="Rehacer (Ctrl+Shift+Z / Ctrl+Y)"
+          aria-label="Rehacer"
+          [disabled]="!canRedo"
+          (click)="redoRequested.emit()"
+        >
+          <span
+            class="material-symbols-rounded"
+            aria-hidden="true"
+          >
+            redo
+          </span>
+        </button>
+      </div>
       <button
         mat-button
         class="cf-button-secondary validate-button"

@@ -374,3 +374,26 @@
     justify-content: center;
   }
 }
+
+/* CLASSFORGE-CU05-HISTORY */
+
+.history-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border: 1px solid #e4e7ec;
+  border-radius: 0.65rem;
+  background: #ffffff;
+}
+
+.history-controls button:disabled {
+  opacity: 0.45;
+}
+
+@media (max-width: 600px) {
+  .history-controls {
+    justify-self: stretch;
+    justify-content: center;
+  }
+}

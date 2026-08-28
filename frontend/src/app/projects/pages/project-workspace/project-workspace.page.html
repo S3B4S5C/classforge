@@ -307,7 +307,11 @@
           [document]="store.documentDraft()"
           [requestedSelection]="diagramSelection()"
           [validating]="store.validating()"
+          [canUndo]="store.canUndo()"
+          [canRedo]="store.canRedo()"
           (createClassRequested)="createClass()"
+          (undoRequested)="store.undo()"
+          (redoRequested)="store.redo()"
           (validateRequested)="validateModel()"
           (editClassRequested)="
             editClassById($event)

@@ -1063,17 +1063,33 @@ Principios:
 
 ## 27. Persistencia de proyectos ClassForge
 
-La propia herramienta podrá utilizar inicialmente almacenamiento basado en archivos para proyectos.
+### Decision vigente
 
-Formato conceptual:
+ClassForge utiliza **Spring Data JPA/Hibernate** para persistir proyectos.
 
-```text
-*.classforge
-```
+En desarrollo se utiliza **H2 en archivo**. PostgreSQL permanece como destino previsto para despliegues posteriores.
 
-Internamente podrá ser JSON.
+El agregado persistido conserva:
 
-Contenido posible:
+- identidad y metadata;
+- ownership;
+- `ProjectDocument`;
+- `UmlModel`;
+- `DiagramLayout`;
+- revision;
+- timestamps.
+
+La representacion fisica actual reutiliza una columna historica denominada `uml_model`, aunque su significado logico es `ProjectDocument`. Esto permitio conservar los datos H2 existentes durante la evolucion CU-01 → CU-02.
+
+Los tests Spring utilizan H2 en memoria.
+
+### Formato portable futuro
+
+Un archivo `*.classforge` sigue siendo una posibilidad futura de exportacion, importacion o backup.
+
+No es el mecanismo primario de persistencia vigente.
+
+Si se implementa, debera adaptar el mismo modelo canonico y no convertirse en una segunda fuente de verdad.
 
 ```json
 {
@@ -1086,20 +1102,7 @@ Contenido posible:
 }
 ```
 
-Esto facilita:
-
-- guardar;
-- abrir;
-- versionar;
-- exportar;
-- realizar backups;
-- depurar;
-- trabajar offline.
-
-Más adelante podrá añadirse una base de datos para proyectos colaborativos si resulta necesario.
-
 ---
-
 ## 28. Stack consolidado
 
 ### Aplicación ClassForge
@@ -1304,7 +1307,9 @@ La generación desde fotografía puede desarrollarse después de que este pipeli
 
 ---
 
-## 32. Orden de implementación recomendado
+## 32. Orden de implementacion
+
+### Orden arquitectonico recomendado originalmente
 
 ```text
 1. CanonicalUmlModel
@@ -1330,10 +1335,44 @@ La generación desde fotografía puede desarrollarse después de que este pipeli
 21. Imagen → UML
 ```
 
-No se debe comenzar por IA, visión o frontend generado antes de disponer de un modelo canónico sólido.
+La regla central se mantiene: IA, vision y generacion no deben preceder a un modelo canonico solido.
+
+### Orden realmente ejecutado
+
+```text
+1. CU-01 Proyecto persistible
+2. Autenticacion y ownership
+3. CU-02 ProjectDocument + revision
+4. CU-03-001 dominio UML tipado
+5. CU-03-002 JointJS
+6. CU-03-003 relaciones e inspector
+7. CU-04 validacion explicita
+8. CU-05 Command Bus + Undo/Redo
+```
+
+La persistencia y el canvas se adelantaron respecto al Command Bus para obtener un vertical slice verificable.
+
+CU-05 ya resolvio esa desviacion: las mutaciones manuales pasan por comandos tipados.
+
+### Arquitectura actual
+
+```text
+adaptador
+   ↓
+UmlCommand
+   ↓
+UmlCommandBus
+   ↓
+UmlCommandExecutor
+   ↓
+ProjectDocument
+```
+
+Esta capa debe reutilizarse en CU-06 colaboracion y posteriormente en IA/voz.
+
+No se debe introducir otra ruta que modifique directamente los arrays del modelo canonico.
 
 ---
-
 ## 33. Definición resumida del producto
 
 **ClassForge** es una herramienta CASE colaborativa y offline-first que permite diseñar modelos UML de clases mediante edición manual, voz, imágenes o Enterprise Architect, y transformar esos modelos en aplicaciones funcionales compuestas por un backend Spring Boot/JPA, una API REST/OpenAPI, una colección Postman y un frontend Angular exportable tanto a web como a Android mediante Capacitor.
@@ -1505,3 +1544,61 @@ El usuario puede validar el draft actual y recibir:
 Los diagnosticos navegables seleccionan la clase o relacion correspondiente en el canvas.
 
 El guardado conserva validacion automatica y rechaza solo errores; las advertencias no bloquean la persistencia.
+
+<!-- COMMAND-BUS-UNDO-REDO-V1 -->
+# Actualizacion de producto — Command Bus y CU-05
+
+El editor manual despacha mutaciones tipadas al `UmlCommandBus`.
+
+CU-05 agrega Undo/Redo local con un historial máximo inicial de 100 operaciones y shortcuts de teclado.
+
+Los snapshots before/after son internos al historial; `UmlCommand` continúa siendo el contrato reutilizable para colaboración e IA.
+
+<!-- IMPLEMENTATION-STATUS-CU05-V2 -->
+# Estado de implementacion verificado hasta CU-05
+
+| Caso | Estado | Evidencia principal |
+|---|---|---|
+| CU-01 Crear proyecto | Cerrado | API, UUID, ownership y JPA |
+| CU-02 Abrir/guardar | Cerrado | ProjectDocument, revision y conflicto 409 |
+| CU-03 Diagramar manualmente | Cerrado | clases, atributos, JointJS, relaciones, multiplicidades e inspector |
+| CU-04 Validar UML | Cerrado | motor unico, endpoint explicito y diagnosticos navegables |
+| CU-05 Undo/Redo | Cerrado | Command Bus, executor e historial local |
+| CU-06+ | Pendiente | backlog PUDS |
+
+## Fuente de verdad
+
+```text
+ProjectDocument
+├── UmlModel
+└── DiagramLayout
+```
+
+JointJS sigue siendo una proyeccion.
+
+## Command Bus
+
+La deuda arquitectonica detectada despues de CU-04 queda resuelta en CU-05.
+
+El historial before/after pertenece a Undo/Redo; `UmlCommand` es el contrato reutilizable.
+
+## Perfil ClassForge
+
+`nullable` e `identifier` son metadatos de generacion asociados al atributo.
+
+No deben presentarse academicamente como propiedades UML 2.5.1 puras.
+
+## Subconjunto UML implementado
+
+- Class;
+- Attribute/Property;
+- Visibility;
+- tipos;
+- Association;
+- Aggregation;
+- Composition;
+- Generalization;
+- Multiplicity;
+- layout separado.
+
+Operaciones, enums y packages siguen pendientes.

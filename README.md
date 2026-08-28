@@ -2,118 +2,134 @@
 
 > Model it. Generate it. Talk to it.
 
-ClassForge es una herramienta CASE web y colaborativa para modelar diagramas de clases UML y utilizarlos como fuente de verdad para generar backends Spring Boot, frontends web/mobile y artefactos auxiliares operables también mediante lenguaje natural y voz.
+ClassForge es una herramienta CASE web y colaborativa para modelar diagramas de clases UML y utilizarlos como fuente de verdad para generar backends Spring Boot, frontends web/mobile y artefactos auxiliares operables tambien mediante lenguaje natural y voz.
 
-La especificación consolidada del producto está en [`docs/product/product.md`](docs/product/product.md).
+La especificacion consolidada del producto esta en `docs/product/product.md`.
 
-## Estructura
+## Estado actual
 
-```text
-classforge/
-├── frontend/        # Angular 22
-├── backend/         # Spring Boot 4 / Java 21
-├── docs/
-│   ├── product/
-│   ├── architecture/
-│   ├── puds/
-│   └── uml/
-├── examples/
-└── scripts/
-```
+Implementado hasta **CU-05 — Deshacer y rehacer cambios**.
 
-Este es un monorepo simple: Angular y Gradle siguen siendo proyectos independientes. No utiliza Nx, Turborepo ni una herramienta adicional de orquestación de monorepo.
+- autenticacion y ownership;
+- CU-01 crear proyecto;
+- CU-02 abrir/guardar con revision;
+- modelo UML canonico tipado;
+- CU-03 editor manual JointJS;
+- clases y atributos;
+- Association, Aggregation, Composition y Generalization;
+- multiplicidades;
+- inspector;
+- CU-04 validacion explicita;
+- ERROR/WARNING/INFO;
+- diagnosticos navegables;
+- CU-05 Command Bus;
+- Undo/Redo local;
+- shortcuts de teclado;
+- historial local acotado.
 
-## Requisitos
-
-### Frontend
-
-- Node.js **22.22.3 o superior dentro de una rama soportada por Angular 22**.
-- npm.
-
-Se incluye `.nvmrc` dentro de `frontend/`.
-
-### Backend
-
-- JDK 21 o superior para ejecutar las herramientas de desarrollo.
-- El proyecto compila con `java.version=21`.
-- Gradle 9.1+ si vas a ejecutar Gradle con tu JDK 25. IntelliJ IDEA puede gestionar la distribución de Gradle al importar el proyecto.
+El siguiente caso es **CU-06 — Colaboracion en tiempo real**.
 
 ## Ejecutar backend
 
-Desde IntelliJ, abre la carpeta `backend/` como proyecto Gradle y ejecuta:
-
-```text
-com.classforge.ClassForgeApplication
-```
-
-O desde terminal, si tienes Gradle 9.1+ instalado:
-
-```bash
+```powershell
 cd backend
-gradle bootRun
+.\gradlew.bat bootRun
 ```
 
-El backend escucha en `http://localhost:8080`.
-
-Prueba:
+Backend:
 
 ```text
-GET http://localhost:8080/api/health
+http://localhost:8082
 ```
 
-Respuesta esperada:
+Health:
 
-```json
-{
-  "status": "UP",
-  "application": "ClassForge"
-}
+```text
+GET http://localhost:8082/api/health
+```
+
+Consola H2:
+
+```text
+http://localhost:8082/h2-console
 ```
 
 ## Ejecutar frontend
 
-```bash
+```powershell
 cd frontend
 npm install
 npm start
 ```
 
-El frontend escucha en `http://localhost:4200`.
-
-Durante desarrollo Angular usa `proxy.conf.json`, por lo que `/api/*` se reenvía a `http://localhost:8080`.
-
-Al levantar ambos proyectos, la página principal debe mostrar:
+Frontend:
 
 ```text
-Backend: ClassForge: UP
+http://localhost:4200
 ```
 
-## Base de datos inicial
-
-El backend usa H2 en archivo para el desarrollo inicial:
+El proxy Angular reenvia `/api/*` a:
 
 ```text
-backend/data/classforge
+http://localhost:8082
 ```
 
-La consola está habilitada en:
+## Persistencia vigente
+
+La aplicacion usa Spring Data JPA/Hibernate.
+
+- H2 en archivo para desarrollo.
+- H2 en memoria para tests.
+- PostgreSQL como destino posterior.
+
+Un posible `*.classforge` se considera formato portable futuro, no persistencia primaria.
+
+## Arquitectura vigente
 
 ```text
-http://localhost:8080/h2-console
+ProjectDocument
+├── UmlModel
+└── DiagramLayout
 ```
 
-Más adelante se separarán perfiles para H2 (desarrollo/demo) y PostgreSQL.
+Desde CU-05:
 
-## Decisiones iniciales
+```text
+UI / Canvas
+    ↓
+UmlCommand
+    ↓
+UmlCommandBus
+    ↓
+UmlCommandExecutor
+    ↓
+ProjectDocument
+    ↓
+JointJS
+```
 
-- Aplicación principal: Angular 22 web.
-- Backend/orquestador: Spring Boot.
-- Target Java: 21.
-- Servidor autoritativo para colaboración.
-- WebSocket/STOMP se incorporará sobre el backend existente.
-- El núcleo UML se implementará antes del canvas visual.
-- Los proyectos generados no se versionarán automáticamente en este repositorio.
+Reglas:
 
-## Próximo hito
+- JointJS representa el modelo; no es el modelo.
+- UUID es identidad estable.
+- Command Bus gobierna las mutaciones manuales.
+- el backend sigue siendo autoridad final de validacion.
+- Guardar usa revision explicita.
+- Validar no persiste ni cambia revision.
+- Material Symbols Rounded se sirve localmente.
 
-Implementar el **modelo canónico UML** (`UMLModel`) antes de instalar JointJS o comenzar la generación de código.
+## PUDS
+
+Consultar:
+
+- `docs/puds/use-cases.md`;
+- `docs/puds/current-status.md`;
+- `docs/puds/iterations/`.
+
+Los diagramas UML academicos se elaboran separadamente en `docs/uml/`.
+
+## Proximo hito
+
+**CU-06 — Colaboracion en tiempo real.**
+
+CU-06 debera transportar operaciones/comandos y mantener al servidor como autoridad.
