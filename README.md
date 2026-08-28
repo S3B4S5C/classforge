@@ -2,32 +2,90 @@
 
 > Model it. Generate it. Talk to it.
 
-ClassForge es una herramienta CASE web y colaborativa para modelar diagramas de clases UML y utilizarlos como fuente de verdad para generar backends Spring Boot, frontends web/mobile y artefactos auxiliares operables tambien mediante lenguaje natural y voz.
+ClassForge es una herramienta CASE web, colaborativa y offline-first para modelar diagramas de clases UML y utilizarlos como fuente de verdad para futuras transformaciones y generación de aplicaciones.
 
-La especificacion consolidada del producto esta en `docs/product/product.md`.
+La visión completa del producto está en `docs/product/product.md`. El estado realmente implementado está en `docs/puds/current-status.md`.
 
 ## Estado actual
 
-Implementado hasta **CU-05 — Deshacer y rehacer cambios**.
+**Ciclo 1 de Elaboración cerrado — corte 28 de agosto de 2026.**
 
-- autenticacion y ownership;
+En ClassForge llamamos **Ciclo** a una **iteración PUDS**.
+
+El incremento ejecutable actual incluye:
+
+- autenticación local, JWT, BCrypt y ownership;
 - CU-01 crear proyecto;
-- CU-02 abrir/guardar con revision;
-- modelo UML canonico tipado;
-- CU-03 editor manual JointJS;
-- clases y atributos;
+- CU-02 abrir y guardar `ProjectDocument` con revisión;
+- CU-03 modelado UML manual mediante Angular + JointJS;
+- clases, atributos, layout, relaciones y multiplicidades;
 - Association, Aggregation, Composition y Generalization;
-- multiplicidades;
-- inspector;
-- CU-04 validacion explicita;
-- ERROR/WARNING/INFO;
-- diagnosticos navegables;
-- CU-05 Command Bus;
-- Undo/Redo local;
-- shortcuts de teclado;
-- historial local acotado.
+- CU-04 validación UML explícita;
+- CU-05 Command Bus + Undo/Redo;
+- CU-06 colaboración autoritativa Spring WebSocket/STOMP;
+- CU-07 presencia efímera;
+- CU-08 lenguaje natural y voz local para proponer cambios UML;
+- llama.cpp + Gemma 3 4B como planner local;
+- whisper.cpp como Speech-to-Text local;
+- preview, grounding, validación, BATCH atómico y protección por revisión;
+- health de runtimes locales y diagnóstico del pipeline.
 
-El siguiente caso es **CU-06 — Colaboracion en tiempo real**.
+También están implementados como infraestructura transversal:
+
+- CU-28 registrar cuenta;
+- CU-29 iniciar sesión;
+- CU-30 acceder solo a proyectos propios;
+- CU-24 STT local y CU-25 IA local en el contexto del Asistente UML.
+
+Aún no están implementados:
+
+- CU-09 imagen a UML;
+- CU-10/11 XMI Enterprise Architect;
+- CU-12 modelo relacional;
+- CU-13..18 generación backend/frontend/mobile;
+- CU-19..23 voz sobre la aplicación generada;
+- CU-26 auditoría histórica completa;
+- CU-27 demo reproducible formal;
+- CU-31 membresía e invitaciones.
+
+La colaboración actual sigue limitada por ownership: hasta incorporar membresías, la demostración multiusuario real se realiza como multisesión del propietario.
+
+## Arquitectura vigente
+
+```text
+UI manual / colaboración / Asistente
+                |
+                v
+          UmlCommand / BATCH
+                |
+                v
+          UmlCommandBus
+                |
+                v
+       UmlCommandExecutor
+                |
+                v
+         ProjectDocument
+        /               \
+   UmlModel          DiagramLayout
+        |
+        +--> validación
+        +--> JointJS como proyección
+        +--> persistencia autoritativa
+```
+
+Principios:
+
+1. `ProjectDocument` es la raíz documental persistida.
+2. `UmlModel` es la fuente de verdad semántica.
+3. `DiagramLayout` se mantiene separado de la semántica.
+4. JointJS representa el modelo; no es el modelo.
+5. UUID es identidad estable.
+6. Las mutaciones pasan por comandos tipados.
+7. El backend valida, controla revisión y persiste como autoridad final.
+8. Presencia es efímera y no incrementa revisión.
+9. Whisper transcribe; Gemma propone; Java valida y resuelve.
+10. La IA nunca modifica directamente `ProjectDocument`.
 
 ## Ejecutar backend
 
@@ -48,12 +106,6 @@ Health:
 GET http://localhost:8082/api/health
 ```
 
-Consola H2:
-
-```text
-http://localhost:8082/h2-console
-```
-
 ## Ejecutar frontend
 
 ```powershell
@@ -68,68 +120,37 @@ Frontend:
 http://localhost:4200
 ```
 
-El proxy Angular reenvia `/api/*` a:
+El proxy Angular reenvía `/api/*` a `http://localhost:8082`.
+
+## Runtimes locales del Asistente
 
 ```text
-http://localhost:8082
+llama-server   127.0.0.1:8092
+whisper-server 127.0.0.1:8093
 ```
 
-## Persistencia vigente
+Consultar `docs/runtime/assistant-local.md`.
 
-La aplicacion usa Spring Data JPA/Hibernate.
+## Persistencia
 
-- H2 en archivo para desarrollo.
-- H2 en memoria para tests.
-- PostgreSQL como destino posterior.
+- Spring Data JPA/Hibernate;
+- H2 en archivo durante desarrollo;
+- H2 en memoria para tests;
+- PostgreSQL permanece como destino posterior.
 
-Un posible `*.classforge` se considera formato portable futuro, no persistencia primaria.
+Un posible archivo `*.classforge` continúa siendo un formato portable futuro, no la persistencia primaria.
 
-## Arquitectura vigente
+## Documentación
 
-```text
-ProjectDocument
-├── UmlModel
-└── DiagramLayout
-```
+- `docs/README.md`: índice documental y fuente prevista para el Word final;
+- `docs/product/`: visión y alcance del producto objetivo;
+- `docs/puds/`: proceso, ciclos, casos de uso y estado;
+- `docs/architecture/`: decisiones técnicas y correspondencia con código;
+- `docs/runtime/`: instalación y ejecución de runtimes locales;
+- `docs/uml/`: catálogo de diagramas UML académicos y su estado.
 
-Desde CU-05:
+## Próximo hito
 
-```text
-UI / Canvas
-    ↓
-UmlCommand
-    ↓
-UmlCommandBus
-    ↓
-UmlCommandExecutor
-    ↓
-ProjectDocument
-    ↓
-JointJS
-```
+El **Ciclo 2 aún no está formalmente abierto** en este corte.
 
-Reglas:
-
-- JointJS representa el modelo; no es el modelo.
-- UUID es identidad estable.
-- Command Bus gobierna las mutaciones manuales.
-- el backend sigue siendo autoridad final de validacion.
-- Guardar usa revision explicita.
-- Validar no persiste ni cambia revision.
-- Material Symbols Rounded se sirve localmente.
-
-## PUDS
-
-Consultar:
-
-- `docs/puds/use-cases.md`;
-- `docs/puds/current-status.md`;
-- `docs/puds/iterations/`.
-
-Los diagramas UML academicos se elaboran separadamente en `docs/uml/`.
-
-## Proximo hito
-
-**CU-06 — Colaboracion en tiempo real.**
-
-CU-06 debera transportar operaciones/comandos y mantener al servidor como autoridad.
+Antes de implementar el siguiente CU se debe seleccionar el objetivo del nuevo ciclo desde `docs/puds/use-cases.md` y registrar su objetivo, riesgos y criterios de salida.

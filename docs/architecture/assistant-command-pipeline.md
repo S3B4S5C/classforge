@@ -518,7 +518,7 @@ classforge.assistant.whisper-url=http://127.0.0.1:8093
 classforge.assistant.whisper-language=es
 ```
 
-CU08-003 incorporara health/runtime hardening y cierre integral de CU08.
+Nota histórica de CU08-002: en ese corte CU08-003 aún estaba pendiente. El cierre se encuentra documentado inmediatamente después en la sección CU08-003.
 
 <!-- CU08-002-FIX-001-ASSISTANT-DIAGNOSTICS -->
 ## CU08-002 fix-001 — diagnostico estructurado del planner

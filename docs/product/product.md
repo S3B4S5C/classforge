@@ -2,6 +2,31 @@
 
 > Herramienta CASE colaborativa para modelado UML de clases y generación automática de aplicaciones backend/frontend operables mediante interfaz convencional, lenguaje natural y voz.
 
+<!-- PRODUCT-STATUS-CYCLE1-2026-08-28 -->
+## Estado de implementación al cierre del Ciclo 1
+
+Este documento describe el **producto objetivo**. El uso de futuro o la descripción de una capacidad no implica que dicha capacidad ya esté implementada.
+
+Fuente normativa del estado: `../puds/current-status.md`.
+
+| Área | Estado |
+|---|---|
+| Proyecto, auth, ownership y persistencia | IMPLEMENTADO |
+| Modelo UML canónico y diagramación manual | IMPLEMENTADO |
+| Validación, Command Bus y Undo/Redo | IMPLEMENTADO |
+| Colaboración STOMP y presencia | IMPLEMENTADO |
+| Assistant texto/voz para modificar UML | IMPLEMENTADO |
+| llama.cpp y whisper.cpp locales | IMPLEMENTADO |
+| Imagen a UML | PLANIFICADO |
+| XMI / Enterprise Architect | PLANIFICADO |
+| UML a modelo relacional | PLANIFICADO |
+| Generadores Spring/OpenAPI/Postman | PLANIFICADO |
+| Frontend web/mobile generado | PLANIFICADO |
+| Voz sobre la aplicación generada | PLANIFICADO |
+| Membresías e invitaciones | PLANIFICADO |
+
+La separación anterior permite utilizar `product.md` como visión estable sin confundir alcance objetivo con estado actual.
+
 ---
 
 ## 1. Visión del producto
@@ -1337,22 +1362,31 @@ La generación desde fotografía puede desarrollarse después de que este pipeli
 
 La regla central se mantiene: IA, vision y generacion no deben preceder a un modelo canonico solido.
 
-### Orden realmente ejecutado
+### Orden realmente ejecutado — Ciclo 1
+
+La ejecución real difirió del roadmap inicial para reducir riesgos arquitectónicos.
 
 ```text
-1. CU-01 Proyecto persistible
-2. Autenticacion y ownership
-3. CU-02 ProjectDocument + revision
-4. CU-03-001 dominio UML tipado
-5. CU-03-002 JointJS
-6. CU-03-003 relaciones e inspector
-7. CU-04 validacion explicita
+1. CU-01 proyecto persistible
+2. autenticación y ownership
+3. CU-02 ProjectDocument + revisión
+4. CU03-001 dominio UML tipado
+5. CU03-002 JointJS
+6. CU03-003 relaciones e inspector
+7. CU-04 validación explícita
 8. CU-05 Command Bus + Undo/Redo
+9. CU06-001 autoridad STOMP backend
+10. CU06-002 sincronización Angular
+11. CU06-003 Undo/Redo colaborativo
+12. CU07-001 presencia
+13. CU08-001 texto + semantic plan + BATCH
+14. CU08-002 voz + whisper.cpp
+15. CU08-003 health + hardening colaborativo
 ```
 
-La persistencia y el canvas se adelantaron respecto al Command Bus para obtener un vertical slice verificable.
+CU-24 STT local y CU-25 IA local se adelantaron como infraestructura de CU-08.
 
-CU-05 ya resolvio esa desviacion: las mutaciones manuales pasan por comandos tipados.
+La decisión no cambia la visión objetivo: primero se estabilizó la fuente de verdad y las rutas de mutación; generación e integraciones permanecen para ciclos posteriores.
 
 ### Arquitectura actual
 
@@ -1368,7 +1402,7 @@ UmlCommandExecutor
 ProjectDocument
 ```
 
-Esta capa debe reutilizarse en CU-06 colaboracion y posteriormente en IA/voz.
+Esta capa ya es reutilizada por CU-06 colaboración y CU-08 IA/voz. Los siguientes adaptadores y generadores deben continuar utilizando la misma ruta de comandos.
 
 No se debe introducir otra ruta que modifique directamente los arrays del modelo canonico.
 
