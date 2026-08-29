@@ -96,6 +96,14 @@ tasks.register('assistantE2EReliability', Test) {
     systemProperty 'classforge.assistant.llama-url', option('llamaUrl', 'http://127.0.0.1:8092')
     systemProperty 'classforge.assistant.llama-model', option('model', 'local-model')
 
+    // CU08-FIX-013-NATIVE-TOOLS-BENCHMARK
+    systemProperty 'classforge.assistant.planner-mode', option('plannerMode', 'legacy')
+
+    def reportFile = option('reportFile', '')
+    if (reportFile) {
+        systemProperty 'assistant.benchmark.reportFile', reportFile
+    }
+
     testLogging {
         events 'passed', 'failed', 'skipped'
         showStandardStreams = true

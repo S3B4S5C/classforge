@@ -650,3 +650,17 @@ El resultado interno conserva también el UUID de la clase resuelta; el plan act
 Las referencias ambiguas no se autocorrigen. Los nombres nuevos de `CREATE_CLASS` tampoco se autocorrigen contra el catálogo existente.
 
 Para medir el efecto real del LLM y del compilador se incorpora `scripts/assistant-reliability.ps1`, que ejecuta N inferencias sin Apply y reporta por separado exactitud raw y exactitud final.
+
+<!-- CU08-FIX-013-NATIVE-TOOLS -->
+## C2-cu08-fix-013 — camino candidato con native tool calling
+
+El planner JSON legado permanece operativo, pero se incorpora un segundo camino experimental con Qwen/tool calling nativo. Véase `assistant-native-tool-calling.md`.
+
+```text
+legacy: texto -> JSON Schema -> AssistantSemanticPlan
+
+tools:  texto -> DynamicUmlToolCatalog -> native tool_calls
+             -> UUID/reference validation -> AssistantSemanticPlan interno
+```
+
+El endpoint, preview, validator, Apply y Command Bus no cambian. `classforge.assistant.planner-mode` selecciona `legacy`, `tools` o `compare`; durante fix-013 el default continúa siendo `legacy` hasta disponer de evidencia A/B suficiente.

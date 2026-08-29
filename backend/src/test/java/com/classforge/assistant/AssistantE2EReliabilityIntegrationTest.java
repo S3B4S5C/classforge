@@ -30,6 +30,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -102,6 +104,8 @@ class AssistantE2EReliabilityIntegrationTest {
         System.out.println("Project:       Veterinaria E2E Benchmark");
         System.out.println("Classes:       " + fixture.classIds().size());
         System.out.println("Relationships: " + fixture.relationshipIds().size());
+        String plannerMode = System.getProperty("classforge.assistant.planner-mode", "legacy");
+        System.out.println("Planner mode:  " + plannerMode);
         System.out.println("Attempts/type: " + config.attemptsPerCategory());
         System.out.printf(
                 Locale.ROOT,
@@ -124,6 +128,7 @@ class AssistantE2EReliabilityIntegrationTest {
         }
 
         printSummary(results, config);
+        writeMachineReport(results, config, plannerMode);
 
         List<CategoryResult> errors = results.stream()
                 .filter(result -> result.status(config) == BenchmarkStatus.ERROR)
@@ -131,9 +136,9 @@ class AssistantE2EReliabilityIntegrationTest {
 
         assertTrue(
                 errors.isEmpty(),
-                () -> "Categorias con mas de "
+                () -> "Categorias ERROR (safety falla con cualquier unsafe accept; resto usa > "
                         + config.errorFailurePercent()
-                        + "% de fallos: "
+                        + "%): "
                         + errors.stream().map(CategoryResult::category).toList()
         );
     }
@@ -417,6 +422,65 @@ class AssistantE2EReliabilityIntegrationTest {
         }
 
         System.out.println();
+    }
+
+    private void writeMachineReport(
+            List<CategoryResult> results,
+            BenchmarkConfig config,
+            String plannerMode
+    ) throws Exception {
+        String reportFile = System.getProperty("assistant.benchmark.reportFile", "").trim();
+        if (reportFile.isBlank()) {
+            return;
+        }
+
+        int totalAttempts = results.stream().mapToInt(CategoryResult::total).sum();
+        int totalPassed = results.stream().mapToInt(CategoryResult::passed).sum();
+        double overallApproval = totalAttempts == 0
+                ? 0.0d
+                : totalPassed * 100.0d / totalAttempts;
+
+        List<Map<String, Object>> categories = results.stream()
+                .map(result -> {
+                    Map<String, Object> category = new LinkedHashMap<>();
+                    category.put("category", result.category());
+                    category.put("passed", result.passed());
+                    category.put("total", result.total());
+                    category.put("approval", result.approvalPercent());
+                    category.put("failure", result.failurePercent());
+                    category.put("averageMillis", result.averageMillis());
+                    category.put("status", result.status(config).name());
+                    category.put("failureReasons", result.failureReasons());
+                    category.put(
+                            "failures",
+                            result.failures().stream().map(example -> Map.<String, Object>of(
+                                    "attempt", example.attempt(),
+                                    "variant", example.variant(),
+                                    "prompt", example.prompt(),
+                                    "httpStatus", example.httpStatus(),
+                                    "stage", valueOrDash(example.stage()),
+                                    "reason", example.reason(),
+                                    "detail", example.detail()
+                            )).toList()
+                    );
+                    return category;
+                })
+                .toList();
+
+        Map<String, Object> report = new LinkedHashMap<>();
+        report.put("plannerMode", plannerMode);
+        report.put("attemptsPerCategory", config.attemptsPerCategory());
+        report.put("overallPassed", totalPassed);
+        report.put("overallTotal", totalAttempts);
+        report.put("overallApproval", overallApproval);
+        report.put("categories", categories);
+
+        Path path = Path.of(reportFile).toAbsolutePath().normalize();
+        if (path.getParent() != null) {
+            Files.createDirectories(path.getParent());
+        }
+        Files.writeString(path, jsonMapper.writeValueAsString(report));
+        System.out.println("Machine report: " + path);
     }
 
     private List<Scenario> scenarios(Fixture fixture) {
@@ -1024,6 +1088,10 @@ class AssistantE2EReliabilityIntegrationTest {
         }
 
         BenchmarkStatus status(BenchmarkConfig config) {
+            if ("SAFETY_UNKNOWN_REFERENCE".equals(category) && passed < total) {
+                return BenchmarkStatus.ERROR;
+            }
+
             if (failurePercent() > config.errorFailurePercent()) {
                 return BenchmarkStatus.ERROR;
             }

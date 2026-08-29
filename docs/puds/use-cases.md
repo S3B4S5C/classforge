@@ -392,3 +392,8 @@ Ciclo 2 está formalmente ABIERTO con CU-31 y CU-09.
 C2-cu31-001, C2-cu31-002 y C2-cu31-003 están completados. CU-31 está CERRADO y CU-09 es el siguiente caso del Ciclo 2.
 
 El historial del plan original se conserva en `history/`.
+
+<!-- CU08-FIX-013-NATIVE-TOOLS -->
+### Hardening post-CU08 — tool calling nativo
+
+CU-08 continúa CERRADO. Antes de CU-09 se evalúa sustituir el contrato LLM -> `AssistantSemanticPlan` por un catálogo de tools UML nativas. El camino nuevo conserva preview/Apply/Command Bus y obliga a resolver referencias existentes contra UUID reales. El planner anterior se mantiene durante fix-013 para benchmark A/B y solo podrá retirarse en fix-014 si tools demuestra mayor fiabilidad y safety 100 %.

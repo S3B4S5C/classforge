@@ -1750,3 +1750,8 @@ El preview muestra si el tipo de cada atributo fue explícito, inferido o predet
 El runtime recomendado para la estación de trabajo de referencia es Gemma 3 4B Instruct Q4_K_M mediante llama.cpp.
 
 MCP no forma parte de CU08-001.
+
+<!-- CU08-FIX-013-NATIVE-TOOLS -->
+### Runtime local del Assistant — evaluación tool-aware
+
+El Assistant continúa siendo local mediante llama.cpp. Como hardening post-CU08 se evalúa Qwen2.5-7B-Instruct GGUF con function calling nativo para que el modelo seleccione operaciones UML tipadas en vez de serializar directamente el DTO interno. Gemma/JSON Schema se conserva temporalmente como baseline legacy durante la comparación A/B. Esta decisión no cambia la regla de producto: la IA propone y Java resuelve, valida, previsualiza y aplica mediante el Command Bus.

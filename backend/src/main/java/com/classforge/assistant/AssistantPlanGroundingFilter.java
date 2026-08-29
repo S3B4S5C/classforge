@@ -78,6 +78,7 @@ public class AssistantPlanGroundingFilter {
                     sanitizeAction(
                             userText,
                             action,
+                            document,
                             knownClassNames,
                             redundantExistingCreates
                     );
@@ -131,6 +132,7 @@ public class AssistantPlanGroundingFilter {
     private AssistantPlanAction sanitizeAction(
             String userText,
             AssistantPlanAction action,
+            ProjectDocument document,
             Set<String> knownClassNames,
             List<String> redundantExistingCreates
     ) {
@@ -181,9 +183,11 @@ public class AssistantPlanGroundingFilter {
                             userText,
                             action.className()
                     )
-                            && mentionsExistingEntity(
+                            && mentionsExistingAttribute(
                             userText,
-                            action.attributeName()
+                            action.className(),
+                            action.attributeName(),
+                            document
                     )
                             && (
                             action.newAttributeName() == null
@@ -202,9 +206,11 @@ public class AssistantPlanGroundingFilter {
                             userText,
                             action.className()
                     )
-                            && mentionsExistingEntity(
+                            && mentionsExistingAttribute(
                             userText,
-                            action.attributeName()
+                            action.className(),
+                            action.attributeName(),
+                            document
                     )
                             ? action
                             : null;
@@ -339,6 +345,21 @@ public class AssistantPlanGroundingFilter {
                 action.sourceUpper(),
                 action.targetLower(),
                 action.targetUpper()
+        );
+    }
+
+    private boolean mentionsExistingAttribute(
+            String userText,
+            String className,
+            String attributeName,
+            ProjectDocument document
+    ) {
+        return mentionsEntity(userText, attributeName)
+                || entityResolver.fuzzyMentionsExistingAttribute(
+                userText,
+                className,
+                attributeName,
+                document
         );
     }
 

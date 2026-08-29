@@ -115,3 +115,18 @@ CU-09 — Imagen -> UML
 ```
 
 CU-31 está cerrado. El Ciclo 2 permanece ABIERTO hasta cerrar CU-09.
+
+<!-- CU08-FIX-013-NATIVE-TOOLS -->
+## Hardening CU-08 previo a CU-09 — native tool calling
+
+Se abre `C2-cu08-fix-013` como experimento arquitectónico sin reabrir funcionalmente CU-08. El planner legacy permanece disponible y por defecto; se añade un camino `tools` basado en llama.cpp function calling, catálogo UML dinámico, referencias existentes fail-closed y benchmark A/B. CU-09 continúa siendo el siguiente caso funcional del Ciclo 2.
+
+<!-- CU08-FIX-013-V1.2-SEMANTIC-TOOLS -->
+### Evidencia y hardening v1.2
+
+El primer A/B nativo con Qwen2.5-3B-Instruct Q4_K_M obtuvo `legacy=88 %` y `tools=70 %` sobre 50 intentos. El transporte native tool calling y la latencia quedaron validados; los fallos se concentraron en contratos genéricos de update, roles de relaciones, literalidad de nombres nuevos y una clasificación unsafe de atributo desconocido. v1.2 endurece esos contratos sin cambiar el default `legacy`. El cutover a tools sigue bloqueado hasta repetir el benchmark y cumplir los criterios de fix-014.
+
+<!-- CU08-FIX-013-V1.3-GROUNDED-REBINDING -->
+### Native tools v1.3 — grounded rebinding
+
+El A/B de v1.2 alcanzó `tools=82 %` frente a `legacy=92 %`, con safety ya en `100 %`. v1.3 corrige los fallos restantes observados mediante rebinding determinista de clases/relaciones/extremos desde el texto del usuario y amplía IntentHint para imperativos con pronombre enclítico, evitando overflows de contexto por exposición accidental del catálogo completo. Legacy continúa siendo el planner por defecto y fix-014 permanece bloqueado hasta nueva evidencia A/B.

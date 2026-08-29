@@ -84,3 +84,6 @@ ProjectDocument
 ## UML académico
 
 Los diagramas para presentación se controlan desde `../uml/diagram-catalog.md`.
+
+<!-- CU08-FIX-013-NATIVE-TOOLS -->
+- `assistant-native-tool-calling.md`: catálogo dinámico de tools UML, function calling nativo, resolución canónica/fail-closed y estrategia de migración legacy -> tools.

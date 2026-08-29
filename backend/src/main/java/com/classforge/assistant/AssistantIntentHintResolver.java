@@ -3,6 +3,7 @@ package com.classforge.assistant;
 import com.classforge.project.domain.document.ProjectDocument;
 import com.classforge.project.domain.document.UmlAttribute;
 import com.classforge.project.domain.document.UmlClass;
+import org.springframework.stereotype.Component;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import java.util.regex.Pattern;
  * full action schema. Its purpose is to stop small local models from confusing
  * read-only model context with the requested operation.
  */
+@Component
 public class AssistantIntentHintResolver {
 
     private final AssistantEntityReferenceResolver entityResolver =
@@ -73,21 +75,35 @@ public class AssistantIntentHintResolver {
                         || containsApprox(tokens, "quita")
                         || containsApprox(tokens, "quitar")
                         || containsApprox(tokens, "saca")
-                        || containsApprox(tokens, "sacalo");
+                        || containsApprox(tokens, "sacalo")
+                        || containsStem(tokens, "elimin")
+                        || containsStem(tokens, "borr")
+                        || containsStem(tokens, "quit")
+                        || containsStem(tokens, "sac");
 
         boolean renameCue =
                 containsApprox(tokens, "renombra")
                         || containsApprox(tokens, "renombrar")
+                        || containsStem(tokens, "renombr")
+                        || containsStem(tokens, "renonbr")
                         || containsPhrase(normalized, "cambia el nombre")
                         || containsPhrase(normalized, "cambiale el nombre")
                         || containsPhrase(normalized, "ahora se llama")
                         || containsPhrase(normalized, "se llama");
+
+        boolean classRenamePhrase =
+                containsPhrase(normalized, "cambia el nombre")
+                        || containsPhrase(normalized, "cambiale el nombre")
+                        || containsPhrase(normalized, "cambiar el nombre")
+                        || containsPhrase(normalized, "cambiarle el nombre");
 
         boolean updateCue =
                 containsApprox(tokens, "actualiza")
                         || containsApprox(tokens, "actualizar")
                         || containsApprox(tokens, "cambia")
                         || containsApprox(tokens, "cambiar")
+                        || containsStem(tokens, "actualiz")
+                        || containsStem(tokens, "cambi")
                         || renameCue;
 
         boolean createCue =
@@ -104,7 +120,15 @@ public class AssistantIntentHintResolver {
                         || containsApprox(tokens, "compuesta")
                         || containsApprox(tokens, "agrupa")
                         || containsApprox(tokens, "nueva")
-                        || containsApprox(tokens, "nuevo");
+                        || containsApprox(tokens, "nuevo")
+                        || containsStem(tokens, "crea")
+                        || containsStem(tokens, "agreg")
+                        || containsStem(tokens, "anad")
+                        || containsStem(tokens, "pon")
+                        || containsStem(tokens, "conect")
+                        || containsStem(tokens, "relacion")
+                        || containsStem(tokens, "hered")
+                        || containsStem(tokens, "agrup");
 
         boolean multiplicityCue =
                 containsApprox(tokens, "multiplicidad")
@@ -126,6 +150,11 @@ public class AssistantIntentHintResolver {
                         resolvedClasses,
                         document
                 );
+
+        boolean scopedMemberSyntax =
+                document != null
+                        && !classContext
+                        && hasScopedMemberSyntax(tokens, resolvedClasses);
 
         Set<AssistantActionType> candidates = new LinkedHashSet<>();
         List<String> evidence = new ArrayList<>();
@@ -158,7 +187,10 @@ public class AssistantIntentHintResolver {
             }
 
             if (renameCue) {
-                if (resolvedAttributes.size() == 1) {
+                if (classRenamePhrase && resolvedClasses.size() == 1) {
+                    candidates.add(AssistantActionType.RENAME_CLASS);
+                    evidence.add("rename+class-name-phrase");
+                } else if (resolvedAttributes.size() == 1) {
                     candidates.add(AssistantActionType.UPDATE_ATTRIBUTE);
                     evidence.add("rename+scoped-attribute");
                 } else {
@@ -166,9 +198,9 @@ public class AssistantIntentHintResolver {
                     evidence.add("rename-existing-symbol");
                 }
             } else if (deleteCue) {
-                if (resolvedAttributes.size() == 1) {
+                if (resolvedAttributes.size() == 1 || scopedMemberSyntax) {
                     candidates.add(AssistantActionType.DELETE_ATTRIBUTE);
-                    evidence.add("delete+scoped-attribute");
+                    evidence.add(scopedMemberSyntax ? "delete+scoped-member-syntax" : "delete+scoped-attribute");
                 } else if (classContext || resolvedClasses.size() == 1) {
                     candidates.add(AssistantActionType.DELETE_CLASS);
                     evidence.add("delete+existing-class");
@@ -193,6 +225,9 @@ public class AssistantIntentHintResolver {
                             containsApprox(tokens, "ponle")
                                     || containsApprox(tokens, "agrega")
                                     || containsApprox(tokens, "anade")
+                                    || containsStem(tokens, "pon")
+                                    || containsStem(tokens, "agreg")
+                                    || containsStem(tokens, "anad")
                     )
             ) {
                 candidates.add(AssistantActionType.ADD_ATTRIBUTES);
@@ -256,6 +291,26 @@ public class AssistantIntentHintResolver {
         return matches.stream().distinct().toList();
     }
 
+    private boolean hasScopedMemberSyntax(
+            List<String> tokens,
+            List<AssistantEntityReferenceResolver.ResolvedClassReference> resolvedClasses
+    ) {
+        if (resolvedClasses.size() != 1) {
+            return false;
+        }
+        AssistantEntityReferenceResolver.ResolvedClassReference reference = resolvedClasses.getFirst();
+        String observed = normalize(reference.observedText());
+        if (observed.startsWith("de ") || observed.startsWith("del ")) {
+            return true;
+        }
+        int startIndex = reference.tokenIndex();
+        if (startIndex <= 0 || startIndex > tokens.size()) {
+            return false;
+        }
+        String previous = tokens.get(startIndex - 1);
+        return previous.equals("de") || previous.equals("del");
+    }
+
     private boolean tokenListMentionsScoped(
             List<String> tokens,
             String expected
@@ -285,6 +340,18 @@ public class AssistantIntentHintResolver {
 
     private boolean containsPhrase(String normalized, String phrase) {
         return (" " + normalized + " ").contains(" " + phrase + " ");
+    }
+
+    private boolean containsStem(List<String> tokens, String stem) {
+        if (stem == null || stem.length() < 3) {
+            return false;
+        }
+        for (String token : tokens) {
+            if (token.startsWith(stem)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean containsApprox(List<String> tokens, String expected) {

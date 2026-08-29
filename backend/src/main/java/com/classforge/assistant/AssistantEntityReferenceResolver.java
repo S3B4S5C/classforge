@@ -508,6 +508,59 @@ public class AssistantEntityReferenceResolver {
                 : MIN_DOMINANCE_MARGIN;
     }
 
+    public boolean fuzzyMentionsExistingAttribute(
+            String userText,
+            String className,
+            String attributeName,
+            ProjectDocument document
+    ) {
+        if (
+                userText == null
+                        || userText.isBlank()
+                        || attributeName == null
+                        || attributeName.isBlank()
+                        || resolveExistingClass(className, document).isEmpty()
+        ) {
+            return false;
+        }
+
+        String normalizedAttribute =
+                normalizeForMatch(
+                        splitCamelCase(attributeName)
+                );
+
+        List<String> textTokens =
+                tokenize(
+                        normalizeForMatch(userText)
+                );
+
+        List<String> attributeTokens =
+                tokenize(normalizedAttribute);
+
+        if (textTokens.isEmpty() || attributeTokens.isEmpty()) {
+            return false;
+        }
+
+        int preferredWindow = attributeTokens.size();
+        int minWindow = Math.max(1, preferredWindow - 1);
+        int maxWindow = Math.min(textTokens.size(), preferredWindow + 1);
+        double threshold = attributeThresholdFor(normalizedAttribute);
+
+        for (int windowSize = minWindow; windowSize <= maxWindow; windowSize++) {
+            for (int start = 0; start + windowSize <= textTokens.size(); start++) {
+                String observed = String.join(
+                        " ",
+                        textTokens.subList(start, start + windowSize)
+                );
+                if (similarity(observed, normalizedAttribute) >= threshold) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     public boolean fuzzyMentions(
             String userText,
             String entity
@@ -659,23 +712,49 @@ public class AssistantEntityReferenceResolver {
             return 0.0d;
         }
 
-        int distance =
-                damerauLevenshtein(
-                        compactLeft,
-                        compactRight
-                );
+        double direct = normalizedEditSimilarity(compactLeft, compactRight);
 
-        int maxLength =
+        String singularLeft = simpleSingular(compactLeft);
+        String singularRight = simpleSingular(compactRight);
+
+        return Math.max(
+                direct,
                 Math.max(
-                        compactLeft.length(),
-                        compactRight.length()
-                );
-
-        return 1.0d
-                - (
-                (double) distance
-                        / (double) maxLength
+                        normalizedEditSimilarity(singularLeft, compactRight),
+                        Math.max(
+                                normalizedEditSimilarity(compactLeft, singularRight),
+                                normalizedEditSimilarity(singularLeft, singularRight)
+                        )
+                )
         );
+    }
+
+    private double normalizedEditSimilarity(String left, String right) {
+        if (left == null || right == null || left.isBlank() || right.isBlank()) {
+            return 0.0d;
+        }
+        if (left.equals(right)) {
+            return 1.0d;
+        }
+        int distance = damerauLevenshtein(left, right);
+        int maxLength = Math.max(left.length(), right.length());
+        return 1.0d - ((double) distance / (double) maxLength);
+    }
+
+    private String simpleSingular(String value) {
+        if (value == null || value.length() <= 4) {
+            return value;
+        }
+        if (value.endsWith("iones") && value.length() > 6) {
+            return value.substring(0, value.length() - 2);
+        }
+        if (value.endsWith("es") && value.length() > 6) {
+            return value.substring(0, value.length() - 2);
+        }
+        if (value.endsWith("s")) {
+            return value.substring(0, value.length() - 1);
+        }
+        return value;
     }
 
     private int damerauLevenshtein(

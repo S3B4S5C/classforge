@@ -42,3 +42,12 @@ pwsh -NoProfile -File .\scripts\assistant-e2e-reliability.ps1 `
 La tabla final muestra `APPROVAL`, `FAILURE` y `STATUS` por categoría. Una categoría queda `ERROR` cuando su porcentaje de fallos es estrictamente mayor a 60 %; cualquier fallo menor o igual a ese umbral se marca `WARN`. Si existe al menos una categoría `ERROR`, la tarea Gradle termina con código distinto de cero.
 
 Este benchmark requiere llama.cpp levantado. No aplica el preview al proyecto, por lo que todos los intentos usan el mismo estado UML.
+
+<!-- CU08-FIX-013-NATIVE-TOOLS -->
+## Benchmark A/B del Assistant
+
+Con Qwen2.5-Instruct iniciado en `llama-server` con `--jinja`, `assistant-tool-ab.ps1` ejecuta el mismo benchmark HTTP E2E dos veces: primero con `planner-mode=legacy` y después con `planner-mode=tools`. Los reportes JSON quedan bajo `backend/build/reports/assistant-tool-ab/` y la consola muestra aprobación por categoría, delta y regla safety fail-closed.
+
+```powershell
+pwsh -NoProfile -File .\scripts\assistant-tool-ab.ps1 -Attempts 5 -VerboseAttempts
+```

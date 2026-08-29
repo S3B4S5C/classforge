@@ -99,12 +99,15 @@ public class AssistantPlanService {
         } catch (
                 AssistantPlanningException exception
         ) {
+            AssistantPlanningStage stage = exception.stage() == null
+                    ? AssistantPlanningStage.LLM
+                    : exception.stage();
             throw diagnostic(
                     exception,
-                    AssistantPlanningStage.LLM,
+                    stage,
                     source,
                     userText,
-                    null
+                    exception.attemptedPlan()
             );
         }
 
