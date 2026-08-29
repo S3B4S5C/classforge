@@ -14,7 +14,15 @@ public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID> {
 
     List<ProjectEntity> findAllByOwnerIdOrderByUpdatedAtDesc(UUID ownerId);
 
-    Optional<ProjectEntity> findByIdAndOwnerId(UUID projectId, UUID ownerId);
+    Optional<ProjectEntity> findByIdAndOwnerId(
+            UUID projectId,
+            UUID ownerId
+    );
+
+    boolean existsByIdAndOwnerId(
+            UUID projectId,
+            UUID ownerId
+    );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
@@ -26,5 +34,15 @@ public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID> {
     Optional<ProjectEntity> findForUpdate(
             @Param("projectId") UUID projectId,
             @Param("ownerId") UUID ownerId
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select project
+            from ProjectEntity project
+            where project.id = :projectId
+            """)
+    Optional<ProjectEntity> findForUpdateById(
+            @Param("projectId") UUID projectId
     );
 }

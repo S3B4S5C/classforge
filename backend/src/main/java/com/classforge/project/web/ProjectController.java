@@ -1,6 +1,7 @@
 package com.classforge.project.web;
 
 import com.classforge.auth.security.CurrentUser;
+import com.classforge.project.access.ProjectAccessRole;
 import com.classforge.project.application.ProjectNotFoundException;
 import com.classforge.project.application.ProjectRevisionConflictException;
 import com.classforge.project.application.ProjectService;
@@ -43,7 +44,8 @@ public class ProjectController {
             @Valid @RequestBody CreateProjectRequest request
     ) {
         ProjectResponse project = ProjectResponse.from(
-                projectService.create(currentUser.id(), request.name())
+                projectService.create(currentUser.id(), request.name()),
+                ProjectAccessRole.OWNER
         );
 
         return ResponseEntity
@@ -53,7 +55,8 @@ public class ProjectController {
 
     @GetMapping
     public List<ProjectResponse> list() {
-        return projectService.list(currentUser.id())
+        return projectService
+                .listAccessible(currentUser.id())
                 .stream()
                 .map(ProjectResponse::from)
                 .toList();
@@ -62,7 +65,10 @@ public class ProjectController {
     @GetMapping("/{projectId}")
     public ProjectResponse get(@PathVariable UUID projectId) {
         return ProjectResponse.from(
-                projectService.get(currentUser.id(), projectId)
+                projectService.getAccessible(
+                        currentUser.id(),
+                        projectId
+                )
         );
     }
 
@@ -76,7 +82,8 @@ public class ProjectController {
                         currentUser.id(),
                         projectId,
                         request.name()
-                )
+                ),
+                ProjectAccessRole.OWNER
         );
     }
 
@@ -99,13 +106,20 @@ public class ProjectController {
             @PathVariable UUID projectId,
             @Valid @RequestBody SaveProjectDocumentRequest request
     ) {
+        ProjectAccessRole accessRole =
+                projectService.accessRole(
+                        currentUser.id(),
+                        projectId
+                );
+
         return ProjectResponse.from(
                 projectService.saveDocument(
                         currentUser.id(),
                         projectId,
                         request.baseRevision(),
                         request.document()
-                )
+                ),
+                accessRole
         );
     }
 

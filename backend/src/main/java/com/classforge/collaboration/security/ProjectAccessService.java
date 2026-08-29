@@ -1,36 +1,36 @@
 package com.classforge.collaboration.security;
 
-import com.classforge.project.persistence.ProjectRepository;
+import com.classforge.project.access.ProjectAccessRole;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+/**
+ * Compatibility adapter for the collaboration layer.
+ * The source of truth now lives under com.classforge.project.access.
+ */
 @Service
 public class ProjectAccessService {
 
-    private final ProjectRepository projectRepository;
+    private final com.classforge.project.access.ProjectAccessService
+            projectAccessService;
 
     public ProjectAccessService(
-            ProjectRepository projectRepository
+            com.classforge.project.access.ProjectAccessService
+                    projectAccessService
     ) {
-        this.projectRepository = projectRepository;
+        this.projectAccessService = projectAccessService;
     }
 
-    @Transactional(readOnly = true)
     public void requireAccess(
             UUID userId,
             UUID projectId
     ) {
-        if (
-                projectRepository
-                        .findByIdAndOwnerId(
-                                projectId,
-                                userId
-                        )
-                        .isEmpty()
-        ) {
+        ProjectAccessRole role =
+                projectAccessService.role(userId, projectId);
+
+        if (!role.canEdit()) {
             throw new AccessDeniedException(
                     "The authenticated user cannot access this project"
             );
