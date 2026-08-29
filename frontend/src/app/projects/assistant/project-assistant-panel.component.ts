@@ -78,6 +78,9 @@ export class ProjectAssistantPanelComponent
   private healthProjectId:
     string | null = null;
 
+  private healthRefreshTimer:
+    number | null = null;
+
   readonly store =
     inject(ProjectWorkspaceStore);
 
@@ -150,6 +153,20 @@ export class ProjectAssistantPanelComponent
 
   readonly messages =
     signal<ChatMessage[]>([]);
+
+  constructor() {
+    this.healthRefreshTimer = window.setInterval(
+      () => {
+        if (
+          !this.planning()
+          && this.voiceState() === 'idle'
+        ) {
+          this.refreshRuntimeHealth();
+        }
+      },
+      30_000,
+    );
+  }
 
   send(): void {
     const project =
@@ -628,6 +645,11 @@ export class ProjectAssistantPanelComponent
 
   ngOnDestroy(): void {
     this.clearVoiceTimer();
+
+    if (this.healthRefreshTimer !== null) {
+      window.clearInterval(this.healthRefreshTimer);
+      this.healthRefreshTimer = null;
+    }
 
     void this.recorder.cancel();
   }

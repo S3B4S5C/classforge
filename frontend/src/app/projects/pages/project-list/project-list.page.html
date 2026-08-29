@@ -4,7 +4,7 @@
       <p class="eyebrow">PROYECTOS</p>
       <h1>Modela una idea y conviertela en una aplicacion.</h1>
       <p class="lead">
-        Estos son los proyectos asociados a tu cuenta. Su propiedad se conserva en el backend.
+        Aqui aparecen tus proyectos propios y los que otros propietarios compartan contigo.
       </p>
     </div>
   </header>
@@ -55,7 +55,7 @@
       <div class="section-heading">
         <div>
           <p class="eyebrow">BIBLIOTECA</p>
-          <h2 id="project-library-title">Mis proyectos</h2>
+          <h2 id="project-library-title">Proyectos</h2>
         </div>
 
         @if (!loading()) {
@@ -65,6 +65,84 @@
           </span>
         }
       </div>
+
+      @if (
+        invitationsLoading()
+        || pendingInvitations().length > 0
+        || invitationErrorMessage()
+      ) {
+        <mat-card class="invitation-inbox" appearance="outlined">
+          <mat-card-header>
+            <div class="invitation-heading-icon" aria-hidden="true">
+              <span class="material-symbols-rounded">mail</span>
+            </div>
+            <div>
+              <mat-card-title>Invitaciones pendientes</mat-card-title>
+              <mat-card-subtitle>
+                Proyectos que otros propietarios quieren compartir contigo.
+              </mat-card-subtitle>
+            </div>
+          </mat-card-header>
+
+          <mat-card-content>
+            @if (invitationsLoading()) {
+              <div class="invitation-loading" aria-live="polite">
+                <mat-spinner diameter="28"></mat-spinner>
+                <span>Cargando invitaciones...</span>
+              </div>
+            } @else if (invitationErrorMessage()) {
+              <div class="invitation-error" role="alert">
+                <span>{{ invitationErrorMessage() }}</span>
+                <button
+                  mat-button
+                  class="cf-button-secondary"
+                  type="button"
+                  (click)="retryInvitations()"
+                >
+                  Reintentar
+                </button>
+              </div>
+            } @else {
+              <div class="invitation-list">
+                @for (invitation of pendingInvitations(); track invitation.id) {
+                  <article class="invitation-row">
+                    <div class="invitation-copy">
+                      <strong>{{ invitation.projectName }}</strong>
+                      <span>Invitado por {{ invitation.invitedByDisplayName }}</span>
+                      <small>{{ invitation.createdAt | date:'short' }}</small>
+                    </div>
+
+                    <div class="invitation-actions">
+                      <button
+                        mat-flat-button
+                        class="cf-button-primary"
+                        type="button"
+                        [disabled]="invitationActionId() !== null"
+                        (click)="acceptInvitation(invitation)"
+                      >
+                        <span class="material-symbols-rounded" aria-hidden="true">
+                          check
+                        </span>
+                        {{ invitationActionId() === invitation.id ? 'Procesando...' : 'Aceptar' }}
+                      </button>
+
+                      <button
+                        mat-button
+                        class="cf-button-secondary"
+                        type="button"
+                        [disabled]="invitationActionId() !== null"
+                        (click)="declineInvitation(invitation)"
+                      >
+                        Rechazar
+                      </button>
+                    </div>
+                  </article>
+                }
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+      }
 
       @if (errorMessage()) {
         <div class="feedback-panel error-panel" role="alert">
@@ -92,8 +170,20 @@
             <mat-card class="project-card" appearance="outlined">
               <mat-card-header>
                 <mat-card-title>{{ project.name }}</mat-card-title>
-                <mat-card-subtitle>
-                  Revision {{ project.revision }}
+                <mat-card-subtitle class="project-card-subtitle">
+                  <span>
+                    Revision {{ project.revision }}
+                  </span>
+                  <span
+                    class="project-access-badge"
+                    [class.is-shared]="project.accessRole === 'EDITOR'"
+                  >
+                    {{
+                      project.accessRole === 'OWNER'
+                        ? 'Propietario'
+                        : 'Compartido · Editor'
+                    }}
+                  </span>
                 </mat-card-subtitle>
               </mat-card-header>
 

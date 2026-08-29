@@ -73,9 +73,12 @@ export interface ProjectDocument {
   layout: DiagramLayout;
 }
 
+export type ProjectAccessRole = 'OWNER' | 'EDITOR';
+
 export interface Project {
   id: string;
   name: string;
+  accessRole: ProjectAccessRole;
   revision: number;
   document: ProjectDocument;
   createdAt: string;

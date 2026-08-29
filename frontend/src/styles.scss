@@ -785,3 +785,19 @@ a {
     max-height: min(70vh, 520px);
   }
 }
+
+/* C2-CU31-002 — Colaboradores abre dialog; conserva el lenguaje visual de CU-07. */
+.collaborators-trigger {
+  font: inherit;
+}
+
+.collaborators-trigger:hover {
+  border-color: #a5b4fc;
+  background: #f9fafb;
+}
+
+.collaborators-trigger:focus-visible {
+  outline: 3px solid var(--cf-button-focus);
+  outline-offset: 2px;
+}
+

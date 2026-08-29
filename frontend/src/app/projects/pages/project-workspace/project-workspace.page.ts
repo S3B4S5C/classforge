@@ -31,6 +31,9 @@ import {
   ConfirmDialogComponent,
 } from '../../dialogs/confirm-dialog/confirm-dialog.component';
 import {
+  CollaboratorsDialogComponent,
+} from '../../dialogs/collaborators-dialog/collaborators-dialog.component';
+import {
   RelationshipDialogComponent,
   RelationshipDialogResult,
 } from '../../dialogs/relationship-dialog/relationship-dialog.component';
@@ -242,6 +245,27 @@ export class ProjectWorkspacePage {
         this.diagramSelection.set(null);
       }
     });
+  }
+
+  openCollaborators(): void {
+    const project = this.store.project();
+
+    if (!project) {
+      return;
+    }
+
+    this.dialog.open(
+      CollaboratorsDialogComponent,
+      {
+        data: {
+          projectId: project.id,
+          projectName: project.name,
+          accessRole: project.accessRole,
+        },
+        width: '720px',
+        maxWidth: '94vw',
+      },
+    );
   }
 
   retry(): void {

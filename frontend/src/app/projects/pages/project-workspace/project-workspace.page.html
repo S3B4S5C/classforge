@@ -134,7 +134,9 @@
           <div class="title-row">
             <h1>{{ currentProject.name }}</h1>
 
-            <button
+            <!-- C2-CU31-001-OWNER-RENAME -->
+            @if (currentProject.accessRole === 'OWNER') {
+<button
               mat-button
               class="cf-button-secondary rename-button"
               type="button"
@@ -148,15 +150,18 @@
               </span>
               Renombrar
             </button>
+            }
           </div>
         }
 
       </div>
 
-      <details class="presence-panel">
-        <summary
-          class="presence-summary"
-          title="Colaboradores conectados"
+      <div class="presence-panel">
+        <button
+          class="presence-summary collaborators-trigger"
+          type="button"
+          title="Ver colaboradores y presencia"
+          (click)="openCollaborators()"
         >
           <span
             class="material-symbols-rounded"
@@ -172,74 +177,8 @@
           <strong>
             {{ presence.participantCount() }}
           </strong>
-        </summary>
-
-        <div class="presence-popover">
-          <header>
-            <strong>
-              Colaboradores conectados
-            </strong>
-            <small>
-              Presencia efimera · CU-07
-            </small>
-          </header>
-
-          @if (
-            presence.participants().length
-              === 0
-          ) {
-            <p class="presence-empty">
-              Esperando presencia STOMP...
-            </p>
-          } @else {
-            <ul class="presence-list">
-              @for (
-                participant
-                  of presence.participants();
-                track participant.clientId
-              ) {
-                <li>
-                  <span
-                    class="material-symbols-rounded"
-                    aria-hidden="true"
-                  >
-                    person
-                  </span>
-
-                  <div>
-                    <strong>
-                      {{
-                        presence.displayLabel(
-                          participant
-                        )
-                      }}
-                    </strong>
-
-                    @if (
-                      participant.selectedElement
-                    ) {
-                      <small>
-                        {{
-                          participant.selectedElement
-                            .elementType
-                            === 'CLASS'
-                            ? 'Clase'
-                            : 'Relacion'
-                        }}
-                        seleccionada
-                      </small>
-                    } @else {
-                      <small>
-                        En el proyecto
-                      </small>
-                    }
-                  </div>
-                </li>
-              }
-            </ul>
-          }
-        </div>
-      </details>
+        </button>
+      </div>
 
       <div class="save-toolbar">
         <div

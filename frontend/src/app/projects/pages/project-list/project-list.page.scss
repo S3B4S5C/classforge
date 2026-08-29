@@ -188,3 +188,128 @@
     gap: 0.2rem;
   }
 }
+
+/* C2-CU31-001 — ownership/membership en biblioteca */
+.project-card-subtitle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.65rem;
+}
+
+.project-access-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.55rem;
+  padding: 0.18rem 0.5rem;
+  border: 1px solid var(--cf-border);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.project-access-badge.is-shared {
+  background: rgb(79 70 229 / 6%);
+}
+
+/* C2-CU31-002 — bandeja compacta de invitaciones */
+.invitation-inbox {
+  margin-bottom: 1rem;
+  border-color: rgb(79 70 229 / 18%);
+  background: rgb(255 255 255 / 78%);
+}
+
+.invitation-inbox mat-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+
+.invitation-heading-icon {
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.6rem;
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.invitation-list {
+  display: grid;
+  gap: 0.65rem;
+  padding-top: 0.85rem;
+}
+
+.invitation-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--cf-border);
+  border-radius: 0.75rem;
+  background: white;
+}
+
+.invitation-copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.12rem;
+}
+
+.invitation-copy strong,
+.invitation-copy span,
+.invitation-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invitation-copy span,
+.invitation-copy small,
+.invitation-loading,
+.invitation-error {
+  color: var(--cf-muted);
+  font-size: 0.8rem;
+}
+
+.invitation-actions,
+.invitation-loading,
+.invitation-error {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.invitation-actions {
+  flex: 0 0 auto;
+}
+
+.invitation-loading,
+.invitation-error {
+  min-height: 64px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 700px) {
+  .invitation-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .invitation-actions button {
+    flex: 1 1 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .invitation-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
