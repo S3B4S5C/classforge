@@ -104,8 +104,9 @@ class AssistantE2EReliabilityIntegrationTest {
         System.out.println("Project:       Veterinaria E2E Benchmark");
         System.out.println("Classes:       " + fixture.classIds().size());
         System.out.println("Relationships: " + fixture.relationshipIds().size());
-        String plannerMode = System.getProperty("classforge.assistant.planner-mode", "legacy");
-        System.out.println("Planner mode:  " + plannerMode);
+        String plannerMode = "tools";
+        System.out.println("Planner mode:  tools (official)");
+        System.out.println("Suite:         " + config.suite());
         System.out.println("Attempts/type: " + config.attemptsPerCategory());
         System.out.printf(
                 Locale.ROOT,
@@ -120,7 +121,7 @@ class AssistantE2EReliabilityIntegrationTest {
                 () -> "llama.cpp no esta listo para el benchmark: " + health.llama().message()
         );
 
-        List<Scenario> scenarios = scenarios(fixture);
+        List<Scenario> scenarios = scenarios(fixture, config.suite());
         List<CategoryResult> results = new ArrayList<>();
 
         for (Scenario scenario : scenarios) {
@@ -469,6 +470,7 @@ class AssistantE2EReliabilityIntegrationTest {
 
         Map<String, Object> report = new LinkedHashMap<>();
         report.put("plannerMode", plannerMode);
+        report.put("suite", config.suite());
         report.put("attemptsPerCategory", config.attemptsPerCategory());
         report.put("overallPassed", totalPassed);
         report.put("overallTotal", totalAttempts);
@@ -483,7 +485,10 @@ class AssistantE2EReliabilityIntegrationTest {
         System.out.println("Machine report: " + path);
     }
 
-    private List<Scenario> scenarios(Fixture fixture) {
+    private List<Scenario> scenarios(Fixture fixture, String suite) {
+        if ("holdout".equalsIgnoreCase(suite)) {
+            return holdoutScenarios(fixture);
+        }
         return List.of(
                 new Scenario(
                         "CREATE_CLASS",
@@ -586,6 +591,84 @@ class AssistantE2EReliabilityIntegrationTest {
                         )
                 )
         );
+    }
+
+    private List<Scenario> holdoutScenarios(Fixture fixture) {
+        return List.of(
+                new Scenario("CREATE_CLASS", List.of(
+                        successCase("holdout-direct", "Necesito una clase TurnoEmergencia", expectCreateClass("TurnoEmergencia")),
+                        successCase("holdout-literal", "Crea TurnoEmergncia como clase", expectCreateClass("TurnoEmergncia")),
+                        successCase("holdout-natural", "Añade al modelo una nueva clase que se llame TurnoEmergencia", expectCreateClass("TurnoEmergencia"))
+                )),
+                new Scenario("RENAME_CLASS", List.of(
+                        successCase("holdout-natural", "La clase Veternario debe llamarse DoctorVeterinario", expectRename(fixture, "Veterinario", "DoctorVeterinario")),
+                        successCase("holdout-command", "Ponle DoctorVeterinario de nombre a Veterinairo", expectRename(fixture, "Veterinario", "DoctorVeterinario")),
+                        successCase("holdout-case", "VETERINARIO ahora se llama DoctorVeterinario", expectRename(fixture, "Veterinario", "DoctorVeterinario"))
+                )),
+                new Scenario("DELETE_CLASS", List.of(
+                        successCase("holdout-natural", "Saca Tratamietno del diagrama", expectDeleteClass(fixture, "Tratamiento")),
+                        successCase("holdout-direct", "Quita la clase Trtamiento", expectDeleteClass(fixture, "Tratamiento")),
+                        successCase("holdout-conversation", "Tratamiento ya sobra, borrala", expectDeleteClass(fixture, "Tratamiento"))
+                )),
+                new Scenario("ADD_ATTRIBUTES", List.of(
+                        successCase("holdout-natural", "Propietairo necesita un campo celular de texto", expectAddAttribute(fixture, "Propietario", "celular", UmlDataType.STRING)),
+                        successCase("holdout-direct", "Añade celular STRING en Propetario", expectAddAttribute(fixture, "Propietario", "celular", UmlDataType.STRING)),
+                        successCase("holdout-conversation", "Pon un celular a la clase Propietario", expectAddAttribute(fixture, "Propietario", "celular", UmlDataType.STRING))
+                )),
+                new Scenario("UPDATE_ATTRIBUTE", List.of(
+                        successCase("holdout-natural", "El peso de Masctoa ahora se llama masaKg", expectUpdateAttribute(fixture, "Mascota", "peso", "masaKg")),
+                        successCase("holdout-direct", "Renombra pseo de Mascota a masaKg", expectUpdateAttribute(fixture, "Mascota", "peso", "masaKg")),
+                        successCase("holdout-scope", "En msacota cambia el campo peso por masaKg", expectUpdateAttribute(fixture, "Mascota", "peso", "masaKg"))
+                )),
+                new Scenario("DELETE_ATTRIBUTE", List.of(
+                        successCase("holdout-natural", "Consulta puede quedarse sin motivo, quitalo", expectDeleteAttribute(fixture, "Consulta", "motivo")),
+                        successCase("holdout-direct", "Borra motvio en Consutla", expectDeleteAttribute(fixture, "Consulta", "motivo")),
+                        successCase("holdout-scope", "El campo motivo sobra de Consulta", expectDeleteAttribute(fixture, "Consulta", "motivo"))
+                )),
+                new Scenario("CREATE_RELATIONSHIP", List.of(
+                        successCase("holdout-inheritance", "Haz que AnimalDomestcio sea una especializacion de Animal", expectCreateRelationship(fixture, "AnimalDomestico", "Animal", UmlRelationshipType.GENERALIZATION)),
+                        successCase("holdout-association", "Asocia Propetario con Veterinaria", expectCreateRelationship(fixture, "Propietario", "Veterinaria", UmlRelationshipType.ASSOCIATION)),
+                        successCase("holdout-composition", "Veterinaria contiene Factrua como composicion", expectCreateRelationship(fixture, "Veterinaria", "Factura", UmlRelationshipType.COMPOSITION))
+                )),
+                new Scenario("UPDATE_RELATIONSHIP", List.of(
+                        successCase("holdout-natural", "En Propietario Mascota permite de cero a muchas Mascotas", expectUpdateRelationshipMany(fixture)),
+                        successCase("holdout-star", "Pon 0..* del lado Masctoa en su relacion con Propietario", expectUpdateRelationshipMany(fixture)),
+                        successCase("holdout-conversation", "Un propietario puede tener ninguna o varias mascotas", expectUpdateRelationshipMany(fixture))
+                )),
+                new Scenario("DELETE_RELATIONSHIP", List.of(
+                        successCase("holdout-natural", "Desconecta Mascota de Vcauna", expectDeleteRelationship(fixture, "Mascota->Vacuna")),
+                        successCase("holdout-direct", "Quita el vinculo msacota vacuna", expectDeleteRelationship(fixture, "Mascota->Vacuna")),
+                        successCase("holdout-conversation", "Mascota y Vacuna ya no deben estar conectadas", expectDeleteRelationship(fixture, "Mascota->Vacuna"))
+                )),
+                new Scenario("SAFETY_UNKNOWN_REFERENCE", List.of(
+                        rejectionCase("holdout-unknown-class", "Borra la clase HospitalFantasma"),
+                        rejectionCase("holdout-unknown-attribute", "Quita claveOculta de Propietario"),
+                        rejectionCase("holdout-unknown-relation", "Desconecta Veterinaria de EntidadFantasma")
+                )),
+                new Scenario("MULTI_TOOL_COMPOUND", List.of(
+                        successCase("holdout-compound", "Crea Cliente, agregale email STRING y relaciona Cliente con Factura", expectCompoundClientPlan(fixture)),
+                        successCase("holdout-compound-natural", "Necesito una clase Cliente con un campo email de texto y despues conectala con Factura", expectCompoundClientPlan(fixture)),
+                        successCase("holdout-compound-steps", "Crea Cliente; ponle email STRING; asociala con Factura", expectCompoundClientPlan(fixture))
+                ))
+        );
+    }
+
+    private OutcomeEvaluator expectCompoundClientPlan(Fixture fixture) {
+        return outcome -> withResponse(outcome, response -> {
+            if (response.plan() == null || response.plan().actions() == null || response.plan().actions().size() < 3) {
+                return Evaluation.failure("MISSING_COMPOUND_ACTIONS", "Se esperaban al menos tres acciones en el plan compuesto");
+            }
+            boolean create = response.plan().actions().stream().anyMatch(a -> a.type() == AssistantActionType.CREATE_CLASS && "Cliente".equals(a.className()));
+            boolean add = response.plan().actions().stream().anyMatch(a -> a.type() == AssistantActionType.ADD_ATTRIBUTES && "Cliente".equals(a.className()) && a.safeAttributes().stream().anyMatch(at -> "email".equals(at.name())));
+            boolean relation = response.plan().actions().stream().anyMatch(a -> a.type() == AssistantActionType.CREATE_RELATIONSHIP && "Cliente".equals(a.sourceClassName()) && "Factura".equals(a.targetClassName()));
+            if (!create || !add || !relation) {
+                return Evaluation.failure("WRONG_COMPOUND_PLAN", "create=" + create + " add=" + add + " relation=" + relation + " plan=" + response.plan());
+            }
+            if (response.command() == null || response.command().safeCommands().size() < 3) {
+                return Evaluation.failure("WRONG_COMPOUND_COMMAND", "El BATCH no contiene la secuencia completa");
+            }
+            return Evaluation.ok();
+        });
     }
 
     private PromptCase successCase(
@@ -1107,7 +1190,8 @@ class AssistantE2EReliabilityIntegrationTest {
     private record BenchmarkConfig(
             int attemptsPerCategory,
             double errorFailurePercent,
-            boolean verboseAttempts
+            boolean verboseAttempts,
+            String suite
     ) {
         static BenchmarkConfig fromSystemProperties() {
             int attempts = Integer.parseInt(
@@ -1130,7 +1214,11 @@ class AssistantE2EReliabilityIntegrationTest {
                 throw new IllegalArgumentException("assistant.benchmark.errorFailurePercent debe estar entre 0 y 100");
             }
 
-            return new BenchmarkConfig(attempts, errorThreshold, verbose);
+            String suite = System.getProperty("assistant.benchmark.suite", "regression").trim().toLowerCase(Locale.ROOT);
+            if (!List.of("regression", "holdout").contains(suite)) {
+                throw new IllegalArgumentException("assistant.benchmark.suite debe ser regression u holdout");
+            }
+            return new BenchmarkConfig(attempts, errorThreshold, verbose, suite);
         }
     }
 

@@ -1747,11 +1747,10 @@ Los atributos de una clase forman parte de la intención `CREATE_CLASS`; Java lo
 
 El preview muestra si el tipo de cada atributo fue explícito, inferido o predeterminado.
 
-El runtime recomendado para la estación de trabajo de referencia es Gemma 3 4B Instruct Q4_K_M mediante llama.cpp.
+El runtime recomendado para la estación de trabajo de referencia es Qwen2.5-3B-Instruct Q4_K_M mediante llama.cpp con `--jinja` y native tool calling.
 
 MCP no forma parte de CU08-001.
 
-<!-- CU08-FIX-013-NATIVE-TOOLS -->
-### Runtime local del Assistant — evaluación tool-aware
-
-El Assistant continúa siendo local mediante llama.cpp. Como hardening post-CU08 se evalúa Qwen2.5-7B-Instruct GGUF con function calling nativo para que el modelo seleccione operaciones UML tipadas en vez de serializar directamente el DTO interno. Gemma/JSON Schema se conserva temporalmente como baseline legacy durante la comparación A/B. Esta decisión no cambia la regla de producto: la IA propone y Java resuelve, valida, previsualiza y aplica mediante el Command Bus.
+<!-- CU08-FIX-014 -->
+### Assistant local — contrato definitivo
+El Assistant usa Qwen2.5-3B-Instruct Q4_K_M mediante native function calling de llama.cpp. El modelo selecciona tools UML semánticas; ClassForge resuelve elementos existentes a UUID, preserva literales nuevos y genera preview/BATCH. Texto y voz convergen en el mismo planner y las peticiones compuestas se planifican sobre un documento efímero antes de Apply.

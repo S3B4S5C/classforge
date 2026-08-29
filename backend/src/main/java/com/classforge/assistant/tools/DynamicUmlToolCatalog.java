@@ -30,7 +30,78 @@ public class DynamicUmlToolCatalog {
         this.intentHintResolver = intentHintResolver;
     }
 
+    public AssistantToolCatalog routingCatalog() {
+        return new AssistantToolCatalog(
+                List.of(definition(AssistantToolName.ROUTE_REQUEST, List.of(), List.of(), List.of())),
+                Map.of(),
+                Map.of(),
+                Map.of()
+        );
+    }
+
+    public AssistantToolCatalog buildForTools(
+            ProjectDocument document,
+            List<AssistantToolName> requestedTools
+    ) {
+        List<UmlClass> classes = document.umlModel().classes().stream()
+                .sorted(Comparator.comparing(UmlClass::name, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+
+        Map<String, UUID> classIds = new LinkedHashMap<>();
+        Map<UUID, String> classNamesById = new LinkedHashMap<>();
+        Map<String, AssistantToolCatalog.AttributeReference> attributes = new LinkedHashMap<>();
+        Map<String, AssistantToolCatalog.RelationshipReference> relationships = new LinkedHashMap<>();
+
+        for (UmlClass umlClass : classes) {
+            classIds.put(umlClass.name(), umlClass.id());
+            classNamesById.put(umlClass.id(), umlClass.name());
+            for (UmlAttribute attribute : umlClass.attributes()) {
+                String label = umlClass.name() + "." + attribute.name();
+                attributes.put(label, new AssistantToolCatalog.AttributeReference(
+                        label, umlClass.id(), umlClass.name(), attribute.id(), attribute.name()
+                ));
+            }
+        }
+
+        int relationIndex = 1;
+        for (UmlRelationship relationship : document.umlModel().relationships()) {
+            String source = classNamesById.get(relationship.sourceClassId());
+            String target = classNamesById.get(relationship.targetClassId());
+            if (source == null || target == null) continue;
+            String label = "R" + relationIndex++ + ": " + source + " -> " + target + " (" + relationship.type() + ")";
+            relationships.put(label, new AssistantToolCatalog.RelationshipReference(
+                    label, relationship.id(), source, target, relationship.type()
+            ));
+        }
+
+        List<String> classNames = List.copyOf(classIds.keySet());
+        List<String> attributeLabels = List.copyOf(attributes.keySet());
+        List<String> relationshipLabels = List.copyOf(relationships.keySet());
+        List<AssistantToolDefinition> definitions = requestedTools.stream()
+                .filter(tool -> tool != AssistantToolName.ROUTE_REQUEST && tool != AssistantToolName.FINISH_PLAN)
+                .distinct()
+                .map(tool -> definition(tool, classNames, attributeLabels, relationshipLabels))
+                .toList();
+
+        if (definitions.isEmpty()) {
+            throw new IllegalArgumentException("La ruta native tools no contiene operaciones UML ejecutables.");
+        }
+
+        return new AssistantToolCatalog(
+                definitions, Map.copyOf(classIds), Map.copyOf(attributes), Map.copyOf(relationships)
+        );
+    }
+
     public AssistantToolCatalog build(String userText, ProjectDocument document) {
+        return build(userText, document, false, false);
+    }
+
+    public AssistantToolCatalog build(
+            String userText,
+            ProjectDocument document,
+            boolean compound,
+            boolean allowFinish
+    ) {
         List<UmlClass> classes = document.umlModel().classes().stream()
                 .sorted(Comparator.comparing(UmlClass::name, String.CASE_INSENSITIVE_ORDER))
                 .toList();
@@ -77,7 +148,7 @@ public class DynamicUmlToolCatalog {
         List<String> relationshipLabels = List.copyOf(relationships.keySet());
 
         List<AssistantToolDefinition> definitions = new ArrayList<>();
-        for (AssistantToolName toolName : selectedTools(userText, document)) {
+        for (AssistantToolName toolName : selectedTools(userText, document, compound, allowFinish)) {
             definitions.add(definition(toolName, classNames, attributeLabels, relationshipLabels));
         }
 
@@ -89,10 +160,45 @@ public class DynamicUmlToolCatalog {
         );
     }
 
-    private List<AssistantToolName> selectedTools(String userText, ProjectDocument document) {
+    private List<AssistantToolName> selectedTools(
+            String userText,
+            ProjectDocument document,
+            boolean compound,
+            boolean allowFinish
+    ) {
+        if (compound) {
+            List<AssistantToolName> result = new ArrayList<>();
+            String text = normalize(userText);
+            if (containsAny(text, "crea", "crear", "nueva clase", "clase llamada", "necesito una clase")) {
+                result.add(AssistantToolName.CREATE_CLASS);
+            }
+            if (containsAny(text, "agrega", "agregale", "anade", "atributo", "campo", "ponle")) {
+                result.add(AssistantToolName.ADD_ATTRIBUTES);
+            }
+            if (containsAny(text, "relacion", "relaciona", "conecta", "asocia", "hereda", "agrupa", "compuesta")) {
+                result.add(createRelationshipTool(userText));
+            }
+            if (containsAny(text, "renombra", "cambia el nombre", "ahora se llama")) {
+                result.add(AssistantToolName.RENAME_CLASS);
+            }
+            if (result.isEmpty()) {
+                result.addAll(List.of(
+                        AssistantToolName.CREATE_CLASS,
+                        AssistantToolName.ADD_ATTRIBUTES,
+                        AssistantToolName.CREATE_ASSOCIATION,
+                        AssistantToolName.RENAME_CLASS
+                ));
+            }
+            if (allowFinish) {
+                result.add(AssistantToolName.FINISH_PLAN);
+            }
+            return result.stream().distinct().toList();
+        }
         Optional<AssistantIntentHintResolver.IntentHint> hint = intentHintResolver.resolve(userText, document);
         if (hint.isEmpty()) {
-            return List.of(AssistantToolName.values());
+            return java.util.Arrays.stream(AssistantToolName.values())
+                    .filter(tool -> tool != AssistantToolName.FINISH_PLAN && tool != AssistantToolName.ROUTE_REQUEST)
+                    .toList();
         }
 
         return switch (hint.get().actionType()) {
@@ -145,12 +251,18 @@ public class DynamicUmlToolCatalog {
             List<String> relationshipLabels
     ) {
         return switch (tool) {
+            case ROUTE_REQUEST -> new AssistantToolDefinition(
+                    tool,
+                    "Route the user request to the ordered UML tools required to satisfy it. Return one step per requested semantic operation, in dependency order.",
+                    objectSchema(Map.of(
+                            "steps", routeStepsSchema()
+                    ), List.of("steps"))
+            );
             case CREATE_CLASS -> new AssistantToolDefinition(
                     tool,
                     "Create one new UML class. The name is a NEW identifier: copy it literally from the user; never autocorrect spelling.",
                     objectSchema(Map.of(
-                            "name", stringSchema("New class name literally requested by the user."),
-                            "attributes", arraySchema(attributeCreateSchema())
+                            "name", stringSchema("New class name literally requested by the user.")
                     ), List.of("name"))
             );
             case RENAME_CLASS -> new AssistantToolDefinition(
@@ -264,6 +376,11 @@ public class DynamicUmlToolCatalog {
                             "existing_relationship_ref", existingEnumSchema("Existing relationship reference from the current project.", relationshipLabels)
                     ), List.of("existing_relationship_ref"))
             );
+            case FINISH_PLAN -> new AssistantToolDefinition(
+                    tool,
+                    "Finish a compound UML plan only after every requested change has already been planned successfully.",
+                    objectSchema(Map.of(), List.of())
+            );
         };
     }
 
@@ -284,6 +401,23 @@ public class DynamicUmlToolCatalog {
         properties.put("target_lower", lowerIntegerSchema("Optional target/part/superclass lower multiplicity; omit unless explicitly requested."));
         properties.put("target_upper", upperIntegerSchema("Optional target/part/superclass upper multiplicity; -1 means *; omit unless explicitly requested."));
         return new AssistantToolDefinition(tool, description, objectSchema(properties, List.of(firstName, secondName)));
+    }
+
+    private Map<String, Object> routeStepsSchema() {
+        Map<String, Object> items = new LinkedHashMap<>();
+        items.put("type", "string");
+        items.put("enum", java.util.Arrays.stream(AssistantToolName.values())
+                .filter(tool -> tool != AssistantToolName.ROUTE_REQUEST && tool != AssistantToolName.FINISH_PLAN)
+                .map(AssistantToolName::wireName)
+                .toList());
+
+        Map<String, Object> schema = new LinkedHashMap<>();
+        schema.put("type", "array");
+        schema.put("description", "Ordered UML tool names. Use exactly one step for a simple request. For compound requests include each requested operation once and put create_class before operations that reference the newly created class.");
+        schema.put("items", items);
+        schema.put("minItems", 1);
+        schema.put("maxItems", 8);
+        return schema;
     }
 
     private Map<String, Object> attributeCreateSchema() {

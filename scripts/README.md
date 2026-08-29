@@ -43,11 +43,12 @@ La tabla final muestra `APPROVAL`, `FAILURE` y `STATUS` por categoría. Una cate
 
 Este benchmark requiere llama.cpp levantado. No aplica el preview al proyecto, por lo que todos los intentos usan el mismo estado UML.
 
-<!-- CU08-FIX-013-NATIVE-TOOLS -->
-## Benchmark A/B del Assistant
-
-Con Qwen2.5-Instruct iniciado en `llama-server` con `--jinja`, `assistant-tool-ab.ps1` ejecuta el mismo benchmark HTTP E2E dos veces: primero con `planner-mode=legacy` y después con `planner-mode=tools`. Los reportes JSON quedan bajo `backend/build/reports/assistant-tool-ab/` y la consola muestra aprobación por categoría, delta y regla safety fail-closed.
+<!-- CU08-FIX-014 -->
+## Benchmarks Assistant native tools
 
 ```powershell
-pwsh -NoProfile -File .\scripts\assistant-tool-ab.ps1 -Attempts 5 -VerboseAttempts
+pwsh -NoProfile -File .\scripts\assistant-tool-regression.ps1 -Attempts 20 -VerboseAttempts
+pwsh -NoProfile -File .\scripts\assistant-tool-holdout.ps1 -Attempts 3 -VerboseAttempts
 ```
+
+`regression` repite la matriz que autorizó el cutover; `holdout` usa redacciones nuevas y una petición compuesta. El antiguo runner A/B se retiró junto con el planner legacy.

@@ -1,155 +1,166 @@
-# Assistant — native tool calling y resolución semántica
+# Assistant — native tool calling oficial
 
-**Estado:** EXPERIMENTAL / CANDIDATO durante `C2-cu08-fix-013`.
+**Estado:** OFICIAL desde `C2-cu08-fix-014`.
 
-Este documento describe el camino candidato para sustituir la generación directa de `AssistantSemanticPlan` por function calling nativo de llama.cpp con un modelo tool-aware (baseline de migración validado en hardware de desarrollo: Qwen2.5-3B-Instruct Q4_K_M GGUF).
+El Assistant de ClassForge usa Qwen2.5-3B-Instruct Q4_K_M mediante llama.cpp native function calling. El antiguo planner que pedía al LLM serializar directamente `AssistantSemanticPlan` fue retirado del runtime.
 
-## Objetivo
-
-El LLM deja de construir el DTO polimórfico interno de ClassForge. En su lugar selecciona herramientas pequeñas del dominio UML:
+## Pipeline oficial
 
 ```text
-create_class
-rename_class
-delete_class
-add_attributes
-update_attribute
-delete_attribute
-create_relationship
-update_relationship
-delete_relationship
-```
-
-El flujo candidato es:
-
-```text
-texto / transcript
- -> IntentHint conservador
- -> DynamicUmlToolCatalog
+texto / transcript de Whisper
+ -> AssistantNativeToolPlanner
+ -> route_uml_request (catalogo ligero)
+ -> AssistantToolRouteAdjudicator (invariantes del proyecto)
+ -> DynamicUmlToolCatalog (una tool pesada por step)
  -> llama.cpp /v1/chat/completions + tools
- -> native tool_calls
+ -> native tool_call
  -> UmlToolCallResolver
- -> referencias canónicas / UUID reales
+ -> referencias existentes grounded -> UUID
+ -> nombres nuevos literales
  -> AssistantSemanticPlan interno
- -> grounding / normalizer
+ -> compiler de defaults + grounding final + normalizer
  -> UmlAssistantCommandResolver
  -> preview
  -> Apply
  -> Command Bus / STOMP
 ```
 
-`AssistantSemanticPlan` continúa existiendo como representación interna compatible con preview/Apply, pero deja de ser el contrato que el LLM debe serializar en modo `tools`.
+`AssistantSemanticPlan` y `AssistantPlanAction` permanecen como IR interna; ya no son un protocolo que deba generar el LLM.
 
-## Modos
+## Responsabilidades
 
-```text
-classforge.assistant.planner-mode=legacy  # default durante fix-013
-classforge.assistant.planner-mode=tools
-classforge.assistant.planner-mode=compare
-```
+- Qwen decide la operación semántica y los argumentos libres de la tool.
+- ClassForge resuelve referencias existentes, typos, provenance y UUIDs.
+- Los nombres nuevos se recuperan literalmente del texto del usuario.
+- El LLM nunca recibe autoridad de escritura.
+- Preview/validator/Apply/Command Bus siguen siendo la única ruta de mutación.
 
-- `legacy`: mantiene el planner JSON Schema previo.
-- `tools`: usa function calling nativo y catálogo dinámico.
-- `compare`: ejecuta ambos para diagnóstico y entrega el plan de tools; no es modo recomendado para uso normal porque duplica inferencias.
+## Tools
 
-El cutover definitivo queda reservado a `C2-cu08-fix-014` después del benchmark A/B.
+Las interfaces externas son pequeñas y semánticas: `create_class`, `rename_class`, `delete_class`, `add_attributes`, `rename_attribute`, `update_attribute_properties`, `delete_attribute`, `create_association`, `create_aggregation`, `create_composition`, `create_generalization`, `set_relationship_multiplicity`, `change_relationship_type`, `delete_relationship`.
 
-## Referencias existentes vs nombres nuevos
+`route_uml_request` es exclusivamente control de routing y nunca genera una acción UML. `finish_plan` queda como compatibilidad histórica del enum, pero no participa en el flujo oficial de fix-014.
 
-La separación es obligatoria:
+## Peticiones compuestas
 
-```text
-referencia existente -> catálogo canónico -> UUID real -> fail closed
-nombre nuevo          -> string libre -> se preserva literalmente
-```
-
-Ejemplos:
+Una petición como:
 
 ```text
-"Renombra 4nimal..."      -> referencia a Animal existente
-"Crea la clase 4nimal"    -> nombre nuevo "4nimal"
+Crea Cliente, agregale email STRING y relaciona Cliente con Factura
 ```
 
-Las tools de clases existentes reciben enums dinámicos con los nombres actuales. Los atributos existentes se publican como `Clase.atributo`. Las relaciones existentes reciben referencias enumeradas derivadas del `ProjectDocument` actual.
+primero se clasifica en una ruta pequeña y ordenada (`create_class -> add_attributes -> create_association`). Cada step expone una sola tool pesada. El resultado aceptado se proyecta sobre un `ProjectDocument` efímero usando el mismo `UmlAssistantCommandResolver`; los UUIDs creados por preview funcionan como identidades temporales del plan. El proyecto persistido no cambia.
 
-## Seguridad
+Si Qwen devuelve varias llamadas durante un step, ClassForge conserva únicamente la primera llamada compatible con la tool esperada. Desde fix-014 v1.5 los steps no reenvían historial `assistant/tool`: el estado entre rondas vive exclusivamente en el `ProjectDocument` efímero y en el catálogo dinámico reconstruido a partir de él. Esto reduce contexto y evita incompatibilidades del chat template sin perder identidades creadas en steps previos.
 
-Una tool call no tiene autoridad de escritura y tampoco convierte una referencia inventada en válida.
+La ruta final se resuelve de nuevo como un único BATCH desde el documento original antes de devolver el preview al usuario.
 
-Antes del preview:
+## Texto y voz
 
-1. la tool debe haber sido expuesta para la petición;
-2. cada referencia existente debe resolverse contra el `ProjectDocument`;
-3. referencias inexistentes o ambiguas abortan el plan;
-4. Java genera/usa UUIDs reales;
-5. grounding, normalización, resolver de comandos y validator siguen activos;
-6. Apply continúa requiriendo revisión vigente y usa el Command Bus.
+Voz solo añade la etapa `Whisper -> transcript`. `AssistantPlanService.plan` y `planVoice` convergen en la misma instancia de `AssistantNativeToolPlanner`; no existe un planner alternativo para audio.
 
-`SAFETY_UNKNOWN_REFERENCE` es fail-closed: un solo unsafe accept constituye error del benchmark, independientemente del porcentaje global.
+## Fail closed
 
-## llama.cpp
+Las referencias existentes solo se aceptan si el backend puede ligarlas al texto original y a un elemento real del `ProjectDocument`. Safety mantiene la regla: un solo `UNSAFE_ACCEPT` es ERROR.
 
-El gateway de tools usa el contrato OpenAI-compatible de `/v1/chat/completions`:
+## Runtime
+
+Baseline de desarrollo:
+
+```powershell
+llama-server.exe `
+  -hf bartowski/Qwen2.5-3B-Instruct-GGUF:Q4_K_M `
+  --device Vulkan0 `
+  --parallel 1 `
+  --host 127.0.0.1 `
+  --port 8092 `
+  --alias local-model `
+  -c 4096 `
+  --jinja
+```
+
+El gateway exige `supports_tools=true` y `supports_tool_calls=true`, usa temperatura 0 y `parallel_tool_calls=false`.
+
+## Evidencia de cutover
+
+Benchmark A/B previo al cutover, 20 intentos por categoría:
 
 ```text
-messages
-tools
-tool_choice = required
-parallel_tool_calls = false
-temperature = 0.0
+legacy overall: 94.0 %
+tools overall:  100.0 %
+safety tools:   100.0 %
 ```
 
-Antes de inferir, consulta `/props` y exige:
+Las diez categorías conocidas quedaron en 100 % con tools. Desde fix-014 se conservan dos suites: `regression`, para evitar regresiones de esas operaciones, y `holdout`, con redacciones nuevas más un escenario compuesto.
+
+## Código legacy retirado
+
+Se eliminaron del runtime `LlamaLanguageModelGateway`, `LanguageModelGateway`, `AssistantPlanningRouter` y `AssistantPlannerMode`, además de sus tests/prompts específicos. El E2E ya no acepta `plannerMode`: siempre prueba la arquitectura oficial.
+
+
+<!-- CU08-FIX-014-V1.3-HIERARCHICAL-ROUTING -->
+## Hardening holdout: routing jerarquico antes del catalogo pesado
+
+La primera suite holdout de fix-014 detecto una debilidad que el benchmark de regresion no mostraba: cuando una redaccion nueva no producia un `IntentHint` determinista, el fallback exponia todas las tools con todos los enums del proyecto. En el fixture medio eso generaba prompts de ~5.1k tokens y excedia `-c 4096` antes de inferir.
+
+Desde fix-014 v1.3 el runtime usa dos niveles de native function calling:
 
 ```text
-chat_template_caps.supports_tools = true
-chat_template_caps.supports_tool_calls = true
+usuario
+  -> route_uml_request                 # schema pequeno, sin clases/atributos/relaciones
+  -> steps ordenados                   # p.ej. create_class, add_attributes, create_association
+  -> una tool UML pesada por step      # catalogo dinamico del ProjectDocument actual
+  -> resolve/provenance/UUID
+  -> compiler + grounding + normalizer
+  -> preview efimero
+  -> siguiente step
+  -> BATCH final / preview / Apply
 ```
 
-Por tanto, `planner-mode=tools` no degrada silenciosamente a un template content-only. El runtime esperado se inicia con una plantilla tool-aware, por ejemplo Qwen2.5-Instruct + `--jinja`.
+El router no recibe enums del proyecto y por eso su costo de contexto es acotado aunque la redaccion sea nueva. El segundo nivel expone exactamente una tool UML por step. `parallel_tool_calls=false` sigue activo, pero si Qwen devuelve varias llamadas de la misma tool ClassForge ejecuta la primera y responde `DEFERRED_REPLAN` a las restantes en vez de abortar la planificacion.
 
-## Alcance de fix-013
+`finish_plan` deja de ser necesario para completar el flujo oficial: la lista ordenada devuelta por `route_uml_request` determina cuantos steps deben resolverse. Los previews efimeros siguen siendo la fuente de identidad para simbolos creados en steps anteriores.
 
-- single-operation tool calling estable;
-- múltiples tool calls aceptables solo cuando todas las referencias ya existen en el documento;
-- no se resuelven todavía dependencias entre símbolos creados dentro de la misma respuesta;
-- voz reutiliza el mismo `AssistantPlanService`, por lo que puede usar tools sin pipeline paralelo;
-- legacy permanece disponible para comparación.
+Las multiplicidades escritas explicitamente por el usuario (`0..*`, `1..*`) y expresiones inequívocas como `cero/ninguna + muchas/varias` prevalecen sobre un upper/lower distinto propuesto por el LLM.
 
-Los IDs temporales para secuencias como `crear clase -> agregar atributo -> relacionar la clase recién creada`, simplificación final de grounding y retiro del planner legacy pertenecen a fix-014.
 
-## Hardening v1.2 — contratos semánticos y provenance
+<!-- CU08-FIX-014-V1.4-ROUTE-ADJUDICATION -->
+## Hardening holdout v1.4: adjudicacion project-aware y tolerancia a burst
 
-El primer A/B con Qwen2.5-3B-Instruct Q4_K_M mostró `35/50 = 70 %` en tools. Los fallos se concentraron en contratos demasiado genéricos, no en el transporte de function calling. v1.2 reemplaza las interfaces problemáticas por tools que expresan la intención del usuario:
+La segunda corrida holdout posterior a v1.3 subio de 39.4 % a 57.6 % y elimino los overflows de contexto; safety permanecio en 100 %. Los fallos restantes revelaron que el router podia insertar pasos extra en peticiones simples y que Qwen2.5-3B podia repetir 20+ llamadas de la unica tool expuesta o, excepcionalmente, responder texto aun con `tool_choice=required`.
 
-```text
-rename_attribute(existing_attribute_ref, new_name)
-set_relationship_multiplicity(existing_relationship_ref, end_class, lower, upper)
-change_relationship_type(existing_relationship_ref, relationship_type)
-create_association(source_class, target_class)
-create_aggregation(whole_class, part_class)
-create_composition(whole_class, part_class)
-create_generalization(subclass, superclass)
-```
+Fix-014 v1.4 introduce `AssistantToolRouteAdjudicator`:
 
-Los nombres NUEVOS pasan por `AssistantLiteralArgumentBinder`, que recupera el literal respaldado por el texto del usuario antes de Grounding. Esto evita autocorrecciones como `HistorialClinco -> HistorialClinico` o prefijos como `Mascota.pesoKg` cuando el nuevo identificador pedido fue `pesoKg`.
+- una peticion simple termina en exactamente una familia de operacion;
+- referencias/atributos ya grounded y semantica explicita de relaciones corrigen rutas incompatibles;
+- peticiones compuestas conservan una ruta dependency-ordered;
+- una referencia desconocida con lenguaje de relacion permanece en la familia relationship para que `UmlToolCallResolver` falle cerrado;
+- llamadas repetidas del mismo step se descartan y no entran al historial;
+- si llama.cpp devuelve contenido conversacional sin `tool_calls`, el gateway hace un unico reintento native-tools mas estricto;
+- `max_tokens` del step baja a 256 para acotar bursts sin limitar los argumentos esperados.
 
-Las referencias EXISTENTES siguen siendo canónicas, pero el resolver exige provenance textual antes de aceptar la selección del LLM. En particular, una petición como `Elimina codigoSecreto de Veterinaria` no puede sustituirse por otro atributo válido de `Veterinaria`.
+El objetivo no es codificar frases del benchmark, sino impedir efectos laterales no solicitados: Qwen propone semantica; ClassForge adjudica la familia compatible con el texto y el `ProjectDocument`, y el resolver sigue siendo la autoridad de referencias/UUID/provenance.
 
-La resolución fuzzy añade una normalización singular/plural conservadora antes de Damerau-Levenshtein para casos como `Masctoas -> Mascota`, sin bajar el threshold global.
+<!-- CU08-FIX-014-V1.5-STATELESS-COMPOUND -->
+## Hardening holdout v1.5: compound stateless y semántica explícita
 
-El runtime candidato documentado para el hardware de desarrollo pasa a `Qwen2.5-3B-Instruct-Q4_K_M` con Vulkan, `-c 4096` y `--jinja`; el 7B no se usa como baseline de latencia en la GTX 1660 SUPER.
+La corrida holdout posterior a v1.4 alcanzó `28/33 = 84.8 %`, con `SAFETY_UNKNOWN_REFERENCE=100 %`. Ocho de once categorías quedaron en 100 %. Los cinco fallos restantes se concentraron en tres causas: una frase de creación (`Añade ... una nueva clase`) era detectada falsamente como `CREATE_CLASS + ADD_ATTRIBUTES`; la selección de extremo de multiplicidad no puntuaba `ninguna/varias`; y las tres peticiones compuestas fallaban dentro del gateway al reutilizar historial native tool entre steps.
 
-## Hardening v1.3 — grounded rebinding y bounded intent
+Fix-014 v1.5 mantiene el router jerárquico pero hace cada step compuesto stateless a nivel de chat: `ProjectDocument` efímero + catálogo dinámico son la única memoria entre rondas. También distingue el verbo `añade/agrega` que gobierna una `nueva clase` de un verdadero agregado de atributo, y amplía las cues de multiplicidad con `ningun*/vari*`. El gateway conserva un diagnóstico de excepción más preciso si llama.cpp vuelve a fallar. CU-09 sigue condicionado a una nueva corrida holdout y regression.
 
-El A/B posterior a v1.2 obtuvo `legacy=92 %` y `tools=82 %`. Safety alcanzó `100 %` y las familias `CREATE_CLASS`, `UPDATE_ATTRIBUTE`, `DELETE_ATTRIBUTE` y `CREATE_RELATIONSHIP` quedaron en `100 %`. Los nueve fallos restantes se concentraron en tres patrones:
+<!-- CU08-FIX-014-V1.6-LAZY-TOOL-PARSE -->
+## Hardening holdout v1.6: parse perezoso de bursts y retry de truncamiento
 
-- Qwen elegía un sibling válido del enum (`Veterinaria`) cuando el usuario había escrito `Veterinario`/`veternario`;
-- verbos españoles con pronombre enclítico (`eliminála`, `agregale`) dejaban al IntentHint vacío y exponían todo el catálogo, superando `-c 4096`;
-- en relaciones, Qwen podía elegir otra relación existente o el extremo opuesto de multiplicidad aunque el texto identificara de forma suficiente el par/extremo correcto.
+La corrida holdout posterior a v1.5 alcanzo `30/33 = 90.9 %`: las diez categorias simples, incluida `SAFETY_UNKNOWN_REFERENCE`, quedaron en `100 %`; el unico ERROR restante fue `MULTI_TOOL_COMPOUND`. Los tres fallos compartieron `UnexpectedEndOfInputException` al parsear JSON de tool arguments.
 
-v1.3 aplica **grounded rebinding**: para tools unarias de clase, si el texto resuelve una única clase existente, esa referencia derivada del usuario sustituye la selección del LLM. Para relaciones, si los extremos mencionados identifican una única relación existente, esa relación sustituye la elegida por Qwen. La tool sigue decidiendo la operación; el backend decide la referencia canónica respaldada.
+La causa estaba en el gateway: aunque el planner solo necesitaba la primera llamada compatible de cada step, `LlamaNativeToolCallingGateway` parseaba todas las `tool_calls` antes de devolverlas. Qwen puede emitir una rafaga repetida aun con `parallel_tool_calls=false`; con `max_tokens=256`, el tail de esa rafaga puede quedar cortado dentro del string `function.arguments`. Una primera llamada completa quedaba inutilizada porque Jackson intentaba parsear tambien una llamada sobrante truncada.
 
-La multiplicidad añade un binder de extremo que pondera menciones cercanas a `multiplicidad`, `lado`, `muchas/muchos`, `cero` y notación `0..*`/`1..*`. Así la semántica `cero o muchas mascotas` se liga al extremo `Mascota` aunque el modelo seleccione `Propietario`.
+Desde v1.6 el gateway:
 
-El IntentHint reconoce además stems de imperativos/conjugaciones (`elimin*`, `agreg*`, `cambi*`, `actualiz*`, etc.) para mantener operaciones simples en una sola tool y evitar que el fallback de catálogo completo exceda el contexto de 4096 tokens.
+1. calcula las tools realmente expuestas por el catalogo actual;
+2. recorre la respuesta hasta encontrar la primera llamada a una tool expuesta;
+3. parsea solo esa llamada y retorna inmediatamente, sin tocar el tail repetido;
+4. si precisamente esa primera llamada o el envelope HTTP llegan truncados, reintenta una sola vez con `max_tokens=512` y una instruccion estricta de una unica tool call completa;
+5. si el retry tambien llega truncado, falla explicitamente y conserva fail-closed.
+
+El presupuesto normal sigue en 256 tokens; 512 se usa solamente como recuperacion de truncamiento. No se aumenta `-c 4096` ni se reintroduce historial entre steps.

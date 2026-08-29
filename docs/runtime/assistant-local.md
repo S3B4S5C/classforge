@@ -10,20 +10,23 @@ Puerto esperado:
 127.0.0.1:8092
 ```
 
-Ejemplo para NVIDIA/Vulkan:
+Runtime oficial del Assistant desde `C2-cu08-fix-014`:
 
 ```powershell
 llama-server.exe `
-  -hf ggml-org/gemma-3-4b-it-GGUF:Q4_K_M `
-  --no-mmproj `
+  -hf bartowski/Qwen2.5-3B-Instruct-GGUF:Q4_K_M `
   --device Vulkan0 `
-  -ngl all `
   --parallel 1 `
   --host 127.0.0.1 `
   --port 8092 `
   --alias local-model `
-  -c 4096
+  -c 4096 `
+  --jinja
 ```
+
+El modelo 3B Q4_K_M fue elegido porque entra cómodamente en la GTX 1660 SUPER de referencia y sostuvo ~50-56 tokens/s durante las pruebas, mientras Qwen 7B hacía spill de VRAM. `--jinja` es obligatorio para el contrato native tools.
+
+ClassForge verifica `/props` y exige `supports_tools=true` y `supports_tool_calls=true`.
 
 Health oficial:
 

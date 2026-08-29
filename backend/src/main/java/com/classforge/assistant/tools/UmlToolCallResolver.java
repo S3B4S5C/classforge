@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 public class UmlToolCallResolver {
 
     private static final Pattern DIACRITICS = Pattern.compile("\\p{M}+");
+    private static final Pattern EXPLICIT_MULTIPLICITY = Pattern.compile("(?i)([01])\\s*\\.\\.\\s*(\\*|[01])");
 
     private final AssistantEntityReferenceResolver entityResolver;
     private final AssistantLiteralArgumentBinder literalBinder;
@@ -94,6 +95,7 @@ public class UmlToolCallResolver {
         }
 
         return switch (invocation.name()) {
+            case ROUTE_REQUEST -> throw new AssistantPlanningException("route_uml_request es control de routing y no produce una accion UML.");
             case CREATE_CLASS -> createClass(userText, args);
             case RENAME_CLASS -> renameClass(userText, args, catalog, document);
             case DELETE_CLASS -> deleteClass(userText, args, catalog, document);
@@ -112,12 +114,13 @@ public class UmlToolCallResolver {
             case SET_RELATIONSHIP_MULTIPLICITY -> setRelationshipMultiplicity(userText, args, catalog, document);
             case CHANGE_RELATIONSHIP_TYPE -> changeRelationshipType(userText, args, catalog, document);
             case DELETE_RELATIONSHIP -> deleteRelationship(userText, args, catalog, document);
+            case FINISH_PLAN -> throw new AssistantPlanningException("finish_plan es control de flujo y no produce una accion UML.");
         };
     }
 
     private ResolvedAction createClass(String userText, JsonNode args) {
         String newName = literalBinder.bindNewIdentifier(userText, requiredText(args, "name"));
-        List<AssistantAttributePlan> attributes = attributes(args.get("attributes"));
+        List<AssistantAttributePlan> attributes = List.of();
 
         AssistantPlanAction action = new AssistantPlanAction(
                 AssistantToolName.CREATE_CLASS.actionType(),
@@ -355,10 +358,18 @@ public class UmlToolCallResolver {
             String targetField,
             UmlRelationshipType relationshipType
     ) {
-        ExistingClass source = existingClass(requiredText(args, sourceField), catalog, document);
-        ExistingClass target = existingClass(requiredText(args, targetField), catalog, document);
-        requireGroundedClass(userText, source);
-        requireGroundedClass(userText, target);
+        ExistingClass selectedSource = existingClass(requiredText(args, sourceField), catalog, document);
+        ExistingClass selectedTarget = existingClass(requiredText(args, targetField), catalog, document);
+        List<AssistantEntityReferenceResolver.ResolvedClassReference> orderedMentions = orderedDistinctClassMentions(userText, document);
+        ExistingClass source = selectedSource;
+        ExistingClass target = selectedTarget;
+        if (orderedMentions.size() == 2) {
+            source = existingClass(orderedMentions.get(0).canonicalName(), catalog, document);
+            target = existingClass(orderedMentions.get(1).canonicalName(), catalog, document);
+        } else {
+            requireGroundedClass(userText, source);
+            requireGroundedClass(userText, target);
+        }
         if (source.id().equals(target.id())) {
             throw new AssistantPlanningException("La relacion requiere dos extremos UML distintos.");
         }
@@ -400,6 +411,9 @@ public class UmlToolCallResolver {
 
         int lower = requiredInteger(args, "lower");
         int upper = requiredInteger(args, "upper");
+        MultiplicityValues groundedMultiplicity = bindMultiplicityValues(userText, lower, upper);
+        lower = groundedMultiplicity.lower();
+        upper = groundedMultiplicity.upper();
         validateMultiplicity(lower, upper);
 
         boolean sourceEnd = existing.sourceClassName().equals(end.name());
@@ -607,6 +621,10 @@ public class UmlToolCallResolver {
                 score += 5 * proximity;
             } else if (token.startsWith("much")) {
                 score += 4 * proximity;
+            } else if (token.startsWith("vari")) {
+                score += 4 * proximity;
+            } else if (token.startsWith("ningun")) {
+                score += 4 * proximity;
             } else if (token.equals("cero")) {
                 score += 4 * proximity;
             } else if (token.equals("0..*") || token.equals("1..*") || token.equals("0..1") || token.equals("1..1")) {
@@ -615,6 +633,44 @@ public class UmlToolCallResolver {
         }
         return score;
     }
+
+    private MultiplicityValues bindMultiplicityValues(String userText, int selectedLower, int selectedUpper) {
+        String normalized = normalizeText(userText);
+        java.util.regex.Matcher explicit = EXPLICIT_MULTIPLICITY.matcher(userText == null ? "" : userText);
+        if (explicit.find()) {
+            int lower = Integer.parseInt(explicit.group(1));
+            int upper = "*".equals(explicit.group(2)) ? -1 : Integer.parseInt(explicit.group(2));
+            return new MultiplicityValues(lower, upper);
+        }
+
+        boolean zero = normalized.contains("cero") || normalized.contains("ninguna") || normalized.contains("ningun");
+        boolean many = normalized.contains("muchas") || normalized.contains("muchos")
+                || normalized.contains("varias") || normalized.contains("varios");
+        if (zero && many) {
+            return new MultiplicityValues(0, -1);
+        }
+        return new MultiplicityValues(selectedLower, selectedUpper);
+    }
+
+    private List<AssistantEntityReferenceResolver.ResolvedClassReference> orderedDistinctClassMentions(
+            String userText,
+            ProjectDocument document
+    ) {
+        return distinctClassMentions(userText, document).stream()
+                .sorted(Comparator.comparingInt(AssistantEntityReferenceResolver.ResolvedClassReference::tokenIndex))
+                .toList();
+    }
+
+    private String normalizeText(String value) {
+        String decomposed = Normalizer.normalize(value == null ? "" : value, Normalizer.Form.NFD);
+        return DIACRITICS.matcher(decomposed).replaceAll("")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9_*\\s.]", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
+
+    private record MultiplicityValues(int lower, int upper) { }
 
     private List<AssistantEntityReferenceResolver.ResolvedClassReference> distinctClassMentions(
             String userText,

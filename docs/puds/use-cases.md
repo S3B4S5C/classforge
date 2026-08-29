@@ -177,11 +177,11 @@ Texto:
 
 ```text
 texto
- -> Gemma
- -> AssistantSemanticPlan
- -> grounding
- -> normalización
- -> resolver Java
+ -> Qwen native tool calling
+ -> tool UML semántica
+ -> grounded reference resolver / UUID
+ -> AssistantSemanticPlan interno
+ -> grounding + normalización
  -> BATCH
  -> preview
  -> validación
@@ -279,7 +279,7 @@ Requiere confirmación antes de acciones destructivas.
 La infraestructura whisper.cpp ya existe para CU-08 y debe reutilizarse en la futura aplicación generada.
 
 ### CU-25 — IA local
-La infraestructura llama.cpp/Gemma ya existe para CU-08 y debe reutilizarse con `DomainManifest`.
+La infraestructura llama.cpp/Qwen2.5 native tools ya existe para CU-08 y debe reutilizarse con `DomainManifest`, manteniendo Java como autoridad de resolución/validación.
 
 ### CU-26 — Registrar cambios
 Auditoría persistente con operación, usuario, fecha, revisión anterior/nueva y elemento afectado.
@@ -397,3 +397,6 @@ El historial del plan original se conserva en `history/`.
 ### Hardening post-CU08 — tool calling nativo
 
 CU-08 continúa CERRADO. Antes de CU-09 se evalúa sustituir el contrato LLM -> `AssistantSemanticPlan` por un catálogo de tools UML nativas. El camino nuevo conserva preview/Apply/Command Bus y obliga a resolver referencias existentes contra UUID reales. El planner anterior se mantiene durante fix-013 para benchmark A/B y solo podrá retirarse en fix-014 si tools demuestra mayor fiabilidad y safety 100 %.
+
+<!-- CU08-FIX-014 -->
+**Nota CU-08:** la implementación final de texto/voz usa native tool calling como única ruta LLM. `AssistantSemanticPlan` es representación interna y toda mutación continúa convergiendo en preview + BATCH + Command Bus. Se admiten peticiones compuestas dentro de las operaciones UML soportadas.

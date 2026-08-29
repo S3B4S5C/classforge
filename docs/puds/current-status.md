@@ -1,6 +1,6 @@
 # Estado actual PUDS
 
-**Fecha de corte:** 28 de agosto de 2026.
+**Fecha de corte:** 29 de agosto de 2026.
 
 ```text
 Fase PUDS: Elaboración
@@ -116,17 +116,41 @@ CU-09 — Imagen -> UML
 
 CU-31 está cerrado. El Ciclo 2 permanece ABIERTO hasta cerrar CU-09.
 
-<!-- CU08-FIX-013-NATIVE-TOOLS -->
-## Hardening CU-08 previo a CU-09 — native tool calling
+## Hardening CU-08 previo a CU-09 — evidencia de migración
 
-Se abre `C2-cu08-fix-013` como experimento arquitectónico sin reabrir funcionalmente CU-08. El planner legacy permanece disponible y por defecto; se añade un camino `tools` basado en llama.cpp function calling, catálogo UML dinámico, referencias existentes fail-closed y benchmark A/B. CU-09 continúa siendo el siguiente caso funcional del Ciclo 2.
+fix-013 introdujo el candidato native tools y lo endureció en v1.2/v1.3. La evidencia progresó de `tools=70 %` a `82 %` y finalmente, en la corrida de decisión de 20 intentos por categoría, `tools=100 %` frente a `legacy=94 %`, con safety en `100 %`. Esa evidencia autoriza el cutover de fix-014.
 
-<!-- CU08-FIX-013-V1.2-SEMANTIC-TOOLS -->
-### Evidencia y hardening v1.2
+<!-- CU08-FIX-014-NATIVE-TOOLS-CUTOVER -->
+### CU-08 hardening final — native tools oficial
 
-El primer A/B nativo con Qwen2.5-3B-Instruct Q4_K_M obtuvo `legacy=88 %` y `tools=70 %` sobre 50 intentos. El transporte native tool calling y la latencia quedaron validados; los fallos se concentraron en contratos genéricos de update, roles de relaciones, literalidad de nombres nuevos y una clasificación unsafe de atributo desconocido. v1.2 endurece esos contratos sin cambiar el default `legacy`. El cutover a tools sigue bloqueado hasta repetir el benchmark y cumplir los criterios de fix-014.
+`C2-cu08-fix-014` completa el cutover arquitectónico previo a CU-09. El benchmark A/B de decisión con 20 intentos por categoría obtuvo `legacy=94 %`, `tools=100 %`, `SAFETY_UNKNOWN_REFERENCE=100 %`. El planner JSON legacy se retira del runtime; Qwen2.5-3B-Instruct Q4_K_M + llama.cpp native tools pasa a ser la única planificación LLM. Texto y voz convergen en el mismo planner. Se incorpora planificación compuesta mediante previews efímeros y una suite holdout separada de la regresión conocida. CU-08 permanece CERRADO y CU-09 continúa siendo el siguiente caso funcional del Ciclo 2.
 
-<!-- CU08-FIX-013-V1.3-GROUNDED-REBINDING -->
-### Native tools v1.3 — grounded rebinding
 
-El A/B de v1.2 alcanzó `tools=82 %` frente a `legacy=92 %`, con safety ya en `100 %`. v1.3 corrige los fallos restantes observados mediante rebinding determinista de clases/relaciones/extremos desde el texto del usuario y amplía IntentHint para imperativos con pronombre enclítico, evitando overflows de contexto por exposición accidental del catálogo completo. Legacy continúa siendo el planner por defecto y fix-014 permanece bloqueado hasta nueva evidencia A/B.
+<!-- CU08-FIX-014-V1.3-HOLDOUT-HARDENING -->
+### Evidencia holdout y hardening jerarquico
+
+La primera ejecucion holdout posterior al cutover obtuvo 39.4 % (13/33). El resultado no reabre CU-08 funcionalmente, pero bloqueo el inicio de CU-09 hasta corregir el hardening: la mayoria de los fallos eran `LLM HTTP 400` porque el fallback de catalogo completo generaba ~5.1k tokens sobre un contexto de 4096; ademas, Qwen devolvia varias `tool_calls` validas en peticiones compuestas y el planner exigia artificialmente exactamente una.
+
+Fix-014 v1.3 sustituye ese fallback por routing native jerarquico (`route_uml_request` sin enums del proyecto -> una tool UML pesada por step), acepta/deferiere llamadas extra de la misma ronda y liga multiplicidades explicitas desde el texto. CU-09 permanece como siguiente caso funcional, condicionado a una nueva corrida `regression` + `holdout` verde.
+
+
+<!-- CU08-FIX-014-V1.4-HOLDOUT-ADJUDICATION -->
+### Segunda evidencia holdout — route adjudication
+
+Tras fix-014 v1.3 el holdout subio a `19/33 = 57.6 %`: desaparecieron los errores por contexto y `SAFETY_UNKNOWN_REFERENCE` quedo en `100 %`. Los fallos restantes mostraron pasos routed extra en peticiones simples y bursts de 20+ tool calls en un unico step.
+
+Fix-014 v1.4 agrega adjudicacion project-aware de la ruta, colapsa peticiones simples a una unica operacion, ordena compuestos por dependencia, descarta tool calls repetidas y reintenta una vez cuando llama.cpp ignora `tool_choice=required` y responde texto. CU-09 continua bloqueado hasta repetir holdout y regression con esta revision.
+
+<!-- CU08-FIX-014-V1.5-HOLDOUT-STATELESS -->
+### Tercera evidencia holdout — compound stateless
+
+Tras fix-014 v1.4 el holdout subió a `28/33 = 84.8 %`; `RENAME_CLASS`, `DELETE_CLASS`, `ADD_ATTRIBUTES`, `UPDATE_ATTRIBUTE`, `DELETE_ATTRIBUTE`, `CREATE_RELATIONSHIP`, `DELETE_RELATIONSHIP` y `SAFETY_UNKNOWN_REFERENCE` quedaron en `100 %`. Los únicos fallos fueron una creación natural mal detectada como compound, un extremo de multiplicidad conversacional y las tres solicitudes multi-tool dentro del gateway.
+
+Fix-014 v1.5 elimina el historial `assistant/tool` entre steps compuestos y usa únicamente el `ProjectDocument` efímero como estado, corrige la detección `Añade ... una nueva clase` y amplía el binding de multiplicidad `ninguna/varias`. CU-09 continúa bloqueado hasta repetir holdout y regression.
+
+<!-- CU08-FIX-014-V1.6-HOLDOUT-LAZY-PARSE -->
+### Cuarta evidencia holdout — aislamiento final del gateway
+
+Tras fix-014 v1.5 el holdout alcanzo `30/33 = 90.9 %`. `CREATE_CLASS`, `RENAME_CLASS`, `DELETE_CLASS`, `ADD_ATTRIBUTES`, `UPDATE_ATTRIBUTE`, `DELETE_ATTRIBUTE`, `CREATE_RELATIONSHIP`, `UPDATE_RELATIONSHIP`, `DELETE_RELATIONSHIP` y `SAFETY_UNKNOWN_REFERENCE` quedaron en `100 %`. El unico ERROR fue `MULTI_TOOL_COMPOUND=0/3`.
+
+Los tres fallos compuestos fueron `UnexpectedEndOfInputException`: el gateway parseaba llamadas repetidas sobrantes y una de ellas quedaba truncada por el limite de completion, aunque la primera tool call util ya fuera valida. Fix-014 v1.6 aplica parse perezoso de la primera llamada compatible y un unico retry de truncamiento con 512 completion tokens. CU-09 permanece bloqueado hasta repetir holdout y regression con esta revision.

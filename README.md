@@ -25,7 +25,7 @@ El incremento ejecutable actual incluye:
 - CU-06 colaboración autoritativa Spring WebSocket/STOMP;
 - CU-07 presencia efímera;
 - CU-08 lenguaje natural y voz local para proponer cambios UML;
-- llama.cpp + Gemma 3 4B como planner local;
+- llama.cpp + Qwen2.5-3B-Instruct Q4_K_M con native tool calling como planner local;
 - whisper.cpp como Speech-to-Text local;
 - preview, grounding, validación, BATCH atómico y protección por revisión;
 - health de runtimes locales y diagnóstico del pipeline.
@@ -84,7 +84,7 @@ Principios:
 6. Las mutaciones pasan por comandos tipados.
 7. El backend valida, controla revisión y persiste como autoridad final.
 8. Presencia es efímera y no incrementa revisión.
-9. Whisper transcribe; Gemma propone; Java valida y resuelve.
+9. Whisper transcribe; Qwen selecciona tools UML; Java grounded-resuelve, valida y previsualiza.
 10. La IA nunca modifica directamente `ProjectDocument`.
 
 ## Ejecutar backend

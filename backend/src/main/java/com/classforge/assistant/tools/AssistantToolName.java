@@ -5,6 +5,7 @@ import com.classforge.assistant.AssistantActionType;
 import java.util.Arrays;
 
 public enum AssistantToolName {
+    ROUTE_REQUEST("route_uml_request", null),
     CREATE_CLASS("create_class", AssistantActionType.CREATE_CLASS),
     RENAME_CLASS("rename_class", AssistantActionType.RENAME_CLASS),
     DELETE_CLASS("delete_class", AssistantActionType.DELETE_CLASS),
@@ -18,7 +19,8 @@ public enum AssistantToolName {
     CREATE_GENERALIZATION("create_generalization", AssistantActionType.CREATE_RELATIONSHIP),
     SET_RELATIONSHIP_MULTIPLICITY("set_relationship_multiplicity", AssistantActionType.UPDATE_RELATIONSHIP),
     CHANGE_RELATIONSHIP_TYPE("change_relationship_type", AssistantActionType.UPDATE_RELATIONSHIP),
-    DELETE_RELATIONSHIP("delete_relationship", AssistantActionType.DELETE_RELATIONSHIP);
+    DELETE_RELATIONSHIP("delete_relationship", AssistantActionType.DELETE_RELATIONSHIP),
+    FINISH_PLAN("finish_plan", null);
 
     private final String wireName;
     private final AssistantActionType actionType;

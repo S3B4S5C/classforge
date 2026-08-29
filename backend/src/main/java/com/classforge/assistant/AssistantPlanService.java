@@ -1,5 +1,6 @@
 package com.classforge.assistant;
 
+import com.classforge.assistant.tools.AssistantNativeToolPlanner;
 import com.classforge.collaboration.protocol.UmlCommandPayload;
 import com.classforge.project.application.ProjectService;
 import com.classforge.project.domain.Project;
@@ -13,27 +14,18 @@ import java.util.UUID;
 public class AssistantPlanService {
 
     private final ProjectService projectService;
-    private final LanguageModelGateway languageModelGateway;
-    private final AssistantSemanticCompiler semanticCompiler;
-    private final AssistantPlanGroundingFilter groundingFilter;
-    private final AssistantPlanNormalizer normalizer;
+    private final AssistantNativeToolPlanner nativeToolPlanner;
     private final UmlAssistantCommandResolver resolver;
     private final ProjectDocumentValidator validator;
 
     public AssistantPlanService(
             ProjectService projectService,
-            LanguageModelGateway languageModelGateway,
-            AssistantSemanticCompiler semanticCompiler,
-            AssistantPlanGroundingFilter groundingFilter,
-            AssistantPlanNormalizer normalizer,
+            AssistantNativeToolPlanner nativeToolPlanner,
             UmlAssistantCommandResolver resolver,
             ProjectDocumentValidator validator
     ) {
         this.projectService = projectService;
-        this.languageModelGateway = languageModelGateway;
-        this.semanticCompiler = semanticCompiler;
-        this.groundingFilter = groundingFilter;
-        this.normalizer = normalizer;
+        this.nativeToolPlanner = nativeToolPlanner;
         this.resolver = resolver;
         this.validator = validator;
     }
@@ -92,7 +84,7 @@ public class AssistantPlanService {
 
         try {
             rawPlan =
-                    languageModelGateway.plan(
+                    nativeToolPlanner.plan(
                             userText,
                             project.document()
                     );
@@ -111,66 +103,8 @@ public class AssistantPlanService {
             );
         }
 
-        AssistantSemanticPlan compiledPlan;
-
-        try {
-            compiledPlan =
-                    semanticCompiler.compile(
-                            userText,
-                            rawPlan,
-                            project.document()
-                    );
-        } catch (
-                AssistantPlanningException exception
-        ) {
-            throw diagnostic(
-                    exception,
-                    AssistantPlanningStage.GROUNDING,
-                    source,
-                    userText,
-                    rawPlan
-            );
-        }
-
-        AssistantSemanticPlan groundedPlan;
-
-        try {
-            groundedPlan =
-                    groundingFilter.sanitize(
-                            userText,
-                            compiledPlan,
-                            project.document()
-                    );
-        } catch (
-                AssistantPlanningException exception
-        ) {
-            throw diagnostic(
-                    exception,
-                    AssistantPlanningStage.GROUNDING,
-                    source,
-                    userText,
-                    rawPlan
-            );
-        }
-
-        AssistantSemanticPlan normalizedPlan;
-
-        try {
-            normalizedPlan =
-                    normalizer.normalize(
-                            groundedPlan
-                    );
-        } catch (
-                AssistantPlanningException exception
-        ) {
-            throw diagnostic(
-                    exception,
-                    AssistantPlanningStage.NORMALIZATION,
-                    source,
-                    userText,
-                    rawPlan
-            );
-        }
+        // Native tools already return a semantically compiled, grounded and normalized plan.
+        AssistantSemanticPlan normalizedPlan = rawPlan;
 
         UmlCommandPayload batch;
 

@@ -263,6 +263,45 @@ class AssistantNativeToolFoundationTests {
         assertEquals(-1, action.targetUpper());
     }
 
+
+    @Test
+    void conversationalZeroOrSeveralMultiplicityBindsMascotaEndpoint() throws Exception {
+        ProjectDocument document = fixture();
+        AssistantToolCatalog catalog = catalogBuilder.buildForTools(
+                document,
+                List.of(AssistantToolName.SET_RELATIONSHIP_MULTIPLICITY)
+        );
+        String relationshipRef = catalog.relationshipsByLabel().entrySet().stream()
+                .filter(entry -> entry.getValue().sourceClassName().equals("Propietario")
+                        && entry.getValue().targetClassName().equals("Mascota"))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElseThrow();
+
+        AssistantToolInvocation invocation = new AssistantToolInvocation(
+                "call-natural-many",
+                AssistantToolName.SET_RELATIONSHIP_MULTIPLICITY,
+                jsonMapper.readTree(
+                        "{\"existing_relationship_ref\":\""
+                                + relationshipRef.replace("\\", "\\\\").replace("\"", "\\\"")
+                                + "\",\"end_class\":\"Propietario\",\"lower\":1,\"upper\":1}"
+                )
+        );
+
+        AssistantToolResolution resolution = resolver.resolve(
+                "Un propietario puede tener ninguna o varias mascotas",
+                List.of(invocation),
+                catalog,
+                document
+        );
+
+        var action = resolution.plan().actions().getFirst();
+        assertEquals(null, action.sourceLower());
+        assertEquals(null, action.sourceUpper());
+        assertEquals(0, action.targetLower());
+        assertEquals(-1, action.targetUpper());
+    }
+
     @Test
     void deleteRelationshipRebindsWrongLlmChoiceFromGroundedEndpointPair() throws Exception {
         ProjectDocument document = fixture();
@@ -329,11 +368,63 @@ class AssistantNativeToolFoundationTests {
     }
 
     @Test
+    void explicitMultiplicityInUserTextOverridesWrongLlmUpperBound() throws Exception {
+        ProjectDocument document = fixture();
+        String prompt = "Pon 0..* del lado Masctoa en su relacion con Propietario";
+        AssistantToolCatalog catalog = catalogBuilder.buildForTools(
+                document,
+                List.of(AssistantToolName.SET_RELATIONSHIP_MULTIPLICITY)
+        );
+        String relationshipRef = catalog.relationshipsByLabel().entrySet().stream()
+                .filter(entry -> entry.getValue().sourceClassName().equals("Propietario")
+                        && entry.getValue().targetClassName().equals("Mascota"))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElseThrow();
+
+        AssistantToolInvocation invocation = new AssistantToolInvocation(
+                "call-1",
+                AssistantToolName.SET_RELATIONSHIP_MULTIPLICITY,
+                jsonMapper.readTree(
+                        "{\"existing_relationship_ref\":"
+                                + jsonMapper.writeValueAsString(relationshipRef)
+                                + ",\"end_class\":\"Mascota\",\"lower\":0,\"upper\":1}"
+                )
+        );
+
+        AssistantToolResolution resolution = resolver.resolve(prompt, List.of(invocation), catalog, document);
+        var action = resolution.plan().actions().getFirst();
+        assertEquals(0, action.targetLower());
+        assertEquals(-1, action.targetUpper());
+    }
+
+    @Test
+    void routingCatalogNeverEmbedsProjectEnums() {
+        AssistantToolCatalog routing = catalogBuilder.routingCatalog();
+        assertEquals(1, routing.definitions().size());
+        assertEquals(AssistantToolName.ROUTE_REQUEST, routing.definitions().getFirst().name());
+        assertTrue(routing.classIdsByName().isEmpty());
+        assertTrue(routing.attributesByLabel().isEmpty());
+        assertTrue(routing.relationshipsByLabel().isEmpty());
+    }
+
+    @Test
     void pluralPlusTranspositionStillGroundsMascota() {
         ProjectDocument document = fixture();
         assertTrue(entityResolver.fuzzyMentions("Un Propietario puede tener muchas Masctoas", "Mascota"));
         assertTrue(entityResolver.resolveExistingClass("Masctoas", document).isPresent());
         assertEquals("Mascota", entityResolver.resolveExistingClass("Masctoas", document).orElseThrow().canonicalName());
+    }
+
+
+    @Test
+    void compoundDetectorRequiresCreateAttributeAndRelationshipFamilies() {
+        AssistantCompoundRequestDetector detector = new AssistantCompoundRequestDetector();
+        String prompt = "Crea Cliente, agregale email STRING y relaciona Cliente con Factura";
+        assertTrue(detector.isCompound(prompt));
+        assertTrue(detector.requiredFamilies(prompt).contains(AssistantActionType.CREATE_CLASS));
+        assertTrue(detector.requiredFamilies(prompt).contains(AssistantActionType.ADD_ATTRIBUTES));
+        assertTrue(detector.requiredFamilies(prompt).contains(AssistantActionType.CREATE_RELATIONSHIP));
     }
 
     private ProjectDocument fixture() {

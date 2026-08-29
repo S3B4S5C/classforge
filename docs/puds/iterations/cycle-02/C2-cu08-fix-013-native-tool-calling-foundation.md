@@ -93,3 +93,8 @@ v1.3 mantiene legacy como default y añade:
 - regresiones deterministas para los fallos observados de rename, delete/add context, multiplicidad y delete relationship.
 
 El cutover de fix-014 continúa bloqueado hasta repetir A/B y luego confirmar el resultado con al menos 20 intentos por categoría.
+
+<!-- CU08-FIX-014-SUPERSEDED -->
+## Cierre del experimento
+
+La corrida de decisión posterior a v1.3, con 20 intentos por categoría, obtuvo `legacy=94 %` y `tools=100 %`, incluyendo safety en `100 %`. `C2-cu08-fix-014` consume esta evidencia, convierte native tools en la única ruta LLM y retira los modos `legacy/tools/compare`. Este documento queda como historial de la migración, no como descripción del runtime actual.

@@ -7,7 +7,7 @@ La IA nunca modifica ProjectDocument directamente.
 ```text
 chat
 → POST /assistant/plan
-→ llama.cpp JSON Schema
+→ llama.cpp native tool calling
 → AssistantSemanticPlan
 → resolver Java por nombres
 → BATCH
@@ -48,9 +48,9 @@ classforge.assistant.llama-url
 classforge.assistant.llama-model
 ```
 
-El gateway usa `response_format = json_schema`.
+El gateway usa `/v1/chat/completions` con native `tools`, `tool_choice=required`, temperatura 0 y `parallel_tool_calls=false`. La primera llamada usa el catálogo liviano `route_uml_request`; `AssistantToolRouteAdjudicator` corrige pasos incompatibles con evidencia del `ProjectDocument` y luego cada step expone una única tool UML semántica con enums canónicos.
 
-El LLM devuelve nombres y semántica. Java genera UUIDs y valida.
+El LLM propone intención y argumentos. Java adjudica la familia segura, resuelve referencias/typos/provenance, genera UUIDs y valida. Si llama.cpp devuelve texto sin tool calls en un step obligatorio, se realiza un único reintento estricto; las tool calls repetidas del mismo step se descartan después de la primera compatible.
 
 ## UI
 
@@ -477,7 +477,7 @@ Microfono navegador
 -> whisper-server /inference
 -> transcript
 -> AssistantPlanService source=VOICE
--> LlamaLanguageModelGateway
+-> AssistantNativeToolPlanner
 -> grounding contextual
 -> normalizacion/safety
 -> UmlAssistantCommandResolver
@@ -489,7 +489,7 @@ Microfono navegador
 
 Whisper solo produce texto. No conoce `ProjectDocument`, no genera UUIDs y no ejecuta comandos.
 
-Gemma continua produciendo `AssistantSemanticPlan`, nunca modifica directamente el modelo canonico.
+Qwen produce tool calls UML; ClassForge construye `AssistantSemanticPlan` internamente y el modelo nunca modifica directamente el modelo canónico.
 
 La mutacion sigue ocurriendo exclusivamente cuando el usuario pulsa `Aplicar`, por el mismo Command Bus/BATCH de CU08-001.
 
@@ -534,7 +534,7 @@ attemptedPlan
 
 Etapas: STT, LLM, GROUNDING, NORMALIZATION, RESOLUTION y PREVIEW.
 
-Si Gemma ya produjo un `AssistantSemanticPlan` y una defensa posterior lo rechaza, la respuesta HTTP incluye el plan original bajo `attemptedPlan`. El frontend muestra un resumen de las acciones intentadas.
+Si el planner nativo ya produjo una IR `AssistantSemanticPlan` y una defensa posterior la rechaza, la respuesta HTTP incluye el plan original bajo `attemptedPlan`. El frontend muestra un resumen de las acciones intentadas.
 
 No se exponen system prompts, chain-of-thought ni razonamiento interno del modelo.
 
@@ -651,16 +651,13 @@ Las referencias ambiguas no se autocorrigen. Los nombres nuevos de `CREATE_CLASS
 
 Para medir el efecto real del LLM y del compilador se incorpora `scripts/assistant-reliability.ps1`, que ejecuta N inferencias sin Apply y reporta por separado exactitud raw y exactitud final.
 
-<!-- CU08-FIX-013-NATIVE-TOOLS -->
-## C2-cu08-fix-013 — camino candidato con native tool calling
+<!-- CU08-FIX-014-NATIVE-TOOLS-OFFICIAL -->
+## Cutover native tools (fix-014)
 
-El planner JSON legado permanece operativo, pero se incorpora un segundo camino experimental con Qwen/tool calling nativo. Véase `assistant-native-tool-calling.md`.
+Desde fix-014 no existe routing `legacy/tools/compare`. `AssistantPlanService` depende directamente de `AssistantNativeToolPlanner`. El LLM solo emite function calls; `AssistantSemanticPlan` es IR interna. Peticiones compuestas se proyectan sobre un documento efímero entre rondas y finalmente producen un único BATCH para preview/Apply. Texto y transcript de voz convergen aquí.
 
-```text
-legacy: texto -> JSON Schema -> AssistantSemanticPlan
 
-tools:  texto -> DynamicUmlToolCatalog -> native tool_calls
-             -> UUID/reference validation -> AssistantSemanticPlan interno
-```
+<!-- CU08-FIX-014-V1.4-ROUTE-ADJUDICATION -->
+## Fix-014 v1.4 — route adjudication
 
-El endpoint, preview, validator, Apply y Command Bus no cambian. `classforge.assistant.planner-mode` selecciona `legacy`, `tools` o `compare`; durante fix-013 el default continúa siendo `legacy` hasta disponer de evidencia A/B suficiente.
+El router native es una propuesta semántica, no una autoridad de mutación. Para una petición simple ClassForge adjudica exactamente una operación compatible con referencias y cues del proyecto. Esto impide que una ruta como `create_class -> rename_class` cree un símbolo efímero no solicitado antes del rename. En compuestos, la ruta se ordena por dependencias y cada ronda guarda solo la primera tool call compatible.

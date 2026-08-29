@@ -24,7 +24,8 @@ public class LlamaNativeToolCallingGateway implements AssistantToolCallingGatewa
 
     static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(90);
     static final Duration CAPABILITY_CACHE = Duration.ofSeconds(60);
-    static final int MAX_COMPLETION_TOKENS = 512;
+    static final int MAX_COMPLETION_TOKENS = 256;
+    static final int RETRY_COMPLETION_TOKENS = 512;
 
     private final JsonMapper jsonMapper;
     private final HttpClient httpClient;
@@ -51,7 +52,19 @@ public class LlamaNativeToolCallingGateway implements AssistantToolCallingGatewa
     public List<AssistantToolInvocation> call(
             String userText,
             ProjectDocument document,
-            AssistantToolCatalog catalog
+            AssistantToolCatalog catalog,
+            List<AssistantToolConversationTurn> history
+    ) {
+        return callInternal(userText, document, catalog, history, false, null);
+    }
+
+    private List<AssistantToolInvocation> callInternal(
+            String userText,
+            ProjectDocument document,
+            AssistantToolCatalog catalog,
+            List<AssistantToolConversationTurn> history,
+            boolean retryAttempt,
+            String retryInstruction
     ) {
         if (catalog.definitions().isEmpty()) {
             throw new AssistantPlanningException("No hay herramientas UML disponibles para esta peticion.");
@@ -63,23 +76,44 @@ public class LlamaNativeToolCallingGateway implements AssistantToolCallingGatewa
             Map<String, Object> request = new LinkedHashMap<>();
             request.put("model", model);
             request.put("temperature", 0.0d);
-            request.put("max_tokens", MAX_COMPLETION_TOKENS);
+            request.put("max_tokens", retryAttempt ? RETRY_COMPLETION_TOKENS : MAX_COMPLETION_TOKENS);
             request.put("stream", false);
             request.put("parallel_tool_calls", false);
             request.put("tool_choice", "required");
-            request.put(
-                    "messages",
-                    List.of(
-                            Map.of(
-                                    "role", "system",
-                                    "content", systemPrompt()
-                            ),
-                            Map.of(
-                                    "role", "user",
-                                    "content", userText
-                            )
-                    )
-            );
+            List<Map<String, Object>> messages = new ArrayList<>();
+            messages.add(Map.of("role", "system", "content", systemPrompt(catalog)));
+            String effectiveUserText = retryInstruction == null
+                    ? userText
+                    : userText + "\n\nIMPORTANTE: " + retryInstruction;
+            messages.add(Map.of("role", "user", "content", effectiveUserText));
+            if (history != null) {
+                for (AssistantToolConversationTurn turn : history) {
+                    List<Map<String, Object>> priorCalls = new ArrayList<>();
+                    for (AssistantToolInvocation invocation : turn.invocations()) {
+                        priorCalls.add(Map.of(
+                                "id", invocation.id(),
+                                "type", "function",
+                                "function", Map.of(
+                                        "name", invocation.name().wireName(),
+                                        "arguments", jsonMapper.writeValueAsString(invocation.arguments())
+                                )
+                        ));
+                    }
+                    messages.add(Map.of(
+                            "role", "assistant",
+                            "content", "",
+                            "tool_calls", priorCalls
+                    ));
+                    for (int i = 0; i < turn.invocations().size(); i++) {
+                        messages.add(Map.of(
+                                "role", "tool",
+                                "tool_call_id", turn.invocations().get(i).id(),
+                                "content", turn.results().get(i)
+                        ));
+                    }
+                }
+            }
+            request.put("messages", messages);
             request.put(
                     "tools",
                     catalog.definitions().stream()
@@ -109,7 +143,23 @@ public class LlamaNativeToolCallingGateway implements AssistantToolCallingGatewa
                 );
             }
 
-            JsonNode root = jsonMapper.readTree(response.body());
+            JsonNode root;
+            try {
+                root = jsonMapper.readTree(response.body());
+            } catch (Exception malformedEnvelope) {
+                if (!retryAttempt && catalog.definitions().size() == 1) {
+                    return callInternal(
+                            userText, document, catalog, history, true,
+                            "la respuesta JSON anterior de llama.cpp quedo truncada. Devuelve exactamente una "
+                                    + "tool_call completa, sin texto ni llamadas repetidas."
+                    );
+                }
+                throw new AssistantPlanningException(
+                        "llama.cpp devolvio una respuesta JSON truncada incluso despues del reintento: "
+                                + abbreviate(response.body(), 300),
+                        malformedEnvelope
+                );
+            }
             JsonNode choices = root.get("choices");
             if (choices == null || choices.isEmpty()) {
                 throw new AssistantPlanningException("llama.cpp no devolvio choices para tool calling.");
@@ -121,37 +171,81 @@ public class LlamaNativeToolCallingGateway implements AssistantToolCallingGatewa
                 String content = message == null || message.get("content") == null
                         ? ""
                         : message.get("content").asString();
+                if (!retryAttempt && catalog.definitions().size() == 1) {
+                    return callInternal(
+                            userText, document, catalog, history, true,
+                            "responde con exactamente una tool_call completa de la unica herramienta expuesta. "
+                                    + "No escribas texto conversacional ni repitas la llamada."
+                    );
+                }
                 throw new AssistantPlanningException(
-                        "Qwen no devolvio tool_calls nativos. Respuesta: " + abbreviate(content, 400)
+                        "Qwen no devolvio tool_calls nativos despues del reintento obligatorio. Respuesta: "
+                                + abbreviate(content, 400)
                 );
             }
 
-            List<AssistantToolInvocation> invocations = new ArrayList<>();
+            List<AssistantToolName> exposedTools = catalog.definitions().stream()
+                    .map(AssistantToolDefinition::name)
+                    .toList();
+
+            // llama.cpp/Qwen can occasionally emit a burst of repeated tool_calls
+            // even with parallel_tool_calls=false. We only need the first call that
+            // targets a tool actually exposed by the current (normally single-tool)
+            // catalog. Parsing every trailing call is unsafe because max_tokens may
+            // truncate the tail in the middle of its JSON arguments even though the
+            // first call is already complete and valid.
             for (JsonNode toolCall : toolCalls) {
                 JsonNode function = toolCall.get("function");
                 if (function == null || function.get("name") == null || function.get("arguments") == null) {
-                    throw new AssistantPlanningException("llama.cpp devolvio un tool_call incompleto.");
+                    continue;
                 }
 
-                String id = toolCall.get("id") == null
-                        ? "tool-" + (invocations.size() + 1)
-                        : toolCall.get("id").asString();
-                String functionName = function.get("name").asString();
-                JsonNode rawArguments = function.get("arguments");
-                JsonNode arguments = rawArguments.isTextual()
-                        ? jsonMapper.readTree(rawArguments.asString())
-                        : rawArguments;
+                AssistantToolName toolName;
+                try {
+                    toolName = AssistantToolName.fromWireName(function.get("name").asString());
+                } catch (RuntimeException exception) {
+                    continue;
+                }
+                if (!exposedTools.contains(toolName)) {
+                    continue;
+                }
 
-                invocations.add(
-                        new AssistantToolInvocation(
-                                id,
-                                AssistantToolName.fromWireName(functionName),
-                                arguments
-                        )
-                );
+                String id = toolCall.get("id") == null ? "tool-1" : toolCall.get("id").asString();
+                JsonNode rawArguments = function.get("arguments");
+                JsonNode arguments;
+                try {
+                    arguments = rawArguments.isTextual()
+                            ? jsonMapper.readTree(rawArguments.asString())
+                            : rawArguments;
+                } catch (Exception malformedArguments) {
+                    if (!retryAttempt && catalog.definitions().size() == 1) {
+                        return callInternal(
+                                userText, document, catalog, history, true,
+                                "la tool_call anterior quedo truncada. Devuelve exactamente una sola tool_call, "
+                                        + "con JSON de argumentos completo y sin repetir llamadas."
+                        );
+                    }
+                    throw new AssistantPlanningException(
+                            "Qwen devolvio argumentos JSON truncados para " + toolName.wireName()
+                                    + " incluso despues del reintento: "
+                                    + abbreviate(rawArguments.asString(), 300),
+                            malformedArguments
+                    );
+                }
+
+                return List.of(new AssistantToolInvocation(id, toolName, arguments));
             }
 
-            return List.copyOf(invocations);
+            if (!retryAttempt && catalog.definitions().size() == 1) {
+                return callInternal(
+                        userText, document, catalog, history, true,
+                        "usa exactamente la unica herramienta expuesta y devuelve una sola tool_call completa."
+                );
+            }
+            throw new AssistantPlanningException(
+                    "Qwen devolvio tool_calls, pero ninguna corresponde a las herramientas expuestas: "
+                            + exposedTools.stream().map(AssistantToolName::wireName).toList()
+            );
         } catch (HttpTimeoutException exception) {
             throw new AssistantPlanningException(
                     "El modelo local supero "
@@ -162,8 +256,11 @@ public class LlamaNativeToolCallingGateway implements AssistantToolCallingGatewa
         } catch (AssistantPlanningException exception) {
             throw exception;
         } catch (Exception exception) {
+            String detail = exception.getMessage() == null || exception.getMessage().isBlank()
+                    ? exception.getClass().getSimpleName()
+                    : exception.getClass().getSimpleName() + ": " + abbreviate(exception.getMessage(), 240);
             throw new AssistantPlanningException(
-                    "No pudimos ejecutar native tool calling contra llama.cpp en " + url,
+                    "No pudimos ejecutar native tool calling contra llama.cpp en " + url + " (" + detail + ")",
                     exception
             );
         }
@@ -226,10 +323,14 @@ public class LlamaNativeToolCallingGateway implements AssistantToolCallingGatewa
         return node != null && "true".equalsIgnoreCase(node.asString());
     }
 
-    private String systemPrompt() {
+    private String systemPrompt(AssistantToolCatalog catalog) {
+        if (catalog.definitions().size() == 1
+                && catalog.definitions().getFirst().name() == AssistantToolName.ROUTE_REQUEST) {
+            return routingSystemPrompt();
+        }
         return """
                 Eres el planificador UML local de ClassForge.
-                Debes responder exclusivamente mediante una o mas tool_calls de las herramientas proporcionadas.
+                Debes responder exclusivamente mediante exactamente una tool_call de la herramienta proporcionada para este paso.
                 No escribas una respuesta conversacional.
 
                 REGLAS:
@@ -246,7 +347,41 @@ public class LlamaNativeToolCallingGateway implements AssistantToolCallingGatewa
                 - Para upper infinito usa -1; lower nunca puede ser negativo.
                 - "muchas/muchos" sin minimo explicito significa 0..*; "cero o muchas" significa 0..*.
                 - Si una propiedad opcional no fue solicitada, omitela.
-                - En este primer incremento evita depender de una clase creada por otra tool_call de la misma respuesta.
+                - ClassForge ya enruto el paso actual: emite exactamente una llamada a la unica tool UML expuesta para ese paso.
+                - En peticiones compuestas ClassForge te invoca de nuevo con el siguiente paso y un ProjectDocument efimero actualizado.
+                - Si una clase fue creada en una ronda previa, ya aparece en el catalogo actual y puede usarse como referencia existente.
+                """;
+    }
+
+
+    private String routingSystemPrompt() {
+        return """
+                Eres el router de operaciones UML de ClassForge.
+                Responde exclusivamente con exactamente una llamada a route_uml_request.
+
+                Debes convertir la peticion en una lista ORDENADA de herramientas semanticas.
+                No resuelvas nombres de clases ni atributos y no inventes cambios: solo elige operaciones.
+                Usa un unico step para una peticion simple y varios steps solo si el usuario pide varios cambios.
+                Si una clase nueva se usa despues, create_class debe ir antes de add_attributes o relaciones que la referencien.
+
+                Ejemplos de significado:
+                - crear clase -> create_class
+                - renombrar clase -> rename_class
+                - borrar clase -> delete_class
+                - agregar campo/atributo -> add_attributes
+                - renombrar atributo -> rename_attribute
+                - cambiar propiedades de atributo -> update_attribute_properties
+                - borrar atributo -> delete_attribute
+                - asociar/conectar -> create_association
+                - agregacion -> create_aggregation
+                - composicion/contiene como parte fuerte -> create_composition
+                - herencia/especializacion -> create_generalization
+                - cambiar 0..*, 1..*, muchas, ninguna o varias -> set_relationship_multiplicity
+                - cambiar tipo de relacion -> change_relationship_type
+                - desconectar/quitar vinculo/relacion existente -> delete_relationship
+
+                Para "crea Cliente, agregale email y relacionala con Factura" devuelve:
+                [create_class, add_attributes, create_association].
                 """;
     }
 

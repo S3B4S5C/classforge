@@ -1,5 +1,6 @@
 package com.classforge.assistant;
 
+import com.classforge.assistant.tools.AssistantNativeToolPlanner;
 import com.classforge.collaboration.protocol.UmlCommandPayload;
 import com.classforge.project.application.ProjectNotFoundException;
 import com.classforge.project.application.ProjectService;
@@ -48,10 +49,7 @@ class AssistantMembershipAccessIntegrationTests {
                 ProjectMembershipEntity.editor(project.id(), editorId)
         );
 
-        LanguageModelGateway gateway = mock(LanguageModelGateway.class);
-        AssistantSemanticCompiler semanticCompiler = mock(AssistantSemanticCompiler.class);
-        AssistantPlanGroundingFilter grounding = mock(AssistantPlanGroundingFilter.class);
-        AssistantPlanNormalizer normalizer = mock(AssistantPlanNormalizer.class);
+        AssistantNativeToolPlanner gateway = mock(AssistantNativeToolPlanner.class);
         UmlAssistantCommandResolver resolver = mock(UmlAssistantCommandResolver.class);
         ProjectDocumentValidator validator = mock(ProjectDocumentValidator.class);
 
@@ -61,11 +59,6 @@ class AssistantMembershipAccessIntegrationTests {
                 UmlCommandPayload.batch("Sin cambios", List.of());
 
         when(gateway.plan(anyString(), any(ProjectDocument.class))).thenReturn(plan);
-        when(semanticCompiler.compile(anyString(), any(AssistantSemanticPlan.class), any(ProjectDocument.class)))
-                .thenReturn(plan);
-        when(grounding.sanitize(anyString(), any(AssistantSemanticPlan.class), any(ProjectDocument.class)))
-                .thenReturn(plan);
-        when(normalizer.normalize(any(AssistantSemanticPlan.class))).thenReturn(plan);
         when(resolver.resolve(any(AssistantSemanticPlan.class), any(ProjectDocument.class))).thenReturn(batch);
         when(resolver.preview(any(ProjectDocument.class), any(UmlCommandPayload.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -74,9 +67,6 @@ class AssistantMembershipAccessIntegrationTests {
                 new AssistantPlanService(
                         projectService,
                         gateway,
-                        semanticCompiler,
-                        grounding,
-                        normalizer,
                         resolver,
                         validator
                 );

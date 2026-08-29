@@ -27,3 +27,6 @@ Después se abrirán los incrementos técnicos de CU-09.
 ## Hardening del Assistant antes de CU-09
 
 - `C2-cu08-fix-013-native-tool-calling-foundation.md`: introduce native tools detrás de un modo experimental y benchmark A/B contra legacy. CU-08 permanece CERRADO y CU-09 continúa siendo el siguiente CU funcional.
+
+<!-- CU08-FIX-014 -->
+- `C2-cu08-fix-014-native-tools-cutover.md`: native tools oficial, multi-tool, retiro del planner legacy y evidencia previa a CU-09.
