@@ -10,6 +10,8 @@ import com.classforge.project.application.ProjectService;
 import com.classforge.project.domain.Project;
 import com.classforge.project.domain.document.DiagramNodeLayout;
 import com.classforge.project.domain.document.UmlClass;
+import com.classforge.project.persistence.ProjectMembershipEntity;
+import com.classforge.project.persistence.ProjectMembershipRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -56,24 +58,37 @@ class ProjectStompEndToEndIntegrationTests {
     private ProjectService projectService;
 
     @Autowired
+    private ProjectMembershipRepository projectMembershipRepository;
+
+    @Autowired
     private JwtService jwtService;
 
     @Autowired
     private JsonMapper jsonMapper;
 
     @Test
-    void twoClientsReceiveAcceptedOperationAndStaleWriterGetsPrivateRejection()
+    void ownerAndEditorExchangeOperationsAndStaleWriterGetsPrivateRejection()
             throws Exception {
         UUID ownerId = UUID.randomUUID();
 
-        UserEntity user =
+        UserEntity owner =
                 userRepository.save(
                         new UserEntity(
                                 ownerId,
                                 "Realtime Owner",
-                                "cu06-e2e-"
-                                        + ownerId
-                                        + "@classforge.test",
+                                "cu31-owner-" + ownerId + "@classforge.test",
+                                "unused",
+                                Instant.now()
+                        )
+                );
+
+        UUID editorId = UUID.randomUUID();
+        UserEntity editor =
+                userRepository.save(
+                        new UserEntity(
+                                editorId,
+                                "Realtime Editor",
+                                "cu31-editor-" + editorId + "@classforge.test",
                                 "unused",
                                 Instant.now()
                         )
@@ -85,8 +100,12 @@ class ProjectStompEndToEndIntegrationTests {
                         "Veterinaria colaborativa"
                 );
 
-        String token =
-                jwtService.issue(user);
+        projectMembershipRepository.save(
+                ProjectMembershipEntity.editor(project.id(), editorId)
+        );
+
+        String ownerToken = jwtService.issue(owner);
+        String editorToken = jwtService.issue(editor);
 
         WebSocketStompClient stompClient =
                 new WebSocketStompClient(
@@ -104,13 +123,13 @@ class ProjectStompEndToEndIntegrationTests {
             sessionA =
                     connect(
                             stompClient,
-                            token
+                            ownerToken
                     );
 
             sessionB =
                     connect(
                             stompClient,
-                            token
+                            editorToken
                     );
 
             BlockingQueue<String> topicA =
@@ -161,7 +180,7 @@ class ProjectStompEndToEndIntegrationTests {
                             "Animal"
                     );
 
-            sessionA.send(
+            sessionB.send(
                     "/app/projects/"
                             + project.id()
                             + "/operations",
@@ -242,7 +261,7 @@ class ProjectStompEndToEndIntegrationTests {
 
             Project persisted =
                     projectService.get(
-                            ownerId,
+                            editorId,
                             project.id()
                     );
 

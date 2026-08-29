@@ -24,4 +24,6 @@ Los prefijos históricos `E1` y `E3` utilizados durante el desarrollo se normali
 
 Consultar `cycle-01/`.
 
-Ciclo 2 no se crea hasta que su objetivo PUDS sea formalmente abierto.
+## Ciclo 2
+
+Consultar `cycle-02/`. El ciclo está ABIERTO con CU-31 cerrado y CU-09 como siguiente caso.

@@ -40,3 +40,65 @@ tasks.withType(JavaCompile).configureEach {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// CU08-FIX-009-ASSISTANT-RELIABILITY
+tasks.register('assistantReliability', JavaExec) {
+    group = 'verification'
+    description = 'Runs repeated local-LLM planning attempts and compares raw vs semantic-compiled reliability.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.classforge.assistant.AssistantReliabilityCli'
+    dependsOn testClasses
+
+    def option = { String name, String defaultValue ->
+        project.findProperty(name)?.toString() ?: defaultValue
+    }
+
+    args(
+            "attempts=${option('attempts', '20')}",
+            "prompt=${option('prompt', 'Crea una asociacion entre 4nimal y mascota')}",
+            "classes=${option('classes', 'Animal,Mascota')}",
+            "expectedSource=${option('expectedSource', 'Animal')}",
+            "expectedTarget=${option('expectedTarget', 'Mascota')}",
+            "expectedType=${option('expectedType', 'ASSOCIATION')}",
+            "llamaUrl=${option('llamaUrl', 'http://127.0.0.1:8092')}",
+            "model=${option('model', 'local-model')}",
+            "verbose=${option('verbose', 'false')}",
+            "failOnFinalError=${option('failOnFinalError', 'false')}"
+    )
+}
+
+// CU08-FIX-010-ASSISTANT-E2E-RELIABILITY
+tasks.register('assistantE2EReliability', Test) {
+    group = 'verification'
+    description = 'Runs the real Assistant HTTP endpoint repeatedly against llama.cpp and reports reliability by operation type.'
+
+    // CU08-FIX-010-V1.3: custom Test task must be wired to the test runtime.
+    dependsOn testClasses
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+
+    // The external LLM is nondeterministic; execute the benchmark on every invocation.
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching 'com.classforge.assistant.AssistantE2EReliabilityIntegrationTest'
+    }
+
+    def option = { String name, String defaultValue ->
+        project.findProperty(name)?.toString() ?: defaultValue
+    }
+
+    systemProperty 'assistant.benchmark.enabled', 'true'
+    systemProperty 'assistant.benchmark.attempts', option('attempts', '5')
+    systemProperty 'assistant.benchmark.errorFailurePercent', option('errorFailurePercent', '60')
+    systemProperty 'assistant.benchmark.verbose', option('verbose', 'false')
+    systemProperty 'classforge.assistant.llama-url', option('llamaUrl', 'http://127.0.0.1:8092')
+    systemProperty 'classforge.assistant.llama-model', option('model', 'local-model')
+
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+}

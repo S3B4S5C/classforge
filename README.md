@@ -8,7 +8,7 @@ La visión completa del producto está en `docs/product/product.md`. El estado r
 
 ## Estado actual
 
-**Ciclo 1 de Elaboración cerrado — corte 28 de agosto de 2026.**
+**Ciclo 1 cerrado. Ciclo 2 de Elaboración ABIERTO — CU-31 CERRADO; CU-09 SIGUIENTE.**
 
 En ClassForge llamamos **Ciclo** a una **iteración PUDS**.
 
@@ -34,7 +34,7 @@ También están implementados como infraestructura transversal:
 
 - CU-28 registrar cuenta;
 - CU-29 iniciar sesión;
-- CU-30 acceder solo a proyectos propios;
+- CU-30 ownership persistente, ampliado en CU-31 con proyectos compartidos;
 - CU-24 STT local y CU-25 IA local en el contexto del Asistente UML.
 
 Aún no están implementados:
@@ -46,9 +46,9 @@ Aún no están implementados:
 - CU-19..23 voz sobre la aplicación generada;
 - CU-26 auditoría histórica completa;
 - CU-27 demo reproducible formal;
-- CU-31 membresía e invitaciones.
+- CU-31 cerrado: membership, invitaciones, STOMP, presencia y Assistant validados con OWNER/EDITOR/NONE.
 
-La colaboración actual sigue limitada por ownership: hasta incorporar membresías, la demostración multiusuario real se realiza como multisesión del propietario.
+CU-31 quedó cerrado en C2-cu31-003 con colaboración multi-cuenta real, defensa de acceso unificada y hardening concurrente de invitaciones. CU-09 — Imagen → UML — es el siguiente caso del Ciclo 2.
 
 ## Arquitectura vigente
 
@@ -151,6 +151,6 @@ Un posible archivo `*.classforge` continúa siendo un formato portable futuro, n
 
 ## Próximo hito
 
-El **Ciclo 2 aún no está formalmente abierto** en este corte.
+El **Ciclo 2 está formalmente ABIERTO**; CU-31 está cerrado y CU-09 es el siguiente caso.
 
 Antes de implementar el siguiente CU se debe seleccionar el objetivo del nuevo ciclo desde `docs/puds/use-cases.md` y registrar su objetivo, riesgos y criterios de salida.

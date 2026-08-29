@@ -3,6 +3,7 @@ package com.classforge.collaboration.presence;
 import com.classforge.auth.persistence.UserEntity;
 import com.classforge.auth.persistence.UserRepository;
 import com.classforge.collaboration.security.CollaborationPrincipal;
+import com.classforge.project.access.ProjectAccessService;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.Header;
@@ -21,12 +22,14 @@ public class ProjectPresenceController {
 
     private final ProjectPresenceRegistry registry;
     private final UserRepository userRepository;
+    private final ProjectAccessService projectAccessService;
     private final SimpMessagingTemplate messagingTemplate;
     private final JsonMapper jsonMapper;
 
     public ProjectPresenceController(
             ProjectPresenceRegistry registry,
             UserRepository userRepository,
+            ProjectAccessService projectAccessService,
             SimpMessagingTemplate messagingTemplate,
             JsonMapper jsonMapper
     ) {
@@ -35,6 +38,9 @@ public class ProjectPresenceController {
 
         this.userRepository =
                 userRepository;
+
+        this.projectAccessService =
+                projectAccessService;
 
         this.messagingTemplate =
                 messagingTemplate;
@@ -54,6 +60,13 @@ public class ProjectPresenceController {
                 requirePrincipal(
                         principal
                 );
+
+        // Defense in depth: el interceptor valida el destino y el controller
+        // vuelve a exigir permiso de edición antes de tocar presencia.
+        projectAccessService.requireEdit(
+                user.id(),
+                projectId
+        );
 
         PresenceEventRequest request;
 

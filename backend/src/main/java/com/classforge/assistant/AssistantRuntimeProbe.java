@@ -9,6 +9,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Locale;
 
 @Component
 public class AssistantRuntimeProbe {
@@ -45,26 +46,14 @@ public class AssistantRuntimeProbe {
                 System.nanoTime();
 
         try {
-            HttpRequest request =
-                    HttpRequest
-                            .newBuilder(
-                                    URI.create(
-                                            normalizeBaseUrl(
-                                                    baseUrl
-                                            )
-                                                    + "/health"
-                                    )
-                            )
-                            .timeout(
-                                    REQUEST_TIMEOUT
-                            )
-                            .GET()
-                            .build();
+            String normalizedBaseUrl =
+                    normalizeBaseUrl(
+                            baseUrl
+                    );
 
             HttpResponse<String> response =
-                    httpClient.send(
-                            request,
-                            HttpResponse.BodyHandlers.ofString()
+                    get(
+                            normalizedBaseUrl + "/health"
                     );
 
             long latencyMs =
@@ -77,39 +66,57 @@ public class AssistantRuntimeProbe {
                             response.body()
                     );
 
-            boolean available =
+            boolean healthReady =
                     response.statusCode() >= 200
                             && response.statusCode() < 300
                             && "ok".equalsIgnoreCase(
                             reportedState
                     );
 
-            String state =
-                    available
-                            ? "READY"
-                            : (
-                            response.statusCode() == 503
-                                    ? "LOADING"
-                                    : "UNAVAILABLE"
-                    );
+            if (!healthReady) {
+                String state =
+                        response.statusCode() == 503
+                                ? "LOADING"
+                                : "UNAVAILABLE";
 
-            String message =
-                    available
-                            ? "Listo"
-                            : "HTTP "
-                            + response.statusCode()
-                            + (
-                            reportedState == null
-                                    ? ""
-                                    : " · " + reportedState
-                    );
+                String message =
+                        "HTTP "
+                                + response.statusCode()
+                                + (
+                                reportedState == null
+                                        ? ""
+                                        : " · " + reportedState
+                        );
+
+                return new AssistantRuntimeStatus(
+                        name,
+                        false,
+                        state,
+                        latencyMs,
+                        message
+                );
+            }
+
+            if (!matchesExpectedRuntime(
+                    name,
+                    normalizedBaseUrl,
+                    response
+            )) {
+                return new AssistantRuntimeStatus(
+                        name,
+                        false,
+                        "MISMATCH",
+                        latencyMs,
+                        "El puerto responde, pero no parece ser " + name
+                );
+            }
 
             return new AssistantRuntimeStatus(
                     name,
-                    available,
-                    state,
+                    true,
+                    "READY",
                     latencyMs,
-                    message
+                    "Listo"
             );
         } catch (Exception exception) {
             return new AssistantRuntimeStatus(
@@ -122,6 +129,136 @@ public class AssistantRuntimeProbe {
                     "No responde en /health"
             );
         }
+    }
+
+    private boolean matchesExpectedRuntime(
+            String name,
+            String baseUrl,
+            HttpResponse<String> healthResponse
+    ) {
+        if ("llama.cpp".equalsIgnoreCase(name)) {
+            return isLlamaCpp(
+                    baseUrl
+            );
+        }
+
+        if ("whisper.cpp".equalsIgnoreCase(name)) {
+            return isWhisperCpp(
+                    baseUrl,
+                    healthResponse
+            );
+        }
+
+        return true;
+    }
+
+    private boolean isLlamaCpp(
+            String baseUrl
+    ) {
+        try {
+            HttpResponse<String> response =
+                    get(
+                            baseUrl + "/v1/models"
+                    );
+
+            if (
+                    response.statusCode() < 200
+                            || response.statusCode() >= 300
+            ) {
+                return false;
+            }
+
+            JsonNode root =
+                    jsonMapper.readTree(
+                            response.body()
+                    );
+
+            JsonNode data =
+                    root.get(
+                            "data"
+                    );
+
+            if (
+                    data == null
+                            || !data.isArray()
+            ) {
+                return false;
+            }
+
+            for (JsonNode model : data) {
+                JsonNode ownedBy =
+                        model.get(
+                                "owned_by"
+                        );
+
+                if (
+                        ownedBy != null
+                                && ownedBy.asString()
+                                .toLowerCase(Locale.ROOT)
+                                .contains("llama")
+                ) {
+                    return true;
+                }
+            }
+
+            return false;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private boolean isWhisperCpp(
+            String baseUrl,
+            HttpResponse<String> healthResponse
+    ) {
+        String serverHeader =
+                healthResponse
+                        .headers()
+                        .firstValue("Server")
+                        .orElse("")
+                        .toLowerCase(Locale.ROOT);
+
+        if (serverHeader.contains("whisper.cpp")) {
+            return true;
+        }
+
+        try {
+            HttpResponse<String> root =
+                    get(
+                            baseUrl + "/"
+                    );
+
+            return root.statusCode() >= 200
+                    && root.statusCode() < 300
+                    && root.body() != null
+                    && root.body()
+                    .toLowerCase(Locale.ROOT)
+                    .contains("whisper.cpp");
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private HttpResponse<String> get(
+            String url
+    ) throws Exception {
+        HttpRequest request =
+                HttpRequest
+                        .newBuilder(
+                                URI.create(
+                                        url
+                                )
+                        )
+                        .timeout(
+                                REQUEST_TIMEOUT
+                        )
+                        .GET()
+                        .build();
+
+        return httpClient.send(
+                request,
+                HttpResponse.BodyHandlers.ofString()
+        );
     }
 
     private String stateFromBody(

@@ -23,7 +23,7 @@ Fuente normativa del estado: `../puds/current-status.md`.
 | Generadores Spring/OpenAPI/Postman | PLANIFICADO |
 | Frontend web/mobile generado | PLANIFICADO |
 | Voz sobre la aplicación generada | PLANIFICADO |
-| Membresías e invitaciones | PLANIFICADO |
+| Membresías e invitaciones | IMPLEMENTADO — CU-31 cerrado con membership, invitaciones, realtime/presencia/Assistant y hardening concurrente |
 
 La separación anterior permite utilizar `product.md` como visión estable sin confundir alcance objetivo con estado actual.
 
@@ -1453,27 +1453,35 @@ Borrar `localStorage` implica cerrar la sesion local. Al autenticarse nuevamente
 
 Cada proyecto nuevo posee un `ownerId` persistido en la base de datos.
 
-`GET /api/projects` solo devuelve proyectos cuyo propietario sea el usuario autenticado.
+`GET /api/projects` devuelve los proyectos propios y aquellos para los que el usuario posee `ProjectMembership` EDITOR.
 
-Un usuario no puede recuperar un proyecto perteneciente a otra cuenta mediante su UUID.
+El UUID por sí solo no concede acceso: la política central resuelve OWNER, EDITOR o NONE.
 
-## Colaboracion futura mediante invitaciones
+## Membresías e invitaciones — Ciclo 2
 
-La evolucion prevista es:
+ClassForge conserva `Project.ownerId` como ownership explícito e incorpora `ProjectMembership` para colaboradores EDITOR.
 
-1. El propietario genera una invitacion para un proyecto.
-2. ClassForge crea un token de invitacion de un solo uso o con expiracion.
-3. El propietario comparte un enlace.
-4. El receptor inicia sesion o crea una cuenta.
-5. Acepta la invitacion.
-6. Se crea una membresia de proyecto.
-7. El proyecto aparece tanto al propietario como al colaborador segun sus permisos.
+Las invitaciones son internas y persistentes por correo normalizado; no se envían emails reales y no existen links/tokens públicos.
 
-Modelo conceptual futuro:
+Flujo cerrado con C2-cu31-003:
+
+1. OWNER introduce el correo del colaborador.
+2. Se crea `ProjectInvitation` PENDING.
+3. El destinatario puede registrarse después con ese mismo correo.
+4. Su bandeja interna muestra la invitación.
+5. Aceptar crea `ProjectMembership` EDITOR y marca la invitación ACCEPTED de forma transaccional.
+6. El proyecto aparece en su biblioteca como compartido.
+7. Decline/Cancel no conceden acceso.
+
+Modelo:
 
 - `Project -> ownerId`
-- `ProjectMembership -> projectId + userId + role`
-- `ProjectInvitation -> projectId + token + expiresAt + invitedBy`
+- `ProjectMembership -> projectId + userId + role=EDITOR`
+- `ProjectInvitation -> projectId + invitedEmail + invitedByUserId + status + timestamps`
+
+No se incluye todavía eliminación de membership activa, VIEWER, roles personalizados, SMTP ni transferencia de ownership.
+
+C2-cu31-003 valida OWNER/EDITOR/NONE en STOMP operations, presence y Assistant, y serializa invite/accept por proyecto para evitar duplicados concurrentes. CU-31 queda CERRADO; CU-09 es el siguiente caso del Ciclo 2.
 
 ## Endpoints iniciales
 
@@ -1482,7 +1490,14 @@ Modelo conceptual futuro:
 - `GET /api/auth/me`
 - `GET /api/projects` autenticado
 - `POST /api/projects` autenticado
-- `GET /api/projects/{id}` autenticado y limitado por ownership
+- `GET /api/projects/{id}` autenticado y limitado por OWNER/EDITOR
+- `POST /api/projects/{id}/invitations` OWNER
+- `GET /api/projects/{id}/invitations` pendientes administrativas, OWNER
+- `DELETE /api/projects/{id}/invitations/{invitationId}` cancelar PENDING, OWNER
+- `GET /api/projects/{id}/collaborators` OWNER/EDITOR
+- `GET /api/project-invitations` invitaciones PENDING del correo autenticado
+- `POST /api/project-invitations/{id}/accept`
+- `POST /api/project-invitations/{id}/decline`
 
 ## Landing publica
 

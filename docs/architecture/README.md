@@ -1,6 +1,6 @@
 # Arquitectura de ClassForge
 
-**Estado:** arquitectura implementada al cierre del Ciclo 1 de Elaboración.
+**Estado:** arquitectura ejecutable en Ciclo 2 de Elaboración; CU-31 cerrado y CU-09 siguiente.
 
 ## Fuente de verdad
 
@@ -44,6 +44,7 @@ ProjectDocument
 | `api-validation-errors.md` | contrato de errores | implementado |
 | `command-bus.md` | comandos y Undo/Redo | implementado |
 | `authentication-and-ownership.md` | auth y aislamiento | implementado |
+| `project-membership-and-invitations.md` | membership + invitaciones internas | CU-31 implementado y endurecido en C2-cu31-003 |
 | `realtime-collaboration-protocol.md` | protocolo STOMP | implementado |
 | `realtime-client-sync.md` | pending/resync/convergencia | implementado |
 | `realtime-presence.md` | presencia efímera | implementado |
@@ -77,7 +78,7 @@ ProjectDocument
 - frontend Angular generado;
 - Capacitor/Android generado;
 - asistente de la aplicación generada;
-- membresías colaborativas;
+- entrada visual Imagen → UML (CU-09);
 - auditoría persistente.
 
 ## UML académico

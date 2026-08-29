@@ -599,3 +599,54 @@ runtime health + diagnostics + stale-plan guard + collaboration hardening + test
 La IA nunca modifica `ProjectDocument` directamente.
 
 No se introduce MCP, CRDT, Yjs, Kafka, Redis ni un segundo canal de mutación.
+
+
+## C2-cu31-003 — membership-aware
+
+Assistant texto, voz y runtime health reciben semánticamente `userId` y cargan el proyecto mediante `ProjectService.get(userId, projectId)`, que resuelve OWNER/EDITOR en la política central. Un EDITOR puede generar plan texto/voz; un usuario NONE es rechazado antes de invocar LLM o STT. Apply continúa convergiendo por el mismo BATCH/STOMP y `ProjectCollaborationService.requireEdit`.
+
+<!-- C2-CU31-FIX-001-RUNTIME-HEALTH-IDENTITY -->
+## Corrección post-cierre CU-31 — health con identidad de runtime
+
+El health del Assistant deja de considerar suficiente que un proceso cualquiera responda `200 {"status":"ok"}` en los puertos configurados.
+
+La comprobación queda en dos pasos:
+
+```text
+llama.cpp
+GET /health -> READY
+GET /v1/models -> al menos un modelo cuyo owned_by identifica llama.cpp
+
+whisper.cpp
+GET /health -> READY
+Server: whisper.cpp
+  o, como compatibilidad, GET / contiene la identidad Whisper.cpp Server
+```
+
+Si `/health` responde correctamente pero la identidad no coincide, ClassForge publica `available=false`, `state=MISMATCH` y explica que el puerto está ocupado por otro servicio.
+
+El panel refresca este estado cada 30 segundos mientras no haya planificación ni transcripción activa. El refresco manual continúa disponible. De esta forma un runtime detenido después de abrir el workspace no permanece visualmente verde de forma indefinida y el polling no compite con una inferencia activa.
+
+<!-- CU08-FIX-009-SEMANTIC-REFERENCE-RESOLUTION -->
+## Experimento post-CU31 — resolución semántica tolerante de referencias
+
+Se añade una fase determinista entre la intención raw de llama.cpp y el grounding:
+
+```text
+texto
+-> fuzzy class reference resolver
+-> contexto LLM con resolvedClassMentions
+-> AssistantSemanticPlan raw
+-> AssistantSemanticCompiler
+-> grounding
+-> normalizer
+-> UmlAssistantCommandResolver
+```
+
+La fase resuelve únicamente referencias a clases ya existentes. Usa normalización, distancia Damerau-Levenshtein, tolerancia a transposición y una normalización acotada de errores como `4nimal -> Animal`.
+
+El resultado interno conserva también el UUID de la clase resuelta; el plan actual sigue usando el nombre canónico para mantener compatibilidad con `AssistantPlanAction`, y `UmlAssistantCommandResolver` continúa convergiendo a UUID antes de crear comandos.
+
+Las referencias ambiguas no se autocorrigen. Los nombres nuevos de `CREATE_CLASS` tampoco se autocorrigen contra el catálogo existente.
+
+Para medir el efecto real del LLM y del compilador se incorpora `scripts/assistant-reliability.ps1`, que ejecuta N inferencias sin Apply y reporta por separado exactitud raw y exactitud final.

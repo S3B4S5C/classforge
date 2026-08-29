@@ -5,6 +5,7 @@ import com.classforge.auth.persistence.UserRepository;
 import com.classforge.collaboration.protocol.CollaborationActor;
 import com.classforge.collaboration.protocol.ProjectOperationApplied;
 import com.classforge.collaboration.protocol.ProjectOperationRequest;
+import com.classforge.project.access.ProjectAccessService;
 import com.classforge.project.application.ProjectNotFoundException;
 import com.classforge.project.domain.Project;
 import com.classforge.project.domain.document.ProjectDocument;
@@ -27,13 +28,15 @@ public class ProjectCollaborationService {
     private final ProjectDocumentValidator projectDocumentValidator;
     private final ProjectCommandExecutor projectCommandExecutor;
     private final UserRepository userRepository;
+    private final ProjectAccessService projectAccessService;
 
     public ProjectCollaborationService(
             ProjectRepository projectRepository,
             ProjectMapper projectMapper,
             ProjectDocumentValidator projectDocumentValidator,
             ProjectCommandExecutor projectCommandExecutor,
-            UserRepository userRepository
+            UserRepository userRepository,
+            ProjectAccessService projectAccessService
     ) {
         this.projectRepository =
                 projectRepository;
@@ -49,6 +52,9 @@ public class ProjectCollaborationService {
 
         this.userRepository =
                 userRepository;
+
+        this.projectAccessService =
+                projectAccessService;
     }
 
     @Transactional
@@ -62,11 +68,15 @@ public class ProjectCollaborationService {
                 request
         );
 
+        projectAccessService.requireEdit(
+                userId,
+                destinationProjectId
+        );
+
         ProjectEntity entity =
                 projectRepository
-                        .findForUpdate(
-                                destinationProjectId,
-                                userId
+                        .findForUpdateById(
+                                destinationProjectId
                         )
                         .orElseThrow(
                                 () ->

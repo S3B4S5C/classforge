@@ -506,8 +506,8 @@ public class UmlAssistantCommandResolver {
                 null,
                 null,
                 null,
-                relationship(
-                        current.id(),
+                updatedRelationship(
+                        current,
                         source.id(),
                         target.id(),
                         type,
@@ -550,6 +550,83 @@ public class UmlAssistantCommandResolver {
                 null,
                 null,
                 relationship.id()
+        );
+    }
+
+    private UmlRelationship updatedRelationship(
+            UmlRelationship current,
+            UUID sourceId,
+            UUID targetId,
+            UmlRelationshipType type,
+            AssistantPlanAction action
+    ) {
+        if (type == UmlRelationshipType.GENERALIZATION) {
+            return new UmlRelationship(
+                    current.id(),
+                    sourceId,
+                    targetId,
+                    type,
+                    null,
+                    null
+            );
+        }
+
+        return new UmlRelationship(
+                current.id(),
+                sourceId,
+                targetId,
+                type,
+                updatedMultiplicity(
+                        current.sourceMultiplicity(),
+                        action.sourceLower(),
+                        action.sourceUpper()
+                ),
+                updatedMultiplicity(
+                        current.targetMultiplicity(),
+                        action.targetLower(),
+                        action.targetUpper()
+                )
+        );
+    }
+
+    private Multiplicity updatedMultiplicity(
+            Multiplicity current,
+            Integer lower,
+            Integer upper
+    ) {
+        if (lower == null && upper == null) {
+            return current == null
+                    ? Multiplicity.one()
+                    : current;
+        }
+
+        int normalizedLower;
+
+        if (lower != null) {
+            normalizedLower = lower;
+        } else if (upper != null && upper < 0) {
+            normalizedLower = 0;
+        } else if (current != null) {
+            normalizedLower = current.lower();
+        } else {
+            normalizedLower = 1;
+        }
+
+        Integer normalizedUpper;
+
+        if (upper == null) {
+            normalizedUpper = current == null
+                    ? normalizedLower
+                    : current.upper();
+        } else if (upper < 0) {
+            normalizedUpper = null;
+        } else {
+            normalizedUpper = upper;
+        }
+
+        return new Multiplicity(
+                normalizedLower,
+                normalizedUpper
         );
     }
 
@@ -596,7 +673,7 @@ public class UmlAssistantCommandResolver {
     ) {
         int normalizedLower =
                 lower == null
-                        ? 1
+                        ? (upper != null && upper < 0 ? 0 : 1)
                         : lower;
 
         Integer normalizedUpper;

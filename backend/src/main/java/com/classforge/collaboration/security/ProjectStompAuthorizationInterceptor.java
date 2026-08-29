@@ -1,5 +1,7 @@
 package com.classforge.collaboration.security;
 
+import com.classforge.project.access.ProjectAccessService;
+import com.classforge.project.application.ProjectNotFoundException;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessagingException;
@@ -32,8 +34,7 @@ public class ProjectStompAuthorizationInterceptor
     public ProjectStompAuthorizationInterceptor(
             ProjectAccessService projectAccessService
     ) {
-        this.projectAccessService =
-                projectAccessService;
+        this.projectAccessService = projectAccessService;
     }
 
     @Override
@@ -53,8 +54,7 @@ public class ProjectStompAuthorizationInterceptor
             );
         }
 
-        StompCommand command =
-                accessor.getCommand();
+        StompCommand command = accessor.getCommand();
 
         if (
                 command != StompCommand.SEND
@@ -64,12 +64,9 @@ public class ProjectStompAuthorizationInterceptor
         }
 
         CollaborationPrincipal principal =
-                requirePrincipal(
-                        accessor.getUser()
-                );
+                requirePrincipal(accessor.getUser());
 
-        String destination =
-                accessor.getDestination();
+        String destination = accessor.getDestination();
 
         if (destination == null) {
             throw new MessagingException(
@@ -77,15 +74,9 @@ public class ProjectStompAuthorizationInterceptor
             );
         }
 
-        enforceDirection(
-                command,
-                destination
-        );
+        enforceDirection(command, destination);
 
-        Matcher matcher =
-                PROJECT_DESTINATION.matcher(
-                        destination
-                );
+        Matcher matcher = PROJECT_DESTINATION.matcher(destination);
 
         if (!matcher.matches()) {
             if (isClassForgeProjectDestination(destination)) {
@@ -97,12 +88,10 @@ public class ProjectStompAuthorizationInterceptor
             return message;
         }
 
-        UUID projectId =
-                UUID.fromString(
-                        matcher.group(1)
-                );
+        UUID projectId = UUID.fromString(matcher.group(1));
 
-        projectAccessService.requireAccess(
+        requireProjectPermission(
+                command,
                 principal.id(),
                 projectId
         );
@@ -110,13 +99,27 @@ public class ProjectStompAuthorizationInterceptor
         return message;
     }
 
-    private CollaborationPrincipal requirePrincipal(
-            Principal principal
+    private void requireProjectPermission(
+            StompCommand command,
+            UUID userId,
+            UUID projectId
     ) {
-        if (
-                principal
-                        instanceof CollaborationPrincipal collaborationPrincipal
-        ) {
+        try {
+            if (command == StompCommand.SEND) {
+                projectAccessService.requireEdit(userId, projectId);
+            } else {
+                projectAccessService.requireRead(userId, projectId);
+            }
+        } catch (ProjectNotFoundException exception) {
+            throw new AccessDeniedException(
+                    "The authenticated user cannot access this project",
+                    exception
+            );
+        }
+    }
+
+    private CollaborationPrincipal requirePrincipal(Principal principal) {
+        if (principal instanceof CollaborationPrincipal collaborationPrincipal) {
             return collaborationPrincipal;
         }
 
@@ -152,15 +155,9 @@ public class ProjectStompAuthorizationInterceptor
         }
     }
 
-    private boolean isClassForgeProjectDestination(
-            String destination
-    ) {
-        return destination.startsWith(
-                "/app/projects/"
-        ) || destination.startsWith(
-                "/topic/projects/"
-        ) || destination.startsWith(
-                "/user/queue/projects/"
-        );
+    private boolean isClassForgeProjectDestination(String destination) {
+        return destination.startsWith("/app/projects/")
+                || destination.startsWith("/topic/projects/")
+                || destination.startsWith("/user/queue/projects/");
     }
 }

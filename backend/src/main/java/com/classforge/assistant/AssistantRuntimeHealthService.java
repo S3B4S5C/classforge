@@ -37,11 +37,11 @@ public class AssistantRuntimeHealthService {
     }
 
     public AssistantRuntimeHealthResponse health(
-            UUID ownerId,
+            UUID userId,
             UUID projectId
     ) {
         projectService.get(
-                ownerId,
+                userId,
                 projectId
         );
 

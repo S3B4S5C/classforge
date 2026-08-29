@@ -17,7 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AssistantPlanGroundingFilterTests {
 
     private final AssistantPlanGroundingFilter filter =
-            new AssistantPlanGroundingFilter();
+            new AssistantPlanGroundingFilter(
+                    new AssistantEntityReferenceResolver()
+            );
 
     @Test
     void relationshipRequestDropsHallucinatedAttributeUpdate() {

@@ -5,6 +5,8 @@ import com.classforge.auth.persistence.UserRepository;
 import com.classforge.auth.security.JwtService;
 import com.classforge.project.application.ProjectService;
 import com.classforge.project.domain.Project;
+import com.classforge.project.persistence.ProjectMembershipEntity;
+import com.classforge.project.persistence.ProjectMembershipRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -50,38 +52,49 @@ class ProjectPresenceStompEndToEndIntegrationTests {
     private ProjectService projectService;
 
     @Autowired
+    private ProjectMembershipRepository projectMembershipRepository;
+
+    @Autowired
     private JwtService jwtService;
 
     @Autowired
     private JsonMapper jsonMapper;
 
     @Test
-    void presenceBroadcastsWithoutChangingProjectRevision()
+    void ownerSeesEditorPresenceWithoutChangingProjectRevision()
             throws Exception {
-        UUID ownerId =
-                UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
 
-        UserEntity user =
+        UserEntity owner =
                 userRepository.save(
                         new UserEntity(
                                 ownerId,
                                 "Presence Owner",
-                                "cu07-presence-"
-                                        + ownerId
-                                        + "@classforge.test",
+                                "cu31-presence-owner-" + ownerId + "@classforge.test",
                                 "unused",
                                 Instant.now()
                         )
                 );
 
-        Project project =
-                projectService.create(
-                        ownerId,
-                        "Presencia"
+        UUID editorId = UUID.randomUUID();
+        UserEntity editor =
+                userRepository.save(
+                        new UserEntity(
+                                editorId,
+                                "Presence Editor",
+                                "cu31-presence-editor-" + editorId + "@classforge.test",
+                                "unused",
+                                Instant.now()
+                        )
                 );
 
-        String token =
-                jwtService.issue(user);
+        Project project = projectService.create(ownerId, "Presencia");
+        projectMembershipRepository.save(
+                ProjectMembershipEntity.editor(project.id(), editorId)
+        );
+
+        String ownerToken = jwtService.issue(owner);
+        String editorToken = jwtService.issue(editor);
 
         WebSocketStompClient stompClient =
                 new WebSocketStompClient(
@@ -99,13 +112,13 @@ class ProjectPresenceStompEndToEndIntegrationTests {
             sessionA =
                     connect(
                             stompClient,
-                            token
+                            ownerToken
                     );
 
             sessionB =
                     connect(
                             stompClient,
-                            token
+                            editorToken
                     );
 
             BlockingQueue<String> topicA =
@@ -226,7 +239,7 @@ class ProjectPresenceStompEndToEndIntegrationTests {
 
             Project reloaded =
                     projectService.get(
-                            ownerId,
+                            editorId,
                             project.id()
                     );
 

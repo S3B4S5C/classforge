@@ -74,3 +74,15 @@ Antes de abrir el caso de uso:
 Texto requiere llama.cpp.
 
 Voz requiere llama.cpp + whisper.cpp.
+## Diagnóstico de puertos
+
+El indicador verde ya no depende únicamente de `/health`. ClassForge verifica además la identidad del proceso esperado. Si otro proceso ocupa 8092 o 8093 y responde un health genérico, el panel mostrará `MISMATCH` en lugar de READY.
+
+En Windows, si aparece `MISMATCH`, conviene comprobar qué proceso escucha el puerto antes de iniciar los runtimes locales:
+
+```powershell
+Get-NetTCPConnection -LocalPort 8092,8093 -State Listen |
+  Select-Object LocalPort, OwningProcess
+```
+
+Después puede inspeccionarse el proceso con `Get-Process -Id <PID>`.

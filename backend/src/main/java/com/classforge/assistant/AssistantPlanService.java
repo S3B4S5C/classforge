@@ -14,6 +14,7 @@ public class AssistantPlanService {
 
     private final ProjectService projectService;
     private final LanguageModelGateway languageModelGateway;
+    private final AssistantSemanticCompiler semanticCompiler;
     private final AssistantPlanGroundingFilter groundingFilter;
     private final AssistantPlanNormalizer normalizer;
     private final UmlAssistantCommandResolver resolver;
@@ -22,6 +23,7 @@ public class AssistantPlanService {
     public AssistantPlanService(
             ProjectService projectService,
             LanguageModelGateway languageModelGateway,
+            AssistantSemanticCompiler semanticCompiler,
             AssistantPlanGroundingFilter groundingFilter,
             AssistantPlanNormalizer normalizer,
             UmlAssistantCommandResolver resolver,
@@ -29,6 +31,7 @@ public class AssistantPlanService {
     ) {
         this.projectService = projectService;
         this.languageModelGateway = languageModelGateway;
+        this.semanticCompiler = semanticCompiler;
         this.groundingFilter = groundingFilter;
         this.normalizer = normalizer;
         this.resolver = resolver;
@@ -36,12 +39,12 @@ public class AssistantPlanService {
     }
 
     public AssistantPlanResponse plan(
-            UUID ownerId,
+            UUID userId,
             UUID projectId,
             String text
     ) {
         return plan(
-                ownerId,
+                userId,
                 projectId,
                 text,
                 "TEXT"
@@ -49,12 +52,12 @@ public class AssistantPlanService {
     }
 
     public AssistantPlanResponse planVoice(
-            UUID ownerId,
+            UUID userId,
             UUID projectId,
             String transcript
     ) {
         return plan(
-                ownerId,
+                userId,
                 projectId,
                 transcript,
                 "VOICE"
@@ -62,7 +65,7 @@ public class AssistantPlanService {
     }
 
     private AssistantPlanResponse plan(
-            UUID ownerId,
+            UUID userId,
             UUID projectId,
             String text,
             String source
@@ -81,7 +84,7 @@ public class AssistantPlanService {
 
         Project project =
                 projectService.get(
-                        ownerId,
+                        userId,
                         projectId
                 );
 
@@ -105,13 +108,34 @@ public class AssistantPlanService {
             );
         }
 
+        AssistantSemanticPlan compiledPlan;
+
+        try {
+            compiledPlan =
+                    semanticCompiler.compile(
+                            userText,
+                            rawPlan,
+                            project.document()
+                    );
+        } catch (
+                AssistantPlanningException exception
+        ) {
+            throw diagnostic(
+                    exception,
+                    AssistantPlanningStage.GROUNDING,
+                    source,
+                    userText,
+                    rawPlan
+            );
+        }
+
         AssistantSemanticPlan groundedPlan;
 
         try {
             groundedPlan =
                     groundingFilter.sanitize(
                             userText,
-                            rawPlan,
+                            compiledPlan,
                             project.document()
                     );
         } catch (

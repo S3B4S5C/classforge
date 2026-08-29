@@ -22,6 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -53,6 +54,11 @@ public class LlamaLanguageModelGateway
             Pattern.compile("(?<=[a-z0-9])(?=[A-Z])");
 
     private final JsonMapper jsonMapper;
+    private final AssistantEntityReferenceResolver entityResolver =
+            new AssistantEntityReferenceResolver();
+
+    private final AssistantIntentHintResolver intentHintResolver =
+            new AssistantIntentHintResolver();
     private final HttpClient httpClient;
     private final String url;
     private final String model;
@@ -92,6 +98,9 @@ public class LlamaLanguageModelGateway
             String userText,
             ProjectDocument document
     ) {
+        Optional<AssistantIntentHintResolver.IntentHint> intentHint =
+                intentHintResolver.resolve(userText, document);
+
         try {
             Map<String, Object> request =
                     new LinkedHashMap<>();
@@ -123,7 +132,7 @@ public class LlamaLanguageModelGateway
                                     "role",
                                     "system",
                                     "content",
-                                    systemPrompt()
+                                    systemPrompt(intentHint)
                             ),
                             Map.of(
                                     "role",
@@ -131,7 +140,8 @@ public class LlamaLanguageModelGateway
                                     "content",
                                     userPrompt(
                                             userText,
-                                            document
+                                            document,
+                                            intentHint
                                     )
                             )
                     )
@@ -149,7 +159,11 @@ public class LlamaLanguageModelGateway
                                     "strict",
                                     true,
                                     "schema",
-                                    schema()
+                                    schema(
+                                            intentHint
+                                                    .map(AssistantIntentHintResolver.IntentHint::actionType)
+                                                    .orElse(null)
+                                    )
                             )
                     )
             );
@@ -283,12 +297,32 @@ public class LlamaLanguageModelGateway
         }
     }
 
-    private String systemPrompt() {
+    private String systemPrompt(
+            Optional<AssistantIntentHintResolver.IntentHint> intentHint
+    ) {
+        String hintRule =
+                intentHint
+                        .map(
+                                hint ->
+                                        "- INTENT_HINT es de alta confianza y restringe esta peticion a "
+                                                + hint.actionType()
+                                                + ". Usa esa familia de accion y completa solo sus operandos."
+                        )
+                        .orElse(
+                                "- No hay INTENT_HINT: interpreta libremente la familia de accion solicitada."
+                        );
+
         return """
                 Eres el interprete UML de ClassForge.
                 Devuelve solo la intencion semantica solicitada usando el JSON Schema.
 
-                REGLAS:
+                REGLAS CRITICAS:
+                - PETICION_USUARIO es la unica fuente de acciones solicitadas.
+                - MODELO_ACTUAL_SOLO_LECTURA es evidencia para resolver nombres y estado existente; NUNCA copies sus clases, atributos o relaciones como acciones nuevas salvo que PETICION_USUARIO lo pida explicitamente.
+                - No conviertas atributos visibles del modelo actual en ADD_ATTRIBUTES por el simple hecho de aparecer en contexto.
+                %s
+
+                REGLAS UML:
                 - Java resuelve UUIDs, revision, layout, validacion y Command Bus.
                 - CREATE_CLASS contiene sus atributos en attributes[].
                 - No recrees clases que ya aparecen en existingClassNames.
@@ -304,48 +338,73 @@ public class LlamaLanguageModelGateway
                 - Aggregation/composition: source=whole.
                 - Generalization: source=subclass, target=superclass, sin multiplicidades.
                 - upper infinito = -1.
-                - Si no se especifica tipo de relacion, ASSOCIATION.
-                - Si no se especifica multiplicidad, 1..1 en ambos extremos.
+                - Si no se especifica tipo de relacion al crearla, ASSOCIATION.
+                - Si no se especifica multiplicidad al crearla, 1..1 en ambos extremos.
+                - En UPDATE_RELATIONSHIP solo emite las multiplicidades/tipo que el usuario pidio cambiar; Java preserva el resto.
                 - No inventes clases, atributos ni acciones no solicitadas.
+                - resolvedClassMentions contiene referencias existentes detectadas de forma tolerante a errores tipograficos.
+                - Para referencias existentes usa exactamente canonicalName cuando aparezca en resolvedClassMentions.
+                - Un typo del usuario como 4nimal puede representar Animal; no copies el typo si hay canonicalName.
+                - CREATE_CLASS crea un simbolo nuevo: ahi conserva el nombre pedido y no lo autocorrijas contra clases existentes.
 
                 EJEMPLOS:
                 "Crea Veterinario y ponle id UUID y nombre"
                 -> CREATE_CLASS Veterinario con id UUID EXPLICIT y nombre STRING DEFAULT.
 
+                "Renombra Veterinario a MedicoVeterinario"
+                -> RENAME_CLASS className=Veterinario newName=MedicoVeterinario.
+
                 "A Veterinario agregale telefono y correo"
                 -> ADD_ATTRIBUTES Veterinario: telefono STRING DEFAULT, correo STRING DEFAULT.
+
+                "En Mascota renombra el atributo peso a pesoKg"
+                -> UPDATE_ATTRIBUTE className=Mascota attributeName=peso newAttributeName=pesoKg.
 
                 "Conecta Animal con Veterinario"
                 -> CREATE_RELATIONSHIP Animal -> Veterinario, ASSOCIATION, 1..1 a 1..1.
 
-                "Animal esta compuesto por Mascota"
-                -> CREATE_RELATIONSHIP Animal -> Mascota, COMPOSITION.
-                """;
+                "En la relacion entre Propietario y Mascota cambia la multiplicidad de Mascota a 0..*"
+                -> UPDATE_RELATIONSHIP source=Propietario target=Mascota targetLower=0 targetUpper=-1.
+                """.formatted(hintRule);
     }
 
     private String userPrompt(
             String userText,
-            ProjectDocument document
+            ProjectDocument document,
+            Optional<AssistantIntentHintResolver.IntentHint> intentHint
     ) throws Exception {
         return """
-                CONTEXTO:
+                PETICION_USUARIO:
                 %s
 
-                PETICION:
+                MODELO_ACTUAL_SOLO_LECTURA:
                 %s
                 """
                 .formatted(
+                        userText,
                         compactContext(
                                 userText,
-                                document
-                        ),
-                        userText
+                                document,
+                                intentHint
+                        )
                 );
     }
 
     String compactContext(
             String userText,
             ProjectDocument document
+    ) throws Exception {
+        return compactContext(
+                userText,
+                document,
+                intentHintResolver.resolve(userText, document)
+        );
+    }
+
+    private String compactContext(
+            String userText,
+            ProjectDocument document,
+            Optional<AssistantIntentHintResolver.IntentHint> intentHint
     ) throws Exception {
         List<UmlClass> allClasses =
                 document.umlModel()
@@ -365,17 +424,16 @@ public class LlamaLanguageModelGateway
                                 )
                         );
 
+        List<AssistantEntityReferenceResolver.ResolvedClassReference> resolvedMentions =
+                entityResolver.resolveMentions(
+                        userText,
+                        document
+                );
+
         LinkedHashSet<UUID> directIds =
-                allClasses.stream()
-                        .filter(
-                                umlClass ->
-                                        mentionsEntity(
-                                                userText,
-                                                umlClass.name()
-                                        )
-                        )
+                resolvedMentions.stream()
                         .map(
-                                UmlClass::id
+                                AssistantEntityReferenceResolver.ResolvedClassReference::classId
                         )
                         .collect(
                                 Collectors.toCollection(
@@ -445,7 +503,11 @@ public class LlamaLanguageModelGateway
                                 java.util.Objects::nonNull
                         )
                         .map(
-                                this::focusedClass
+                                umlClass ->
+                                        focusedClass(
+                                                umlClass,
+                                                includeAttributes(intentHint)
+                                        )
                         )
                         .toList();
 
@@ -459,7 +521,8 @@ public class LlamaLanguageModelGateway
                 );
 
         List<Map<String, Object>> relationships =
-                allRelationships.stream()
+                includeRelationships(intentHint)
+                        ? allRelationships.stream()
                         .filter(
                                 relationship ->
                                         focusedSet.contains(
@@ -477,7 +540,8 @@ public class LlamaLanguageModelGateway
                                                 classesById
                                         )
                         )
-                        .toList();
+                        .toList()
+                        : List.of();
 
         LinkedHashSet<String> catalog =
                 new LinkedHashSet<>();
@@ -507,6 +571,23 @@ public class LlamaLanguageModelGateway
         Map<String, Object> context =
                 new LinkedHashMap<>();
 
+        intentHint.ifPresent(
+                hint ->
+                        context.put(
+                                "intentHint",
+                                Map.of(
+                                        "actionType",
+                                        hint.actionType().name(),
+                                        "confidence",
+                                        hint.confidence(),
+                                        "evidence",
+                                        hint.evidence(),
+                                        "advisory",
+                                        true
+                                )
+                        )
+        );
+
         context.put(
                 "classCount",
                 allClasses.size()
@@ -520,6 +601,29 @@ public class LlamaLanguageModelGateway
                         )
                         .toList()
         );
+
+        if (!resolvedMentions.isEmpty()) {
+            context.put(
+                    "resolvedClassMentions",
+                    resolvedMentions.stream()
+                            .map(
+                                    mention ->
+                                            Map.of(
+                                                    "observed",
+                                                    mention.observedText(),
+                                                    "canonicalName",
+                                                    mention.canonicalName(),
+                                                    "confidence",
+                                                    Math.round(
+                                                            mention.score()
+                                                                    * 100.0d
+                                                    )
+                                                            / 100.0d
+                                            )
+                            )
+                            .toList()
+            );
+        }
 
         if (!focusedClasses.isEmpty()) {
             context.put(
@@ -541,7 +645,8 @@ public class LlamaLanguageModelGateway
     }
 
     private Map<String, Object> focusedClass(
-            UmlClass umlClass
+            UmlClass umlClass,
+            boolean includeAttributes
     ) {
         Map<String, Object> result =
                 new LinkedHashMap<>();
@@ -551,7 +656,10 @@ public class LlamaLanguageModelGateway
                 umlClass.name()
         );
 
-        if (!umlClass.attributes().isEmpty()) {
+        if (
+                includeAttributes
+                        && !umlClass.attributes().isEmpty()
+        ) {
             result.put(
                     "attributes",
                     umlClass.attributes()
@@ -594,6 +702,36 @@ public class LlamaLanguageModelGateway
         }
 
         return result;
+    }
+
+    private boolean includeAttributes(
+            Optional<AssistantIntentHintResolver.IntentHint> intentHint
+    ) {
+        if (intentHint.isEmpty()) {
+            return true;
+        }
+
+        return switch (intentHint.get().actionType()) {
+            case ADD_ATTRIBUTES,
+                 UPDATE_ATTRIBUTE,
+                 DELETE_ATTRIBUTE -> true;
+            default -> false;
+        };
+    }
+
+    private boolean includeRelationships(
+            Optional<AssistantIntentHintResolver.IntentHint> intentHint
+    ) {
+        if (intentHint.isEmpty()) {
+            return true;
+        }
+
+        return switch (intentHint.get().actionType()) {
+            case CREATE_RELATIONSHIP,
+                 UPDATE_RELATIONSHIP,
+                 DELETE_RELATIONSHIP -> true;
+            default -> false;
+        };
     }
 
     private Map<String, Object> compactRelationship(
@@ -838,6 +976,12 @@ public class LlamaLanguageModelGateway
     }
 
     Map<String, Object> schema() {
+        return schema(null);
+    }
+
+    Map<String, Object> schema(
+            AssistantActionType forcedType
+    ) {
         Map<String, Object> attributeProperties =
                 new LinkedHashMap<>();
 
@@ -937,23 +1081,30 @@ public class LlamaLanguageModelGateway
         Map<String, Object> actionProperties =
                 new LinkedHashMap<>();
 
+        List<String> allowedActionTypes =
+                forcedType == null
+                        ? List.of(
+                        "CREATE_CLASS",
+                        "RENAME_CLASS",
+                        "DELETE_CLASS",
+                        "ADD_ATTRIBUTES",
+                        "UPDATE_ATTRIBUTE",
+                        "DELETE_ATTRIBUTE",
+                        "CREATE_RELATIONSHIP",
+                        "UPDATE_RELATIONSHIP",
+                        "DELETE_RELATIONSHIP"
+                )
+                        : List.of(
+                        forcedType.name()
+                );
+
         actionProperties.put(
                 "type",
                 Map.of(
                         "type",
                         "string",
                         "enum",
-                        List.of(
-                                "CREATE_CLASS",
-                                "RENAME_CLASS",
-                                "DELETE_CLASS",
-                                "ADD_ATTRIBUTES",
-                                "UPDATE_ATTRIBUTE",
-                                "DELETE_ATTRIBUTE",
-                                "CREATE_RELATIONSHIP",
-                                "UPDATE_RELATIONSHIP",
-                                "DELETE_RELATIONSHIP"
-                        )
+                        allowedActionTypes
                 )
         );
 
@@ -1073,6 +1224,46 @@ public class LlamaLanguageModelGateway
             );
         }
 
+        List<String> requiredActionFields =
+                new java.util.ArrayList<>();
+        requiredActionFields.add("type");
+
+        if (forcedType != null) {
+            switch (forcedType) {
+                case CREATE_CLASS -> {
+                    actionProperties.put("className", Map.of("type", "string"));
+                    requiredActionFields.add("className");
+                }
+                case RENAME_CLASS -> {
+                    actionProperties.put("className", Map.of("type", "string"));
+                    actionProperties.put("newName", Map.of("type", "string"));
+                    requiredActionFields.add("className");
+                    requiredActionFields.add("newName");
+                }
+                case DELETE_CLASS -> {
+                    actionProperties.put("className", Map.of("type", "string"));
+                    requiredActionFields.add("className");
+                }
+                case ADD_ATTRIBUTES -> {
+                    actionProperties.put("className", Map.of("type", "string"));
+                    requiredActionFields.add("className");
+                    requiredActionFields.add("attributes");
+                }
+                case UPDATE_ATTRIBUTE, DELETE_ATTRIBUTE -> {
+                    actionProperties.put("className", Map.of("type", "string"));
+                    actionProperties.put("attributeName", Map.of("type", "string"));
+                    requiredActionFields.add("className");
+                    requiredActionFields.add("attributeName");
+                }
+                case CREATE_RELATIONSHIP, UPDATE_RELATIONSHIP, DELETE_RELATIONSHIP -> {
+                    actionProperties.put("sourceClassName", Map.of("type", "string"));
+                    actionProperties.put("targetClassName", Map.of("type", "string"));
+                    requiredActionFields.add("sourceClassName");
+                    requiredActionFields.add("targetClassName");
+                }
+            }
+        }
+
         Map<String, Object> actionSchema =
                 new LinkedHashMap<>();
 
@@ -1093,8 +1284,8 @@ public class LlamaLanguageModelGateway
 
         actionSchema.put(
                 "required",
-                List.of(
-                        "type"
+                List.copyOf(
+                        requiredActionFields
                 )
         );
 
@@ -1126,7 +1317,7 @@ public class LlamaLanguageModelGateway
                                 "minItems",
                                 1,
                                 "maxItems",
-                                30,
+                                forcedType == null ? 30 : 1,
                                 "items",
                                 actionSchema
                         )

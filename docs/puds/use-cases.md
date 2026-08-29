@@ -13,7 +13,7 @@ En ClassForge llamamos **Ciclo** a una **iteración PUDS**.
 ```text
 Fase: Elaboración
 Ciclo 1: CERRADO
-Ciclo 2: NO ABIERTO
+Ciclo 2: ABIERTO
 ```
 
 ## 2. Actores
@@ -25,10 +25,10 @@ Puede registrarse e iniciar el proceso de autenticación.
 Crea proyectos, modela UML, valida, colabora y utiliza el Asistente UML.
 
 ### Propietario
-Usuario autenticado que posee un proyecto. Actualmente es el único rol autorizado a abrirlo y colaborar sobre él.
+Usuario autenticado cuyo `User.id` coincide con `Project.ownerId`. Conserva administración exclusiva: renombrar e invitar.
 
 ### Colaborador
-Rol previsto para CU-31. Todavía no existe `ProjectMembership`.
+Usuario autenticado con `ProjectMembership` EDITOR aceptada. Puede abrir, editar, guardar y validar proyectos compartidos; no administra ownership ni invitaciones.
 
 ### Usuario de aplicación generada
 Actor futuro de CU-19..23. No debe confundirse con el usuario del CASE ClassForge.
@@ -40,6 +40,7 @@ Participa en validación, persistencia, auditoría y generación.
 
 - **CERRADO:** implementado y aceptado.
 - **INFRAESTRUCTURA:** capacidad técnica implementada, aunque el escenario futuro que la reutiliza no esté cerrado.
+- **EN PROGRESO:** implementación dividida en incrementos; el CU aún no cumple su Definition of Done completa.
 - **PLANIFICADO:** especificado, no implementado.
 
 ## 4. Catálogo vigente
@@ -76,7 +77,7 @@ Participa en validación, persistencia, auditoría y generación.
 | CU-28 | Registrar cuenta | CERRADO |
 | CU-29 | Iniciar sesión | CERRADO |
 | CU-30 | Acceder a proyectos propios | CERRADO |
-| CU-31 | Invitar colaborador y crear membresía | PLANIFICADO |
+| CU-31 | Invitar colaborador y crear membresía | CERRADO |
 
 ## 5. Casos cerrados del Ciclo 1
 
@@ -168,7 +169,7 @@ Eventos efímeros:
 
 No persiste y no incrementa revisión.
 
-Limitación vigente: no existe membresía; la demostración se realiza como multisesión del propietario.
+C2-cu31-003 valida presencia entre cuentas OWNER/EDITOR reales y rechaza NONE mediante la misma política central.
 
 ### CU-08 — Crear o modificar UML mediante lenguaje natural y voz
 
@@ -287,7 +288,37 @@ Auditoría persistente con operación, usuario, fecha, revisión anterior/nueva 
 Proyecto veterinaria capaz de demostrar de extremo a extremo las capacidades terminadas.
 
 ### CU-31 — Invitar colaborador
-Introducir `ProjectMembership` e invitaciones seguras para que la colaboración deje de ser owner-only.
+
+**Estado: EN PROGRESO.**
+
+**Actor principal:** Propietario.  
+**Actor secundario:** Usuario invitado / Colaborador.
+
+Flujo vigente cerrado con C2-cu31-003:
+
+1. OWNER abre el diálogo Colaboradores.
+2. Introduce un correo.
+3. Backend normaliza el correo y crea `ProjectInvitation` PENDING.
+4. La invitación puede existir aunque la cuenta todavía no exista.
+5. Al iniciar sesión o registrarse con ese correo, el usuario ve su bandeja pendiente.
+6. Solo esa cuenta puede aceptar o rechazar la invitación.
+7. Aceptar crea `ProjectMembership` EDITOR y marca la invitación ACCEPTED en una única transacción.
+8. El proyecto aparece como `Compartido · Editor`.
+9. Rechazar o cancelar no crea membership.
+
+Reglas ya implementadas:
+
+- `Project.ownerId` permanece intacto;
+- OWNER es implícito y EDITOR se persiste;
+- no hay SMTP, link/token público ni Internet requerido;
+- self-invite rechazado;
+- pending duplicado rechazado;
+- usuario ya miembro no puede ser invitado;
+- EDITOR no puede renombrar, invitar, listar pendientes administrativos ni cancelar;
+- aceptar no modifica `ProjectDocument` ni la revisión UML;
+- no se elimina membership activa en CU-31.
+
+C2-cu31-003 demuestra OWNER + EDITOR + NONE sobre STOMP operations, presencia y Assistant y endurece carreras concurrentes de invitaciones. La eliminación de memberships activas continúa explícitamente fuera de alcance.
 
 ## 7. Dependencias principales
 
@@ -354,10 +385,10 @@ Entidades de referencia:
 - Veterinario;
 - Cita.
 
-## 11. Apertura de Ciclo 2
+## 11. Ciclo 2
 
-Ciclo 2 no se considera abierto solo por comenzar a programar otro CU.
+Ciclo 2 está formalmente ABIERTO con CU-31 y CU-09.
 
-Antes se debe crear su documento PUDS indicando objetivo, casos de uso, riesgos, arquitectura afectada, criterios de salida y pruebas previstas.
+C2-cu31-001, C2-cu31-002 y C2-cu31-003 están completados. CU-31 está CERRADO y CU-09 es el siguiente caso del Ciclo 2.
 
 El historial del plan original se conserva en `history/`.

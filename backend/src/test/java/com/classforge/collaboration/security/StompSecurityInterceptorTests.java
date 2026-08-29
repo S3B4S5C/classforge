@@ -2,6 +2,8 @@ package com.classforge.collaboration.security;
 
 import com.classforge.auth.persistence.UserEntity;
 import com.classforge.auth.security.JwtService;
+import com.classforge.project.access.ProjectAccessService;
+import com.classforge.project.application.ProjectNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessagingException;
@@ -16,7 +18,6 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -150,10 +151,35 @@ class StompSecurityInterceptorTests {
         );
 
         verify(accessService)
-                .requireAccess(
+                .requireRead(
                         userId,
                         projectId
                 );
+    }
+
+    @Test
+    void sendRequiresProjectEditAccess() {
+        ProjectAccessService accessService = mock(ProjectAccessService.class);
+        ProjectStompAuthorizationInterceptor interceptor =
+                new ProjectStompAuthorizationInterceptor(accessService);
+
+        UUID userId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+
+        interceptor.preSend(
+                stompMessage(
+                        StompCommand.SEND,
+                        "/app/projects/" + projectId + "/operations",
+                        null,
+                        new CollaborationPrincipal(
+                                userId,
+                                "editor@classforge.test"
+                        )
+                ),
+                mock(org.springframework.messaging.MessageChannel.class)
+        );
+
+        verify(accessService).requireEdit(userId, projectId);
     }
 
     @Test
@@ -196,17 +222,11 @@ class StompSecurityInterceptorTests {
 
         UUID projectId = UUID.randomUUID();
 
-        doThrow(
-                new AccessDeniedException(
-                        "denied"
-                )
-        ).when(
-                accessService
-        ).requireAccess(
+        org.mockito.Mockito.doThrow(
+                new ProjectNotFoundException(projectId)
+        ).when(accessService).requireRead(
                 org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.eq(
-                        projectId
-                )
+                org.mockito.ArgumentMatchers.eq(projectId)
         );
 
         ProjectStompAuthorizationInterceptor interceptor =

@@ -99,6 +99,6 @@ La prueba E2E comprueba que los eventos de presencia no incrementan la revisión
 
 ## Limitación actual
 
-La infraestructura soporta actores diferentes, pero `ProjectAccessService` todavía autoriza al owner.
+La política central de proyecto ya reconoce OWNER/EDITOR y C2-cu31-002 ya crea memberships mediante invitaciones reales.
 
-La demostración actual es multisesión del owner hasta implementar ProjectMembership/invitaciones.
+C2-cu31-003 completa la validación: un EDITOR con cuenta/JWT distintos al OWNER publica presencia, el OWNER la recibe y la revisión UML permanece intacta. NONE es rechazado por la política STOMP. Además, `ProjectPresenceController` ejecuta `requireEdit` nuevamente como defensa en profundidad.

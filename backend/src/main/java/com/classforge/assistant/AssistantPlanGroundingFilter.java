@@ -15,6 +15,15 @@ import java.util.regex.Pattern;
 @Component
 public class AssistantPlanGroundingFilter {
 
+    private final AssistantEntityReferenceResolver entityResolver;
+
+    public AssistantPlanGroundingFilter(
+            AssistantEntityReferenceResolver entityResolver
+    ) {
+        this.entityResolver =
+                entityResolver;
+    }
+
     private static final Pattern DIACRITICS =
             Pattern.compile("\\p{M}+");
 
@@ -148,7 +157,7 @@ public class AssistantPlanGroundingFilter {
                     );
 
             case RENAME_CLASS ->
-                    mentionsEntity(
+                    mentionsExistingEntity(
                             userText,
                             action.className()
                     )
@@ -160,7 +169,7 @@ public class AssistantPlanGroundingFilter {
                             : null;
 
             case DELETE_CLASS ->
-                    mentionsEntity(
+                    mentionsExistingEntity(
                             userText,
                             action.className()
                     )
@@ -168,11 +177,11 @@ public class AssistantPlanGroundingFilter {
                             : null;
 
             case UPDATE_ATTRIBUTE ->
-                    mentionsEntity(
+                    mentionsExistingEntity(
                             userText,
                             action.className()
                     )
-                            && mentionsEntity(
+                            && mentionsExistingEntity(
                             userText,
                             action.attributeName()
                     )
@@ -189,11 +198,11 @@ public class AssistantPlanGroundingFilter {
                             : null;
 
             case DELETE_ATTRIBUTE ->
-                    mentionsEntity(
+                    mentionsExistingEntity(
                             userText,
                             action.className()
                     )
-                            && mentionsEntity(
+                            && mentionsExistingEntity(
                             userText,
                             action.attributeName()
                     )
@@ -203,11 +212,11 @@ public class AssistantPlanGroundingFilter {
             case CREATE_RELATIONSHIP,
                  UPDATE_RELATIONSHIP,
                  DELETE_RELATIONSHIP ->
-                    mentionsEntity(
+                    mentionsExistingEntity(
                             userText,
                             action.sourceClassName()
                     )
-                            && mentionsEntity(
+                            && mentionsExistingEntity(
                             userText,
                             action.targetClassName()
                     )
@@ -266,7 +275,7 @@ public class AssistantPlanGroundingFilter {
             AssistantPlanAction action
     ) {
         if (
-                !mentionsEntity(
+                !mentionsExistingEntity(
                         userText,
                         action.className()
                 )
@@ -333,6 +342,20 @@ public class AssistantPlanGroundingFilter {
         );
     }
 
+    private boolean mentionsExistingEntity(
+            String userText,
+            String entity
+    ) {
+        return mentionsEntity(
+                userText,
+                entity
+        )
+                || entityResolver.fuzzyMentions(
+                userText,
+                entity
+        );
+    }
+
     boolean mentionsEntity(
             String userText,
             String entity
@@ -358,6 +381,11 @@ public class AssistantPlanGroundingFilter {
                         )
                 );
 
+        String compactEntity =
+                normalize(
+                        entity
+                );
+
         if (
                 normalizedText.isBlank()
                         || normalizedEntity.isBlank()
@@ -375,9 +403,17 @@ public class AssistantPlanGroundingFilter {
                         + normalizedEntity
                         + " ";
 
+        String paddedCompactEntity =
+                " "
+                        + compactEntity
+                        + " ";
+
         if (
                 paddedText.contains(
                         paddedEntity
+                )
+                        || paddedText.contains(
+                        paddedCompactEntity
                 )
         ) {
             return true;

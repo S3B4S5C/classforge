@@ -143,6 +143,55 @@ class LlamaLanguageModelGatewayFocusedContextTests {
         );
     }
 
+
+    @Test
+    void typoMentionIsFocusedAndCanonicalizedForTheModel()
+            throws Exception {
+        ProjectDocument document =
+                document(
+                        List.of(
+                                umlClass("Animal"),
+                                umlClass("Mascota"),
+                                umlClass("Veterinaria")
+                        ),
+                        List.of()
+                );
+
+        JsonNode context =
+                jsonMapper.readTree(
+                        gateway.compactContext(
+                                "Crea una asociacion entre 4nimal y msacota",
+                                document
+                        )
+                );
+
+        JsonNode mentions =
+                context.get(
+                        "resolvedClassMentions"
+                );
+
+        assertEquals(
+                "Animal",
+                mentions.get(0)
+                        .get("canonicalName")
+                        .asString()
+        );
+
+        assertEquals(
+                "Mascota",
+                mentions.get(1)
+                        .get("canonicalName")
+                        .asString()
+        );
+
+        assertTrue(
+                containsClass(
+                        context.get("focusedClasses"),
+                        "Animal"
+                )
+        );
+    }
+
     @Test
     void entityMatchingUnderstandsCommonPlural() {
         assertTrue(

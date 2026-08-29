@@ -34,3 +34,17 @@ Los diagramas UML-09 y UML-10 deben esperar a que los correspondientes component
 ## Destino en Word
 
 Los diagramas aprobados se insertarán en los capítulos de casos de uso, arquitectura, diseño y despliegue. Este catálogo funcionará como control para evitar que falte un diagrama o que el Word use una versión obsoleta.
+
+## Nota C2-cu31-001
+
+El actor Colaborador deja de ser solamente conceptual: `ProjectMembership` EDITOR ya tiene representación persistente. UML-01 continúa PENDIENTE hasta dibujar y verificar el diagrama académico.
+
+## Nota C2-cu31-002
+
+El actor Colaborador ya dispone de flujo real de invitación por correo, aceptación y `ProjectMembership` EDITOR. El catálogo académico sigue sin marcar UML-01 como terminado hasta que el diagrama se dibuje y verifique contra esta implementación.
+
+
+
+## Nota C2-cu31-003
+
+CU-31 queda cerrado en código y pruebas: el actor **Colaborador** corresponde a una cuenta con `ProjectMembership` EDITOR y participa en REST, operaciones STOMP, presencia y Assistant bajo la misma política de acceso. El actor sin membership queda fuera. Esta evidencia no marca automáticamente los diagramas académicos como dibujados; el catálogo mantiene esa distinción.

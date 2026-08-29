@@ -16,6 +16,8 @@ public interface ProjectMembershipRepository
 
     List<ProjectMembershipEntity> findAllByUserId(UUID userId);
 
+    List<ProjectMembershipEntity> findAllByProjectIdOrderByCreatedAtAsc(UUID projectId);
+
     boolean existsByProjectIdAndUserId(
             UUID projectId,
             UUID userId

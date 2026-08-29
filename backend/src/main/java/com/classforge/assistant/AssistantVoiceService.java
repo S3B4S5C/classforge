@@ -30,12 +30,12 @@ public class AssistantVoiceService {
     }
 
     public AssistantPlanResponse plan(
-            UUID ownerId,
+            UUID userId,
             UUID projectId,
             MultipartFile audio
     ) {
         projectService.get(
-                ownerId,
+                userId,
                 projectId
         );
 
@@ -89,7 +89,7 @@ public class AssistantVoiceService {
         }
 
         return planService.planVoice(
-                ownerId,
+                userId,
                 projectId,
                 transcript
         );

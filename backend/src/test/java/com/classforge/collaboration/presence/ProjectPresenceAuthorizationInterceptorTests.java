@@ -1,7 +1,7 @@
 package com.classforge.collaboration.presence;
 
 import com.classforge.collaboration.security.CollaborationPrincipal;
-import com.classforge.collaboration.security.ProjectAccessService;
+import com.classforge.project.access.ProjectAccessService;
 import com.classforge.collaboration.security.ProjectStompAuthorizationInterceptor;
 import org.junit.jupiter.api.Test;
 import org.springframework.messaging.Message;
@@ -51,20 +51,55 @@ class ProjectPresenceAuthorizationInterceptorTests {
         );
 
         verify(accessService)
-                .requireAccess(
+                .requireRead(
                         userId,
                         projectId
                 );
+    }
+
+
+    @Test
+    void presenceSendRequiresProjectEditAccess() {
+        ProjectAccessService accessService = mock(ProjectAccessService.class);
+        ProjectStompAuthorizationInterceptor interceptor =
+                new ProjectStompAuthorizationInterceptor(accessService);
+
+        UUID userId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+
+        interceptor.preSend(
+                stompMessage(
+                        StompCommand.SEND,
+                        "/app/projects/" + projectId + "/presence",
+                        new CollaborationPrincipal(
+                                userId,
+                                "editor@classforge.test"
+                        )
+                ),
+                mock(MessageChannel.class)
+        );
+
+        verify(accessService).requireEdit(userId, projectId);
     }
 
     private Message<byte[]> stompMessage(
             String destination,
             CollaborationPrincipal principal
     ) {
+        return stompMessage(
+                StompCommand.SUBSCRIBE,
+                destination,
+                principal
+        );
+    }
+
+    private Message<byte[]> stompMessage(
+            StompCommand command,
+            String destination,
+            CollaborationPrincipal principal
+    ) {
         StompHeaderAccessor accessor =
-                StompHeaderAccessor.create(
-                        StompCommand.SUBSCRIBE
-                );
+                StompHeaderAccessor.create(command);
 
         accessor.setDestination(
                 destination
