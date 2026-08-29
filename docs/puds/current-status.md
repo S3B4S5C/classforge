@@ -154,3 +154,10 @@ Fix-014 v1.5 elimina el historial `assistant/tool` entre steps compuestos y usa 
 Tras fix-014 v1.5 el holdout alcanzo `30/33 = 90.9 %`. `CREATE_CLASS`, `RENAME_CLASS`, `DELETE_CLASS`, `ADD_ATTRIBUTES`, `UPDATE_ATTRIBUTE`, `DELETE_ATTRIBUTE`, `CREATE_RELATIONSHIP`, `UPDATE_RELATIONSHIP`, `DELETE_RELATIONSHIP` y `SAFETY_UNKNOWN_REFERENCE` quedaron en `100 %`. El unico ERROR fue `MULTI_TOOL_COMPOUND=0/3`.
 
 Los tres fallos compuestos fueron `UnexpectedEndOfInputException`: el gateway parseaba llamadas repetidas sobrantes y una de ellas quedaba truncada por el limite de completion, aunque la primera tool call util ya fuera valida. Fix-014 v1.6 aplica parse perezoso de la primera llamada compatible y un unico retry de truncamiento con 512 completion tokens. CU-09 permanece bloqueado hasta repetir holdout y regression con esta revision.
+
+<!-- CU08-FIX-014-V1.6-FINAL-HOLDOUT -->
+### Evidencia final holdout post-v1.6
+
+La repetición de `assistant-tool-holdout` después de fix-014 v1.6 obtuvo `33/33 = 100.0 %`. Las once categorías quedaron en `100 %`, incluyendo `SAFETY_UNKNOWN_REFERENCE=3/3` y `MULTI_TOOL_COMPOUND=3/3`, y la tarea terminó con `AssistantE2EReliabilityIntegrationTest PASSED` y `BUILD SUCCESSFUL`.
+
+Con esta corrida queda cerrada la puerta holdout que bloqueaba CU-09: el planner oficial demuestra generalización sobre redacciones no usadas para ajustar fix-013, mantiene fail-closed y soporta peticiones compuestas. Solo queda registrar una corrida `assistant-tool-regression -Attempts 20` post-v1.6 como confirmación final de no regresión antes de abrir formalmente `C2-cu09-001`. CU-09 continúa siendo el siguiente caso funcional y su arquitectura debe reutilizar la misma IR/tools/preview/BATCH/Command Bus.

@@ -20,7 +20,7 @@ Una fase puede contener uno o varios ciclos.
 Fase: Elaboración
 Ciclo 1: CERRADO
 Ciclo 2: ABIERTO — CU-31 CERRADO; CU-09 SIGUIENTE
-Corte: 28 de agosto de 2026
+Corte: 29 de agosto de 2026
 ```
 
 El Ciclo 1 consolida la arquitectura ejecutable. El Ciclo 2 permanece abierto: CU-31 está cerrado mediante C2-cu31-001/002/003 y CU-09 — Imagen → UML — es el siguiente caso.

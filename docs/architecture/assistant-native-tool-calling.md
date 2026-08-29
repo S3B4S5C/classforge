@@ -164,3 +164,8 @@ Desde v1.6 el gateway:
 5. si el retry tambien llega truncado, falla explicitamente y conserva fail-closed.
 
 El presupuesto normal sigue en 256 tokens; 512 se usa solamente como recuperacion de truncamiento. No se aumenta `-c 4096` ni se reintroduce historial entre steps.
+
+<!-- CU08-FIX-014-V1.6-FINAL-HOLDOUT -->
+## Validación holdout final
+
+Después de v1.6 la suite holdout alcanzó `33/33 = 100.0 %`: todas las operaciones simples, referencias desconocidas y `MULTI_TOOL_COMPOUND` aprobaron. Safety permaneció en `100 %` y la ejecución terminó con build verde. Esta es la evidencia vigente de generalización del planner native tools; la regression post-v1.6 se conserva como checkpoint final de no regresión antes de abrir CU-09.

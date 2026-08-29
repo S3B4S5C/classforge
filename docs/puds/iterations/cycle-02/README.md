@@ -30,3 +30,8 @@ Después se abrirán los incrementos técnicos de CU-09.
 
 <!-- CU08-FIX-014 -->
 - `C2-cu08-fix-014-native-tools-cutover.md`: native tools oficial, multi-tool, retiro del planner legacy y evidencia previa a CU-09.
+
+<!-- CU08-FIX-014-V1.6-FINAL-HOLDOUT -->
+## Evidencia final del hardening previo a CU-09
+
+La corrida holdout posterior a fix-014 v1.6 cerró `33/33 = 100.0 %`, con safety y multi-tool en `100 %` y build verde. El siguiente checkpoint es registrar la regression post-v1.6 de 20 intentos por categoría; después puede abrirse `C2-cu09-001` sin deuda funcional pendiente de CU-08.

@@ -1,6 +1,6 @@
 # Casos de uso de ClassForge — especificación vigente
 
-**Corte:** 28 de agosto de 2026.
+**Corte:** 29 de agosto de 2026.
 
 Este documento es la fuente normativa de los casos de uso.
 
@@ -289,7 +289,7 @@ Proyecto veterinaria capaz de demostrar de extremo a extremo las capacidades ter
 
 ### CU-31 — Invitar colaborador
 
-**Estado: EN PROGRESO.**
+**Estado: CERRADO.**
 
 **Actor principal:** Propietario.  
 **Actor secundario:** Usuario invitado / Colaborador.
@@ -394,9 +394,12 @@ C2-cu31-001, C2-cu31-002 y C2-cu31-003 están completados. CU-31 está CERRADO y
 El historial del plan original se conserva en `history/`.
 
 <!-- CU08-FIX-013-NATIVE-TOOLS -->
-### Hardening post-CU08 — tool calling nativo
+### Histórico de decisión post-CU08 — evaluación de tool calling nativo
 
-CU-08 continúa CERRADO. Antes de CU-09 se evalúa sustituir el contrato LLM -> `AssistantSemanticPlan` por un catálogo de tools UML nativas. El camino nuevo conserva preview/Apply/Command Bus y obliga a resolver referencias existentes contra UUID reales. El planner anterior se mantiene durante fix-013 para benchmark A/B y solo podrá retirarse en fix-014 si tools demuestra mayor fiabilidad y safety 100 %.
+Durante fix-013, con CU-08 ya CERRADO y antes de CU-09, se evaluó sustituir el contrato LLM -> `AssistantSemanticPlan` por un catálogo de tools UML nativas. El candidato conservó preview/Apply/Command Bus y obligó a resolver referencias existentes contra UUID reales. El planner anterior se mantuvo únicamente para benchmark A/B y fue retirado en fix-014 después de que native tools demostrara mayor fiabilidad y safety 100 %. Este bloque se conserva como evidencia histórica; la arquitectura vigente es la documentada en la nota fix-014 siguiente.
 
 <!-- CU08-FIX-014 -->
 **Nota CU-08:** la implementación final de texto/voz usa native tool calling como única ruta LLM. `AssistantSemanticPlan` es representación interna y toda mutación continúa convergiendo en preview + BATCH + Command Bus. Se admiten peticiones compuestas dentro de las operaciones UML soportadas.
+
+<!-- CU08-FIX-014-V1.6-FINAL-HOLDOUT -->
+**Evidencia vigente CU-08:** después de fix-014 v1.6, la suite holdout obtuvo `33/33 = 100.0 %`, con `SAFETY_UNKNOWN_REFERENCE=100 %` y `MULTI_TOOL_COMPOUND=100 %`. El build finalizó correctamente. La regression post-v1.6 de 20 intentos por categoría queda como checkpoint de no regresión antes de abrir formalmente `C2-cu09-001`; CU-09 sigue siendo el siguiente caso funcional.

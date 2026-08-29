@@ -31,7 +31,7 @@ Para evitar contradicciones:
 Fase PUDS: Elaboración
 Ciclo 1: CERRADO
 Ciclo 2: ABIERTO — CU-31 CERRADO; CU-09 SIGUIENTE
-Fecha: 28-08-2026
+Fecha: 29-08-2026
 ```
 
 ## Composición prevista del Word

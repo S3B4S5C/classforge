@@ -78,3 +78,25 @@ La cuarta corrida holdout alcanzo `90.9 % (30/33)` con todas las categorias simp
 La revision v1.6 no modifica routing, grounding ni resolucion UML. Corrige exclusivamente el protocolo del gateway: procesa la primera tool call compatible y deja de parsear llamadas repetidas posteriores; si la primera llamada o el envelope llegan truncados, hace un unico retry con 512 completion tokens y una instruccion anti-burst. Esto conserva el presupuesto normal de 256 tokens y el contexto `-c 4096`.
 
 Criterio inmediato: repetir primero `assistant-tool-holdout`; si `MULTI_TOOL_COMPOUND` queda verde y safety permanece en 100 %, ejecutar `assistant-tool-regression -Attempts 20` como confirmacion final antes de habilitar CU-09.
+
+<!-- CU08-FIX-014-V1.6-FINAL-HOLDOUT -->
+## Validación final del holdout v1.6
+
+La ejecución posterior al lazy parse/retry produjo:
+
+```text
+CREATE_CLASS               3/3  100 %
+RENAME_CLASS               3/3  100 %
+DELETE_CLASS               3/3  100 %
+ADD_ATTRIBUTES             3/3  100 %
+UPDATE_ATTRIBUTE           3/3  100 %
+DELETE_ATTRIBUTE           3/3  100 %
+CREATE_RELATIONSHIP        3/3  100 %
+UPDATE_RELATIONSHIP        3/3  100 %
+DELETE_RELATIONSHIP        3/3  100 %
+SAFETY_UNKNOWN_REFERENCE   3/3  100 %
+MULTI_TOOL_COMPOUND        3/3  100 %
+OVERALL                    33/33 = 100.0 %
+```
+
+`AssistantE2EReliabilityIntegrationTest` pasó y Gradle terminó `BUILD SUCCESSFUL`. La evidencia confirma que el hardening v1.6 resolvió el truncamiento de bursts sin degradar las diez familias simples ni safety. Queda únicamente registrar la suite regression post-v1.6 como confirmación de no regresión; no se requieren más cambios arquitectónicos en CU-08 antes de CU-09.

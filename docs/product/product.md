@@ -956,19 +956,19 @@ La IA debe ser local y desacoplada del frontend principal.
 
 ### Estrategia de modelos
 
-Modelo pequeño para operaciones frecuentes:
+Planner textual oficial:
 
-- Gemma 3 1B Q4 o equivalente;
-- encargado de transformar lenguaje natural a comandos estructurados.
+- Qwen2.5-3B-Instruct Q4_K_M mediante llama.cpp con `--jinja`;
+- native function calling para seleccionar tools UML semánticas;
+- Java conserva autoridad sobre referencias existentes, UUID, grounding, validación y Apply.
 
-Modelo multimodal opcional de mayor tamaño:
+Modelo multimodal para CU-09:
 
-- Gemma 3 4B u otro VLM compatible;
-- utilizado bajo demanda para fotografía → UML.
+- VLM local compatible con llama.cpp, todavía por seleccionar mediante benchmark específico de imagen → UML;
+- debe producir una propuesta semántica que converja en la misma IR/tools/Command Bus, nunca escribir directamente `ProjectDocument`;
+- podrá cargarse bajo demanda para no competir innecesariamente por VRAM con el planner textual.
 
-El modelo pequeño podrá permanecer cargado.
-
-El modelo multimodal podrá cargarse únicamente cuando sea necesario.
+La selección del VLM forma parte de CU-09 y no se hereda de la elección textual de CU-08.
 
 ---
 
@@ -1157,8 +1157,8 @@ Backend
 
 IA / STT
 - llama.cpp
-- Gemma 3 1B Q4 o equivalente
-- VLM 4B opcional para imagen
+- Qwen2.5-3B-Instruct Q4_K_M para texto/voz -> tools UML
+- VLM local para imagen -> UML, por seleccionar y validar en CU-09
 - whisper.cpp
 
 Interoperabilidad
