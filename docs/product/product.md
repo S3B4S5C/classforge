@@ -17,7 +17,7 @@ Fuente normativa del estado: `../puds/current-status.md`.
 | Colaboración STOMP y presencia | IMPLEMENTADO |
 | Assistant texto/voz para modificar UML | IMPLEMENTADO |
 | llama.cpp y whisper.cpp locales | IMPLEMENTADO |
-| Imagen a UML | PLANIFICADO |
+| Imagen a UML | EN PROGRESO |
 | XMI / Enterprise Architect | PLANIFICADO |
 | UML a modelo relacional | PLANIFICADO |
 | Generadores Spring/OpenAPI/Postman | PLANIFICADO |
@@ -964,11 +964,12 @@ Planner textual oficial:
 
 Modelo multimodal para CU-09:
 
-- VLM local compatible con llama.cpp, todavía por seleccionar mediante benchmark específico de imagen → UML;
-- debe producir una propuesta semántica que converja en la misma IR/tools/Command Bus, nunca escribir directamente `ProjectDocument`;
-- podrá cargarse bajo demanda para no competir innecesariamente por VRAM con el planner textual.
+- baseline de evaluación: Qwen3-VL-2B-Instruct Q4_K_M + mmproj Q8_0 mediante llama.cpp en `127.0.0.1:8094`;
+- challenger: Qwen3-VL-4B-Instruct Q4_K_M + mmproj Q8_0, sujeto a benchmark local;
+- produce `VisionUmlProposal` bajo JSON Schema y converge en la misma IR/Command Bus, nunca escribe directamente `ProjectDocument`;
+- el runtime visual permanece separado del Qwen textual de CU-08 para evitar un cutover no justificado.
 
-La selección del VLM forma parte de CU-09 y no se hereda de la elección textual de CU-08.
+La selección final entre 2B y 4B depende de la evidencia regression/holdout, VRAM y latencia de C2-cu09-002; no se hereda de la elección textual de CU-08.
 
 ---
 
@@ -1158,7 +1159,7 @@ Backend
 IA / STT
 - llama.cpp
 - Qwen2.5-3B-Instruct Q4_K_M para texto/voz -> tools UML
-- VLM local para imagen -> UML, por seleccionar y validar en CU-09
+- VLM local para imagen -> UML mediante llama.cpp; implementación completa, selección/calibración final pendiente de evidencia CU-09
 - whisper.cpp
 
 Interoperabilidad
@@ -1754,3 +1755,29 @@ MCP no forma parte de CU08-001.
 <!-- CU08-FIX-014 -->
 ### Assistant local — contrato definitivo
 El Assistant usa Qwen2.5-3B-Instruct Q4_K_M mediante native function calling de llama.cpp. El modelo selecciona tools UML semánticas; ClassForge resuelve elementos existentes a UUID, preserva literales nuevos y genera preview/BATCH. Texto y voz convergen en el mismo planner y las peticiones compuestas se planifican sobre un documento efímero antes de Apply.
+
+<!-- C2-CU09-001-IMAGE-VISION-CONTRACT -->
+## Addendum CU-09 — contrato visual
+
+C2-cu09-001 abre Imagen → UML con un contrato desacoplado del VLM. PNG/JPEG/WEBP se validan y normalizan; el modelo multimodal futuro debe devolver `VisionUmlProposal` con refs temporales y `VisionEvidence`. Java valida provenance, referencias, tipos, relaciones y multiplicidades, compila a `AssistantSemanticPlan` y conserva preview/BATCH/Command Bus como única ruta de mutación.
+
+El VLM definitivo continúa **TBD** y se seleccionará en C2-cu09-002 mediante benchmark de precisión UML, VRAM, latencia, resolución y compatibilidad llama.cpp. La imagen no se persiste en C2-cu09-001.
+
+<!-- C2-CU09-002-QWEN3-VL -->
+## Addendum CU-09 — runtime visual y benchmark
+
+C2-cu09-002 materializa el adapter multimodal sin cambiar la autoridad del dominio. `LlamaCppVisionModelGateway` envía imagen Base64 + prompt UML a llama.cpp, restringe la respuesta por JSON Schema y rechaza cualquier salida truncada o no deserializable sin repair heurístico. El prompt recibe únicamente nombres de clases/atributos existentes, nunca UUID internos.
+
+El health del Assistant separa `readyForImage` de texto/voz y exige que el runtime de 8094 publique el modelo esperado y `modalities.vision=true`. El frontend bloquea Analizar cuando Vision no está READY.
+
+La suite `assistantVisionBenchmark` compara planes semánticos contra ground truth en regression y holdout y produce métricas de transporte, schema, grounding, exactitud estructural, safety, latencia y memoria GPU observada. C2-cu09-002 queda implementado pero no cerrado hasta ejecutar esa evidencia en la máquina local de referencia.
+
+
+<!-- C2-CU09-003-VISION-UX-HARDENING -->
+## Addendum CU-09 — experiencia visual completa y validación diferida
+
+C2-cu09-003 completa la experiencia de Imagen → UML sin declarar prematuramente que el baseline visual es definitivo. El usuario puede seleccionar, arrastrar, pegar o capturar una imagen, realizar rotación/recorte conservador y analizarla. Cuando el VLM entrega bounding boxes, el preview visual puede resaltar la evidencia asociada a clases, atributos y relaciones.
+
+El resultado puede ser `READY`, `NO_CHANGES` o `NO_ACTIONABLE_UML`. Solo `READY` expone un comando aplicable; los demás estados son éxitos seguros sin mutación. Conflictos con el modelo UML existente se omiten con advertencias antes que convertir Imagen → UML en una ruta de edición destructiva.
+
+La fase de producto queda funcionalmente implementada, pero CU-09 continuará `EN PROGRESO` mientras se calibren Qwen3-VL/modelos alternativos y el prompt. El comando de exploración no impone thresholds; el comando de aceptación sí exige regression, holdout, hardening, E2E real y no regresión de CU-08.

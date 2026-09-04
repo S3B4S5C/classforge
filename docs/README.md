@@ -53,3 +53,8 @@ Fecha: 29-08-2026
 15. Anexos y tutorial.
 
 Esta estructura es editorial. Los detalles técnicos deben mantenerse primero en los Markdown especializados.
+
+<!-- C2-CU09-001 -->
+## CU-09
+
+CU-09 está EN PROGRESO. `puds/iterations/cycle-02/C2-cu09-001-image-input-and-vision-contract.md` documenta la entrada PNG/JPEG/WEBP y su convergencia al pipeline canónico. La selección del VLM queda para C2-cu09-002.

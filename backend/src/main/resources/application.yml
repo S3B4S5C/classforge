@@ -21,6 +21,28 @@ spring:
 server:
   port: 8082
 classforge:
+  assistant:
+    vision:
+      provider: ${CLASSFORGE_ASSISTANT_VISION_PROVIDER:llama-cpp}
+      url: ${CLASSFORGE_ASSISTANT_VISION_URL:http://127.0.0.1:8094}
+      model: ${CLASSFORGE_ASSISTANT_VISION_MODEL:vision-model}
+      request-timeout-seconds: ${CLASSFORGE_ASSISTANT_VISION_TIMEOUT_SECONDS:180}
+      max-completion-tokens: ${CLASSFORGE_ASSISTANT_VISION_MAX_TOKENS:3200}
+      dense-two-pass-enabled: ${CLASSFORGE_ASSISTANT_VISION_TWO_PASS:false}
+      dense-two-pass-min-classes: ${CLASSFORGE_ASSISTANT_VISION_TWO_PASS_MIN_CLASSES:4}
+      relationship-max-completion-tokens: ${CLASSFORGE_ASSISTANT_VISION_RELATIONSHIP_MAX_TOKENS:1800}
+      dense-hybrid:
+        enabled: ${CLASSFORGE_ASSISTANT_VISION_HYBRID:false}
+        min-classes: ${CLASSFORGE_ASSISTANT_VISION_HYBRID_MIN_CLASSES:4}
+        fallback-to-semantic: ${CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK:true}
+        localization-max-completion-tokens: ${CLASSFORGE_ASSISTANT_VISION_HYBRID_LOCALIZATION_TOKENS:1200}
+        relationship-max-completion-tokens: ${CLASSFORGE_ASSISTANT_VISION_HYBRID_RELATIONSHIP_TOKENS:1800}
+
+    image:
+      max-bytes: 10485760
+      min-dimension: 64
+      max-dimension: 8192
+
   security:
     jwt:
       secret: ${CLASSFORGE_JWT_SECRET:classforge-development-secret-change-before-production-2026}

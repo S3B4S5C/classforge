@@ -34,6 +34,7 @@ class AssistantPlanningDiagnosticsTests {
                         null,
                         null,
                         null,
+                        null,
                         null
                 );
 

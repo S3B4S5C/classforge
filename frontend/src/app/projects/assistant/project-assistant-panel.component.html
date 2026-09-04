@@ -67,6 +67,27 @@
         </span>
         {{ runtimeLabel(health.whisper) }}
       </span>
+
+      <span
+        class="runtime-chip"
+        [class.is-ready]="
+          health.vision.available
+        "
+        [class.is-down]="
+          !health.vision.available
+        "
+        [title]="
+          health.vision.message
+        "
+      >
+        <span
+          class="material-symbols-rounded"
+          aria-hidden="true"
+        >
+          visibility
+        </span>
+        {{ runtimeLabel(health.vision) }}
+      </span>
     } @else {
       <span class="runtime-chip">
         @if (healthLoading()) {
@@ -140,7 +161,12 @@
       </div>
     }
 
-    @if (
+    @if (imagePlanning()) {
+      <div class="assistant-thinking">
+        <mat-spinner diameter="18"></mat-spinner>
+        Analizando imagen...
+      </div>
+    } @else if (
       voiceState() === 'transcribing'
     ) {
       <div class="assistant-thinking">
@@ -261,7 +287,151 @@
     </div>
   }
 
+  @if (selectedImage(); as image) {
+    <div
+      class="assistant-image-workbench"
+      (dragover)="onImageDragOver($event)"
+      (drop)="onImageDrop($event)"
+    >
+      @if (imagePreviewUrl(); as previewUrl) {
+        <div class="assistant-image-stage">
+          <img
+            [src]="previewUrl"
+            alt="Vista previa del diagrama preparado"
+          />
+
+          @if (imageResult(); as visionResult) {
+            @for (evidence of visionResult.evidence; track $index) {
+              @if (evidenceHasBox(evidence)) {
+                <button
+                  type="button"
+                  class="vision-evidence-box"
+                  [class.is-low-confidence]="(evidence.confidence ?? 1) < 0.65"
+                  [class.is-active]="activeEvidence() === evidence"
+                  [style.left.%]="evidenceLeft(evidence, visionResult)"
+                  [style.top.%]="evidenceTop(evidence, visionResult)"
+                  [style.width.%]="evidenceWidth(evidence, visionResult)"
+                  [style.height.%]="evidenceHeight(evidence, visionResult)"
+                  [title]="evidence.symbol + ' · ' + confidenceLabel(evidence.confidence)"
+                  (click)="activeEvidence.set(evidence)"
+                ></button>
+              }
+            }
+          }
+        </div>
+      }
+
+      <div class="assistant-image-meta">
+        <strong>{{ image.name }}</strong>
+        <small>
+          {{ imageSizeLabel() }} · PNG preparado · max. 10 MB
+        </small>
+        <small>
+          Rotacion {{ imageRotation() }}° · recorte {{ imageCropInsetPercent() }}% por borde
+        </small>
+        <small>
+          Vision es local; la imagen no se persiste en ProjectDocument.
+        </small>
+      </div>
+
+      <div class="assistant-image-tools">
+        <button mat-button type="button" [disabled]="imagePlanning()" (click)="rotateImage(-90)">
+          <span class="material-symbols-rounded" aria-hidden="true">rotate_left</span>
+          Izquierda
+        </button>
+        <button mat-button type="button" [disabled]="imagePlanning()" (click)="rotateImage(90)">
+          <span class="material-symbols-rounded" aria-hidden="true">rotate_right</span>
+          Derecha
+        </button>
+        <button mat-button type="button" [disabled]="imagePlanning() || imageCropInsetPercent() >= 30" (click)="cropImage()">
+          <span class="material-symbols-rounded" aria-hidden="true">crop</span>
+          Recortar 5%
+        </button>
+        <button mat-button type="button" [disabled]="imagePlanning()" (click)="resetImageEdits()">
+          Restablecer
+        </button>
+        <button mat-button type="button" [disabled]="imagePlanning()" (click)="clearSelectedImage()">
+          Quitar
+        </button>
+      </div>
+
+      @if (imageResult(); as visionResult) {
+        <div
+          class="assistant-vision-result"
+          [class.is-ready]="visionResult.disposition === 'READY'"
+          [class.is-neutral]="visionResult.disposition !== 'READY'"
+        >
+          <strong>
+            @if (visionResult.disposition === 'READY') {
+              Cambios visuales listos para revisar
+            } @else if (visionResult.disposition === 'NO_CHANGES') {
+              Sin cambios UML nuevos
+            } @else {
+              Sin UML accionable
+            }
+          </strong>
+          <small>Confianza global informativa: {{ confidenceLabel(visionResult.confidence) }}</small>
+
+          @if (visionResult.warnings.length > 0) {
+            <ul>
+              @for (warning of visionResult.warnings; track $index) {
+                <li>{{ warning }}</li>
+              }
+            </ul>
+          }
+
+          @if (visionResult.evidence.length > 0) {
+            <div class="vision-evidence-list" aria-label="Evidencia visual detectada">
+              @for (evidence of visionResult.evidence; track $index) {
+                <button
+                  type="button"
+                  [class.is-low-confidence]="(evidence.confidence ?? 1) < 0.65"
+                  [class.is-active]="activeEvidence() === evidence"
+                  (click)="activeEvidence.set(evidence)"
+                >
+                  {{ evidence.symbol }} · {{ confidenceLabel(evidence.confidence) }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      @if (imageRetryAvailable() && !imagePlanning()) {
+        <button mat-button type="button" class="assistant-image-retry" (click)="retryImageAnalysis()">
+          <span class="material-symbols-rounded" aria-hidden="true">refresh</span>
+          Analizar nuevamente
+        </button>
+      }
+    </div>
+  } @else {
+    <div
+      class="assistant-image-dropzone"
+      (dragover)="onImageDragOver($event)"
+      (drop)="onImageDrop($event)"
+    >
+      Arrastra una imagen aqui o pegala desde el portapapeles.
+    </div>
+  }
+
   <div class="assistant-composer">
+    <input
+      #imageInput
+      class="assistant-image-input"
+      type="file"
+      accept="image/png,image/jpeg,image/webp"
+      (change)="onImageSelected($event)"
+    />
+
+    <input
+      #cameraInput
+      class="assistant-image-input"
+      type="file"
+      accept="image/*"
+      capture="environment"
+      (change)="onCameraSelected($event)"
+    />
+
     <textarea
       [formControl]="prompt"
       rows="3"
@@ -276,12 +446,91 @@
       <button
         mat-button
         type="button"
+        class="assistant-image-button"
+        [disabled]="
+          planning()
+          || voiceBusy()
+          || imagePlanning()
+          || !!store.assistantPlanningBlockReason()
+        "
+        title="Seleccionar fotografia o imagen UML"
+        (click)="imageInput.click()"
+      >
+        <span
+          class="material-symbols-rounded"
+          aria-hidden="true"
+        >
+          image
+        </span>
+        Imagen
+      </button>
+
+      <button
+        mat-button
+        type="button"
+        class="assistant-image-button"
+        [disabled]="planning() || voiceBusy() || imagePlanning() || !!store.assistantPlanningBlockReason()"
+        title="Capturar imagen con la camara del dispositivo"
+        (click)="cameraInput.click()"
+      >
+        <span class="material-symbols-rounded" aria-hidden="true">photo_camera</span>
+        Camara
+      </button>
+
+      @if (selectedImage()) {
+        <button
+          mat-button
+          type="button"
+          class="assistant-image-analyze"
+          [disabled]="
+            planning()
+            || voiceBusy()
+            || imagePlanning()
+            || !runtimeReadyForImage()
+            || !!store.assistantPlanningBlockReason()
+          "
+          [title]="
+            runtimeReadyForImage()
+              ? 'Analizar imagen y preparar preview UML'
+              : 'Vision no esta listo en 8094'
+          "
+          (click)="analyzeImage()"
+        >
+          @if (imagePlanning()) {
+            <mat-spinner diameter="16"></mat-spinner>
+          } @else {
+            <span
+              class="material-symbols-rounded"
+              aria-hidden="true"
+            >
+              document_scanner
+            </span>
+          }
+          Analizar
+        </button>
+
+        @if (imagePlanning()) {
+          <button
+            mat-button
+            type="button"
+            class="assistant-image-cancel"
+            (click)="cancelImageAnalysis()"
+          >
+            Cancelar
+          </button>
+        }
+      }
+
+      <button
+        mat-button
+        type="button"
         class="assistant-mic"
         [class.is-recording]="
           voiceState() === 'recording'
         "
         [disabled]="
           voiceState() === 'transcribing'
+          || imagePlanning()
           || (
             planning()
             && voiceState() !== 'recording'
@@ -318,6 +567,7 @@
         [disabled]="
           planning()
           || voiceBusy()
+          || imagePlanning()
           || !runtimeReadyForText()
           || !!store.assistantPlanningBlockReason()
           || prompt.invalid

@@ -661,3 +661,43 @@ Desde fix-014 no existe routing `legacy/tools/compare`. `AssistantPlanService` d
 ## Fix-014 v1.4 — route adjudication
 
 El router native es una propuesta semántica, no una autoridad de mutación. Para una petición simple ClassForge adjudica exactamente una operación compatible con referencias y cues del proyecto. Esto impide que una ruta como `create_class -> rename_class` cree un símbolo efímero no solicitado antes del rename. En compuestos, la ruta se ordena por dependencias y cada ronda guarda solo la primera tool call compatible.
+
+<!-- C2-CU09-001-VISION-CONVERGENCE -->
+## Convergencia visual CU-09
+
+La entrada visual no llama al planner textual de Qwen ni escribe `ProjectDocument`. `VisionModelGateway` produce `VisionUmlProposal`; `VisionProposalGroundingValidator` y `VisionProposalCompiler` la convierten en la misma `AssistantSemanticPlan` interna. Desde ahí se reutilizan `UmlAssistantCommandResolver`, BATCH, preview, validación y Apply. Los refs temporales del VLM nunca sustituyen UUID de dominio.
+
+<!-- C2-CU09-002-VISION-RUNTIME -->
+## Runtime visual real — C2-cu09-002
+
+`VisionModelGateway` tiene ahora una implementación `LlamaCppVisionModelGateway` condicionada por `classforge.assistant.vision.provider=llama-cpp`. Usa un runtime multimodal separado en 8094 y no reutiliza el planner native-tools de 8092.
+
+```text
+normalized image + names-only project context
+        ↓
+/v1/chat/completions + image_url
+        ↓
+response_format=json_object + schema
+        ↓
+VisionUmlProposal
+        ↓
+grounding/compiler/resolver existentes
+```
+
+El contexto entregado al modelo omite `projectId`, UUID y revisión. Un HTTP error, timeout, completion truncada o JSON inválido se rechaza en `VISION`; no hay parser de rescate. Bounding boxes son opcionales, pero si aparecen deben ser completos. Health valida `modalities.vision=true` antes de habilitar análisis en UI.
+
+
+<!-- C2-CU09-003-VISION-NO-ACTION -->
+## Imagen — cierre funcional CU09-003
+
+La entrada visual conserva la convergencia con Assistant pero admite respuestas seguras sin comando. `NO_ACTIONABLE_UML` y `NO_CHANGES` terminan antes de `UmlAssistantCommandResolver`; `READY` continúa por la ruta normal de BATCH/preview/Apply. Nunca se fabrica un `BATCH []`.
+
+```text
+VisionUmlProposal
+   ↓ grounding + bbox bounds
+VisionProposalCompiler
+   ├─ plan vacío por ausencia/duplicado -> command=null
+   └─ plan con acciones                -> resolver -> BATCH -> preview
+```
+
+Cancel/retry son comportamientos de request/UI. Cancelar descarta el resultado; reintentar realiza una inferencia nueva contra la revisión actual. Confidence no bypassa grounding, validación ni confirmación humana.

@@ -1,0 +1,41 @@
+{
+  "suite": "regression",
+  "cases": [
+    {
+      "id": "class-simple",
+      "image": "/assistant/vision/class-simple.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|Cliente|"
+      ]
+    },
+    {
+      "id": "class-attributes",
+      "image": "/assistant/vision/class-attributes.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|Cliente|activo:BOOLEAN,email:STRING,id:UUID"
+      ]
+    },
+    {
+      "id": "two-classes-association",
+      "image": "/assistant/vision/two-classes-association.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|Cliente|email:STRING",
+        "CREATE_CLASS|Factura|total:DECIMAL",
+        "CREATE_RELATIONSHIP|Cliente|Factura|ASSOCIATION|null:null|null:null"
+      ]
+    },
+    {
+      "id": "invalid-not-uml",
+      "image": "/assistant/vision/invalid-not-uml.png",
+      "expectedOutcome": "REJECT",
+      "existingClasses": [],
+      "expectedSignatures": []
+    }
+  ]
+}

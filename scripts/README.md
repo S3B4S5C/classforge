@@ -52,3 +52,151 @@ pwsh -NoProfile -File .\scripts\assistant-tool-holdout.ps1 -Attempts 3 -VerboseA
 ```
 
 `regression` repite la matriz que autorizó el cutover; `holdout` usa redacciones nuevas y una petición compuesta. El antiguo runner A/B se retiró junto con el planner legacy.
+
+<!-- C2-CU09-001-VISION-CONTRACT -->
+## Vision contract
+
+```powershell
+pwsh -NoProfile -File .\scripts\assistant-vision-contract.ps1
+```
+
+Ejecuta las regresiones de validación de imagen, evidence/provenance, compiler visual e integración membership/revision. No requiere un VLM real.
+
+<!-- C2-CU09-002-VISION-BENCHMARK -->
+## Vision runtime smoke y benchmark
+
+Con llama.cpp multimodal levantado en `127.0.0.1:8094` con alias `vision-model`:
+
+```powershell
+pwsh -NoProfile -File .\scripts\assistant-vision-smoke.ps1
+```
+
+El smoke valida `/health`, identidad en `/v1/models`, `modalities.vision=true` en `/props` y una inferencia Base64 real con JSON Schema.
+
+Regression:
+
+```powershell
+pwsh -NoProfile -File .\scripts\assistant-vision-regression.ps1 `
+  -Attempts 2 `
+  -VerboseAttempts
+```
+
+Holdout:
+
+```powershell
+pwsh -NoProfile -File .\scripts\assistant-vision-holdout.ps1 `
+  -Attempts 2 `
+  -VerboseAttempts
+```
+
+Ambos wrappers usan `assistant-vision-benchmark.ps1`, que ejecuta la tarea Gradle `assistantVisionBenchmark`. Los reportes se guardan por defecto en:
+
+```text
+backend/build/reports/assistant-vision/regression.json
+backend/build/reports/assistant-vision/holdout.json
+```
+
+Métricas: transporte, schema válido, grounding, clases, atributos, relaciones, multiplicidades, semantic exact, safety de imagen inválida, p50/p95 y `gpuPeakMiB` cuando `nvidia-smi` está disponible.
+
+Para comparar un challenger puede mantenerse el alias `vision-model` y cambiar únicamente el modelo cargado, usando `-ModelLabel` para identificar el reporte.
+
+
+
+### Vision: pizarra real aislada (CU09-CAL-004/005)
+
+```powershell
+pwsh -NoProfile -File .\scripts\assistant-vision-whiteboard.ps1 `
+  -Attempts 2 `
+  -ModelLabel "Qwen3-VL-4B Q4_K_M" `
+  -TimeoutSeconds 180 `
+  -MaxCompletionTokens 3200 `
+  -VerboseAttempts
+```
+
+Este wrapper filtra `library-whiteboard-realistic` dentro del benchmark hardening real. No duplica el pipeline. CU09-CAL-005 hace configurables `-TimeoutSeconds` y `-MaxCompletionTokens`, usa 180 s / 3200 tokens como defaults focales y genera un reporte separado por `ModelLabel`, por ejemplo `whiteboard-qwen3-vl-4b-q4-k-m.json`. Para comparar el 2B sin sobrescribir evidencia puede usarse `-ModelLabel "Qwen3-VL-2B Q4_K_M" -MaxCompletionTokens 4000`.
+
+Con `-VerboseAttempts`, un `GROUNDING_REJECT` imprime y conserva en el reporte el `VisionUmlProposal` ya parseado antes del grounding. Esto permite inspeccionar evidence/provenance sin relajar el validator ni reparar la salida del modelo.
+
+<!-- C2-CU09-003-VISION-CLOSURE-TOOLING -->
+## Vision CU09-003 — explorar primero, aceptar después
+
+El parche CU09-003 **no ejecuta automáticamente** suites que dependan de un VLM real. Solo el contrato determinista forma parte de la validación del parche.
+
+Para iterar modelo/prompt sin convertir cada experimento en un gate:
+
+```powershell
+pwsh -NoProfile -File .\scripts\assistant-vision-explore.ps1 -Attempts 2 -VerboseAttempts
+```
+
+`explore` ejecuta regression, holdout y hardening con thresholds 0 y conserva los reportes para comparar candidatos. `assistant-vision-hardening.ps1` permite ejecutar sólo las degradaciones visuales.
+
+E2E real aislado:
+
+```powershell
+pwsh -NoProfile -File .\scripts\assistant-vision-e2e.ps1
+```
+
+Comprueba smoke multimodal y `imagen -> plan -> command -> ProjectDocument persistido -> reopen` mediante `AssistantVisionAcceptanceIntegrationTest`.
+
+Cuando el VLM ya esté calibrado:
+
+```powershell
+pwsh -NoProfile -File .\scripts\assistant-vision-acceptance.ps1 -Attempts 2 -VerboseAttempts
+```
+
+La aceptación agrega regression >=95 %, holdout >=85 %, hardening >=75 %, schema/safety 100 %, E2E real y regression CU-08. Produce `backend/build/reports/assistant-vision/cu09-acceptance.json`. Ese reporte, y no la mera aplicación del parche, es la evidencia que habilita cerrar formalmente CU-09.
+
+### Pizarra real: original vs crop vs tiles (CU09-Cal-009)
+
+Cal-008 deja de ser el comportamiento por defecto: el two-pass relacional no mejoró la topología de la pizarra. `assistant-vision-whiteboard.ps1` vuelve a `single-pass` y añade `-ImageStrategy original|board-crop|tiles`.
+
+```powershell
+# fotografía original
+pwsh -NoProfile -File .\scripts\assistant-vision-whiteboard.ps1 -ImageStrategy original -Attempts 2 -ModelLabel "Qwen3-VL-4B Q4_K_M" -VerboseAttempts
+
+# foto orientada + recortada al área útil de pizarra (recomendado primero)
+pwsh -NoProfile -File .\scripts\assistant-vision-whiteboard.ps1 -ImageStrategy board-crop -Attempts 2 -ModelLabel "Qwen3-VL-4B Q4_K_M" -VerboseAttempts
+
+# cuatro regiones solapadas ampliadas; más lento, benchmark-only
+pwsh -NoProfile -File .\scripts\assistant-vision-whiteboard.ps1 -ImageStrategy tiles -Attempts 1 -ModelLabel "Qwen3-VL-4B Q4_K_M" -VerboseAttempts
+```
+
+`board-crop` y `tiles` solo se habilitan para `library-whiteboard-realistic`. `tiles` ejecuta cuatro inferencias single-pass y fusiona firmas semánticas únicamente en el benchmark; no introduce ningún merge visual ni ruta de mutación en producción. Los reportes se separan por modelo, estrategia y modo.
+
+### Pizarra real: hybrid-cv (CU09-Cal-010)
+
+Cal-010 añade un modo experimental inspirado en pipelines híbridos de extracción de diagramas: Qwen conserva clases/atributos, OpenCV CPU reconstruye candidatos geométricos y una inferencia local anota tipo/multiplicidades. No reemplaza todavía el single-pass por defecto.
+
+```powershell
+pwsh -NoProfile -File .\scripts\assistant-vision-whiteboard.ps1 `
+  -VisionMode hybrid-cv `
+  -ImageStrategy original `
+  -Attempts 2 `
+  -ModelLabel "Qwen3-VL-4B Q4_K_M" `
+  -TimeoutSeconds 180 `
+  -MaxCompletionTokens 3200 `
+  -HybridLocalizationTokens 1200 `
+  -HybridRelationshipTokens 1800 `
+  -VerboseAttempts
+```
+
+`hybrid-cv` exige `ImageStrategy=original`. El benchmark guarda diagnósticos de localización/geometría/evidence sheet bajo `backend/build/reports/assistant-vision/geometry/<caseId>/`. La primera descarga de la dependencia OpenCV empaquetada ronda 110 MiB.
+
+### Cal-011 — validar sólo cajas/mapping/geometría híbrida
+
+Para depurar primero la frontera CV-first sin ejecutar la anotación VLM de relaciones:
+
+```powershell
+pwsh -NoProfile -File .\scripts\assistant-vision-whiteboard.ps1 `
+  -VisionMode hybrid-cv `
+  -HybridGeometryOnly `
+  -ImageStrategy original `
+  -Attempts 1 `
+  -ModelLabel "Qwen3-VL-4B Q4_K_M" `
+  -TimeoutSeconds 180 `
+  -MaxCompletionTokens 3200 `
+  -HybridLocalizationTokens 1200 `
+  -VerboseAttempts
+```
+
+Inspeccionar `backend/build/reports/assistant-vision/geometry/library-whiteboard-realistic/` y, en particular, `class-regions.png`, `mapping.json`, `geometry.json` y `overlay.png`.

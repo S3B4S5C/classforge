@@ -4,6 +4,7 @@ import {
 import {
   Component,
   effect,
+  HostListener,
   inject,
   OnDestroy,
   signal,
@@ -21,6 +22,7 @@ import {
 } from '@angular/material/progress-spinner';
 import {
   finalize,
+  Subscription,
 } from 'rxjs';
 
 import {
@@ -33,7 +35,12 @@ import {
   BrowserWavRecorderService,
 } from './browser-wav-recorder.service';
 import {
+  AssistantImagePreparationService,
+} from './assistant-image-preparation.service';
+import {
   AssistantAttributePlan,
+  AssistantImageEvidenceItem,
+  AssistantImagePlanResponse,
   AssistantPlanAction,
   AssistantPlanResponse,
   AssistantRuntimeHealthResponse,
@@ -72,6 +79,9 @@ export class ProjectAssistantPanelComponent
   private readonly recorder =
     inject(BrowserWavRecorderService);
 
+  private readonly imagePreparation =
+    inject(AssistantImagePreparationService);
+
   private voiceTimer:
     number | null = null;
 
@@ -80,6 +90,12 @@ export class ProjectAssistantPanelComponent
 
   private healthRefreshTimer:
     number | null = null;
+
+  private originalImageFile:
+    File | null = null;
+
+  private imageRequest:
+    Subscription | null = null;
 
   readonly store =
     inject(ProjectWorkspaceStore);
@@ -146,6 +162,27 @@ export class ProjectAssistantPanelComponent
       null,
     );
 
+  readonly selectedImage =
+    signal<File | null>(null);
+
+  readonly imagePreviewUrl =
+    signal<string | null>(null);
+
+  readonly imagePlanning =
+    signal(false);
+
+  readonly imageResult =
+    signal<AssistantImagePlanResponse | null>(null);
+
+  readonly imageRotation = signal(0);
+
+  readonly imageCropInsetPercent = signal(0);
+
+  readonly imageRetryAvailable = signal(false);
+
+  readonly activeEvidence =
+    signal<AssistantImageEvidenceItem | null>(null);
+
   readonly error =
     signal<string | null>(
       null,
@@ -160,6 +197,7 @@ export class ProjectAssistantPanelComponent
         if (
           !this.planning()
           && this.voiceState() === 'idle'
+          && !this.imagePlanning()
         ) {
           this.refreshRuntimeHealth();
         }
@@ -181,6 +219,7 @@ export class ProjectAssistantPanelComponent
       || this.prompt.invalid
       || this.planning()
       || this.voiceBusy()
+      || this.imagePlanning()
     ) {
       return;
     }
@@ -273,11 +312,358 @@ export class ProjectAssistantPanelComponent
       });
   }
 
+  onImageSelected(
+    event: Event,
+  ): void {
+    const input =
+      event.target as HTMLInputElement;
+
+    const file =
+      input.files?.[0] ?? null;
+
+    input.value = '';
+    if (file) {
+      void this.selectImage(file);
+    }
+  }
+
+  onCameraSelected(
+    event: Event,
+  ): void {
+    this.onImageSelected(event);
+  }
+
+  @HostListener('document:paste', ['$event'])
+  onPaste(event: ClipboardEvent): void {
+    if (this.imagePlanning()) {
+      return;
+    }
+
+    const directFile = Array.from(event.clipboardData?.files ?? [])
+      .find((candidate) => candidate.type.startsWith('image/'));
+    const itemFile = Array.from(event.clipboardData?.items ?? [])
+      .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .find((candidate): candidate is File => candidate !== null);
+    const file = directFile ?? itemFile;
+
+    if (file) {
+      event.preventDefault();
+      void this.selectImage(file);
+    }
+  }
+
+  onImageDragOver(event: DragEvent): void {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'copy';
+    }
+  }
+
+  onImageDrop(event: DragEvent): void {
+    event.preventDefault();
+    const file = Array.from(event.dataTransfer?.files ?? [])
+      .find((candidate) => candidate.type.startsWith('image/'));
+
+    if (file) {
+      void this.selectImage(file);
+    }
+  }
+
+  rotateImage(delta: number): void {
+    if (!this.originalImageFile || this.imagePlanning()) {
+      return;
+    }
+    this.imageRotation.set(this.imageRotation() + delta);
+    void this.refreshPreparedImage();
+  }
+
+  cropImage(): void {
+    if (!this.originalImageFile || this.imagePlanning()) {
+      return;
+    }
+    this.imageCropInsetPercent.set(
+      Math.min(30, this.imageCropInsetPercent() + 5),
+    );
+    void this.refreshPreparedImage();
+  }
+
+  resetImageEdits(): void {
+    if (!this.originalImageFile || this.imagePlanning()) {
+      return;
+    }
+    this.imageRotation.set(0);
+    this.imageCropInsetPercent.set(0);
+    void this.refreshPreparedImage();
+  }
+
+  cancelImageAnalysis(): void {
+    if (!this.imagePlanning()) {
+      return;
+    }
+    this.imageRequest?.unsubscribe();
+    this.imageRequest = null;
+    this.imagePlanning.set(false);
+    this.imageRetryAvailable.set(true);
+    this.messages.update((messages) => [
+      ...messages,
+      {
+        role: 'assistant',
+        text: 'Analisis visual cancelado. No se aplico ningun cambio.',
+      },
+    ]);
+  }
+
+  retryImageAnalysis(): void {
+    this.imageRetryAvailable.set(false);
+    this.analyzeImage();
+  }
+
+  evidenceLeft(item: AssistantImageEvidenceItem, result: AssistantImagePlanResponse): number {
+    return this.evidencePercent(item.x, result.image.width);
+  }
+
+  evidenceTop(item: AssistantImageEvidenceItem, result: AssistantImagePlanResponse): number {
+    return this.evidencePercent(item.y, result.image.height);
+  }
+
+  evidenceWidth(item: AssistantImageEvidenceItem, result: AssistantImagePlanResponse): number {
+    return this.evidencePercent(item.width, result.image.width);
+  }
+
+  evidenceHeight(item: AssistantImageEvidenceItem, result: AssistantImagePlanResponse): number {
+    return this.evidencePercent(item.height, result.image.height);
+  }
+
+  evidenceHasBox(item: AssistantImageEvidenceItem): boolean {
+    return item.x !== null
+      && item.y !== null
+      && item.width !== null
+      && item.height !== null;
+  }
+
+  confidenceLabel(value: number | null): string {
+    if (value === null) {
+      return 'sin confianza';
+    }
+    if (value < 0.65) {
+      return `baja ${Math.round(value * 100)}%`;
+    }
+    return `${Math.round(value * 100)}%`;
+  }
+
+  private evidencePercent(value: number | null, total: number): number {
+    if (value === null || total <= 0) {
+      return 0;
+    }
+    return Math.max(0, Math.min(100, value * 100 / total));
+  }
+
+  private async selectImage(file: File): Promise<void> {
+    const allowed = new Set([
+      'image/png',
+      'image/jpeg',
+      'image/webp',
+    ]);
+
+    if (!allowed.has(file.type)) {
+      this.error.set('Usa una imagen PNG, JPEG o WEBP.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      this.error.set('La imagen no puede superar 10 MB.');
+      return;
+    }
+
+    this.clearSelectedImage();
+    this.originalImageFile = file;
+    this.imageRotation.set(0);
+    this.imageCropInsetPercent.set(0);
+    await this.refreshPreparedImage();
+  }
+
+  private async refreshPreparedImage(): Promise<void> {
+    const original = this.originalImageFile;
+    if (!original) {
+      return;
+    }
+
+    try {
+      const prepared = await this.imagePreparation.prepare(
+        original,
+        this.imageRotation(),
+        this.imageCropInsetPercent(),
+      );
+      const previous = this.imagePreviewUrl();
+      if (previous) {
+        URL.revokeObjectURL(previous);
+      }
+      this.selectedImage.set(prepared.file);
+      this.imagePreviewUrl.set(prepared.previewUrl);
+      this.imageResult.set(null);
+      this.plan.set(null);
+      this.error.set(null);
+      this.imageRetryAvailable.set(false);
+    } catch (error) {
+      this.error.set(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo preparar la imagen.',
+      );
+    }
+  }
+
+  analyzeImage(): void {
+    const project =
+      this.store.project();
+
+    const image =
+      this.selectedImage();
+
+    if (
+      !project
+      || !image
+      || this.planning()
+      || this.voiceBusy()
+      || this.imagePlanning()
+    ) {
+      return;
+    }
+
+    if (!this.runtimeReadyForImage()) {
+      this.error.set(
+        'El runtime Vision no esta listo. Inicia llama.cpp multimodal en 8094 y actualiza el estado.',
+      );
+      return;
+    }
+
+    const blockReason =
+      this.store
+        .assistantPlanningBlockReason();
+
+    if (blockReason) {
+      this.error.set(blockReason);
+      return;
+    }
+
+    this.error.set(null);
+    this.plan.set(null);
+    this.imageResult.set(null);
+    this.imageRetryAvailable.set(false);
+    this.imagePlanning.set(true);
+
+    this.messages.update(
+      (messages) => [
+        ...messages,
+        {
+          role: 'user',
+          text: `Imagen: ${image.name}`,
+        },
+      ],
+    );
+
+    this.imageRequest = this.api
+      .imagePlan(
+        project.id,
+        image,
+        this.store.revision(),
+      )
+      .pipe(
+        finalize(
+          () =>
+            this.imagePlanning.set(false),
+        ),
+      )
+      .subscribe({
+        next: (plan) => {
+          this.imageRequest = null;
+          this.imageResult.set(plan);
+
+          if (plan.disposition === 'READY') {
+            if (!this.acceptFreshPlan(plan)) {
+              this.imageRetryAvailable.set(true);
+              return;
+            }
+          } else {
+            this.plan.set(null);
+          }
+
+          const warningSuffix =
+            plan.warnings.length > 0
+              ? ` Advertencias: ${plan.warnings.join(' · ')}`
+              : '';
+
+          this.messages.update(
+            (messages) => [
+              ...messages,
+              {
+                role: 'assistant',
+                text: `${plan.summary}${warningSuffix}`,
+              },
+            ],
+          );
+        },
+        error: (
+          response: HttpErrorResponse,
+        ) => {
+          this.imageRequest = null;
+          const message =
+            this.formatError(response);
+
+          this.error.set(message);
+          this.imageRetryAvailable.set(true);
+          this.messages.update(
+            (messages) => [
+              ...messages,
+              {
+                role: 'assistant',
+                text:
+                  `No pude analizar la imagen: ${message}`,
+              },
+            ],
+          );
+        },
+      });
+  }
+
+  clearSelectedImage(): void {
+    const preview =
+      this.imagePreviewUrl();
+
+    if (preview) {
+      URL.revokeObjectURL(preview);
+    }
+
+    this.imagePreviewUrl.set(null);
+    this.selectedImage.set(null);
+    this.originalImageFile = null;
+    this.imageRotation.set(0);
+    this.imageCropInsetPercent.set(0);
+    this.imageResult.set(null);
+    this.activeEvidence.set(null);
+    this.imageRetryAvailable.set(false);
+  }
+
+  imageSizeLabel(): string {
+    const image =
+      this.selectedImage();
+
+    if (!image) {
+      return '';
+    }
+
+    if (image.size < 1024 * 1024) {
+      return `${Math.max(1, Math.round(image.size / 1024))} KB`;
+    }
+
+    return `${(image.size / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
   apply(): void {
     const plan =
       this.plan();
 
-    if (!plan) {
+    if (!plan || !plan.command) {
       return;
     }
 
@@ -308,13 +694,22 @@ export class ProjectAssistantPanelComponent
       ],
     );
 
+    if (plan.source === 'IMAGE') {
+      this.clearSelectedImage();
+    }
+
     this.plan.set(null);
     this.prompt.setValue('');
     this.error.set(null);
   }
 
   discard(): void {
+    const current = this.plan();
+    if (current?.source === 'IMAGE') {
+      this.clearSelectedImage();
+    }
     this.plan.set(null);
+    this.imageResult.set(null);
     this.error.set(null);
   }
 
@@ -330,6 +725,7 @@ export class ProjectAssistantPanelComponent
     if (
       this.voiceBusy()
       || this.planning()
+      || this.imagePlanning()
     ) {
       return;
     }
@@ -560,7 +956,7 @@ export class ProjectAssistantPanelComponent
           );
 
           this.runtimeError.set(
-            'No pudimos comprobar llama.cpp y whisper.cpp.',
+            'No pudimos comprobar llama.cpp, whisper.cpp y Vision.',
           );
         },
       });
@@ -578,6 +974,12 @@ export class ProjectAssistantPanelComponent
       ?? false;
   }
 
+  runtimeReadyForImage(): boolean {
+    return this.runtimeHealth()
+      ?.readyForImage
+      ?? false;
+  }
+
   runtimeLabel(
     runtime: AssistantRuntimeStatus,
   ): string {
@@ -591,7 +993,8 @@ export class ProjectAssistantPanelComponent
   canApplyPlan(
     plan: AssistantPlanResponse,
   ): boolean {
-    return this.store.revision()
+    return plan.command !== null
+      && this.store.revision()
       === plan.baseRevision
       && !this.store
         .assistantPlanningBlockReason();
@@ -651,6 +1054,9 @@ export class ProjectAssistantPanelComponent
       this.healthRefreshTimer = null;
     }
 
+    this.imageRequest?.unsubscribe();
+    this.imageRequest = null;
+    this.clearSelectedImage();
     void this.recorder.cancel();
   }
 
@@ -669,6 +1075,18 @@ export class ProjectAssistantPanelComponent
   private formatError(
     response: HttpErrorResponse,
   ): string {
+    if (response.status === 409) {
+      return 'El proyecto cambio mientras se analizaba la imagen. Analiza nuevamente sobre la revision actual.';
+    }
+
+    if (response.error?.visionReason === 'OUTPUT_CONTRACT') {
+      return 'El modelo visual respondio, pero su salida no cumplio el contrato UML. La imagen no fue aplicada.';
+    }
+
+    if (response.error?.visionReason === 'TRANSPORT') {
+      return 'Vision no pudo completar la inferencia local. Comprueba llama.cpp en 8094 e intenta nuevamente.';
+    }
+
     const base =
       typeof response.error?.message === 'string'
         ? response.error.message
@@ -841,6 +1259,9 @@ export class ProjectAssistantPanelComponent
   actionCount(
     plan: AssistantPlanResponse,
   ): number {
+    if (!plan.command) {
+      return 0;
+    }
     return plan.command.type === 'BATCH'
       ? plan.command.commands.length
       : 1;

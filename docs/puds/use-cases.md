@@ -55,7 +55,7 @@ Participa en validación, persistencia, auditoría y generación.
 | CU-06 | Colaborar en tiempo real | CERRADO |
 | CU-07 | Visualizar presencia colaborativa | CERRADO |
 | CU-08 | Crear/modificar UML mediante lenguaje natural y voz | CERRADO |
-| CU-09 | Crear UML desde imagen/fotografía | PLANIFICADO |
+| CU-09 | Crear UML desde imagen/fotografía | EN PROGRESO |
 | CU-10 | Importar XMI de Enterprise Architect | PLANIFICADO |
 | CU-11 | Exportar XMI para Enterprise Architect | PLANIFICADO |
 | CU-12 | Transformar UML a modelo relacional | PLANIFICADO |
@@ -228,10 +228,13 @@ Backend valida credenciales y emite JWT para sesión stateless.
 
 Backend deriva usuario actual del token y solo devuelve proyectos cuyo `ownerId` coincide.
 
-## 6. Casos planificados
+## 6. Casos planificados / en progreso
 
 ### CU-09 — Imagen a UML
-Interpretar fotografía/imagen y producir propuesta estructurada editable.
+
+**Estado:** EN PROGRESO.
+
+Interpretar fotografía/imagen y producir propuesta estructurada editable. C2-cu09-001 implementa upload/validación/normalización y la convergencia canónica; C2-cu09-002 conecta llama.cpp/Qwen3-VL y prepara benchmark reproducible; C2-cu09-003 completa UX, estados seguros sin acción, evidence overlay, hardening y E2E/acceptance tooling. La implementación funcional está completa, pero la calibración real del VLM y la aceptación cuantitativa se ejecutarán después; hasta entonces CU-09 permanece EN PROGRESO.
 
 ### CU-10 — Importar XMI
 Importar subconjunto XMI 2.1 compatible con Enterprise Architect.
@@ -403,3 +406,13 @@ Durante fix-013, con CU-08 ya CERRADO y antes de CU-09, se evaluó sustituir el 
 
 <!-- CU08-FIX-014-V1.6-FINAL-HOLDOUT -->
 **Evidencia vigente CU-08:** después de fix-014 v1.6, la suite holdout obtuvo `33/33 = 100.0 %`, con `SAFETY_UNKNOWN_REFERENCE=100 %` y `MULTI_TOOL_COMPOUND=100 %`. El build finalizó correctamente. La regression post-v1.6 de 20 intentos por categoría queda como checkpoint de no regresión antes de abrir formalmente `C2-cu09-001`; CU-09 sigue siendo el siguiente caso funcional.
+
+
+<!-- C2-CU09-003-CLOSURE-IMPLEMENTATION -->
+## 12. Addendum CU-09 — cierre implementado, aceptación pendiente
+
+C2-cu09-003 termina el código previsto para CU-09 antes de iniciar la fase de ajuste empírico del VLM. Las fuentes de imagen soportadas por la UI son selector, drag & drop, paste y cámara del dispositivo cuando el navegador expone `capture`. Rotación y recorte se realizan localmente y producen una nueva imagen normalizada para el endpoint existente; no constituyen una ruta de mutación UML.
+
+La respuesta visual distingue tres disposiciones: `READY` (hay comandos revisables), `NO_CHANGES` (lo reconocido ya está representado) y `NO_ACTIONABLE_UML` (no existe UML respaldado suficiente). Los dos últimos devuelven `command=null`, impiden Apply y preservan el documento. Conflictos explícitos con atributos o relaciones existentes se reportan y omiten de forma conservadora.
+
+La evidencia espacial puede mostrarse como overlay, pero confidence/bounding boxes son telemetría/provenance, no autoridad. El cierre formal queda condicionado a una fase posterior de calibración: ejecutar `assistant-vision-explore.ps1`, iterar modelo/prompt sin usar los gates como objetivo de entrenamiento y, cuando el comportamiento sea estable, ejecutar `assistant-vision-acceptance.ps1`. Solo ese PASS constituye evidencia suficiente para cambiar el estado del CU a `CERRADO`.

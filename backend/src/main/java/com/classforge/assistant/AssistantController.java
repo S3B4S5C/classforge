@@ -1,6 +1,12 @@
 package com.classforge.assistant;
 
 import com.classforge.auth.security.CurrentUser;
+import com.classforge.assistant.vision.AssistantImagePlanResponse;
+import com.classforge.assistant.vision.AssistantImagePlanService;
+import com.classforge.assistant.vision.AssistantImageValidationException;
+import com.classforge.assistant.vision.VisionModelGatewayException;
+import com.classforge.project.application.ProjectRevisionConflictException;
+import com.classforge.project.web.ProjectRevisionConflictResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -27,12 +33,14 @@ public class AssistantController {
 
     private final AssistantPlanService service;
     private final AssistantVoiceService voiceService;
+    private final AssistantImagePlanService imagePlanService;
     private final AssistantRuntimeHealthService runtimeHealthService;
     private final CurrentUser currentUser;
 
     public AssistantController(
             AssistantPlanService service,
             AssistantVoiceService voiceService,
+            AssistantImagePlanService imagePlanService,
             AssistantRuntimeHealthService runtimeHealthService,
             CurrentUser currentUser
     ) {
@@ -41,6 +49,9 @@ public class AssistantController {
 
         this.voiceService =
                 voiceService;
+
+        this.imagePlanService =
+                imagePlanService;
 
         this.runtimeHealthService =
                 runtimeHealthService;
@@ -83,6 +94,23 @@ public class AssistantController {
                 currentUser.id(),
                 projectId,
                 audio
+        );
+    }
+
+    @PostMapping(
+            value = "/image/plan",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public AssistantImagePlanResponse imagePlan(
+            @PathVariable UUID projectId,
+            @RequestParam("image") MultipartFile image,
+            @RequestParam("baseRevision") long baseRevision
+    ) {
+        return imagePlanService.plan(
+                currentUser.id(),
+                projectId,
+                baseRevision,
+                image
         );
     }
 
@@ -148,6 +176,40 @@ public class AssistantController {
             );
         }
 
+        Throwable cause = exception.getCause();
+        if (cause instanceof VisionModelGatewayException visionException) {
+            response.put(
+                    "visionReason",
+                    visionException.reason().name()
+            );
+        }
+
         return response;
     }
+    @ExceptionHandler(AssistantImageValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, Object> handleImageValidation(
+            AssistantImageValidationException exception
+    ) {
+        return Map.of(
+                "error", "IMAGE_INPUT_INVALID",
+                "message", exception.getMessage(),
+                "stage", "IMAGE_INPUT",
+                "source", "IMAGE"
+        );
+    }
+
+    @ExceptionHandler(ProjectRevisionConflictException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ProjectRevisionConflictResponse handleRevisionConflict(
+            ProjectRevisionConflictException exception
+    ) {
+        return new ProjectRevisionConflictResponse(
+                "PROJECT_REVISION_CONFLICT",
+                exception.getMessage(),
+                exception.getRequestedRevision(),
+                exception.getCurrentRevision()
+        );
+    }
+
 }

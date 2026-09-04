@@ -1,0 +1,104 @@
+{
+  "suite": "hardening",
+  "cases": [
+    {
+      "id": "rotated-client",
+      "image": "/assistant/vision/benchmark/hardening/rotated-client.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|Cliente|"
+      ]
+    },
+    {
+      "id": "low-contrast-client",
+      "image": "/assistant/vision/benchmark/hardening/low-contrast-client.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|Cliente|activo:BOOLEAN,email:STRING,id:UUID"
+      ]
+    },
+    {
+      "id": "large-margin-client",
+      "image": "/assistant/vision/benchmark/hardening/large-margin-client.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|Cliente|"
+      ]
+    },
+    {
+      "id": "shadow-association",
+      "image": "/assistant/vision/benchmark/hardening/shadow-association.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|Cliente|email:STRING",
+        "CREATE_CLASS|Factura|total:DECIMAL",
+        "CREATE_RELATIONSHIP|Cliente|Factura|ASSOCIATION|null:null|null:null"
+      ]
+    },
+    {
+      "id": "compressed-composition",
+      "image": "/assistant/vision/benchmark/hardening/compressed-composition.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|LineaPedido|",
+        "CREATE_CLASS|Pedido|",
+        "CREATE_RELATIONSHIP|Pedido|LineaPedido|COMPOSITION|null:null|null:null"
+      ]
+    },
+    {
+      "id": "partial-crop-multiplicity",
+      "image": "/assistant/vision/benchmark/hardening/partial-crop-multiplicity.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|Cliente|",
+        "CREATE_CLASS|Pedido|",
+        "CREATE_RELATIONSHIP|Cliente|Pedido|ASSOCIATION|1:1|0:*"
+      ]
+    },
+    {
+      "id": "decorated-inheritance",
+      "image": "/assistant/vision/benchmark/hardening/decorated-inheritance.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|Animal|",
+        "CREATE_CLASS|Mascota|",
+        "CREATE_RELATIONSHIP|Mascota|Animal|GENERALIZATION|null:null|null:null"
+      ]
+    },
+    {
+      "id": "library-whiteboard-realistic",
+      "image": "/assistant/vision/benchmark/hardening/library-whiteboard-realistic.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|Autor|id:STRING,nombre:STRING",
+        "CREATE_CLASS|Biblioteca|direccion:STRING,id:STRING,nombre:STRING",
+        "CREATE_CLASS|Categoria|id:STRING,nombre:STRING",
+        "CREATE_CLASS|Libro|añoPublicacion:STRING,id:STRING,isbn:STRING,titulo:STRING",
+        "CREATE_CLASS|Prestamo|fechaDevolucion:STRING,fechaPrestamo:STRING,id:STRING",
+        "CREATE_CLASS|Usuario|email:STRING,id:STRING,nombre:STRING",
+        "CREATE_RELATIONSHIP|Autor|Libro|ASSOCIATION|1:*|0:*",
+        "CREATE_RELATIONSHIP|Biblioteca|Libro|AGGREGATION|null:null|null:null",
+        "CREATE_RELATIONSHIP|Biblioteca|Usuario|ASSOCIATION|1:1|0:*",
+        "CREATE_RELATIONSHIP|Categoria|Libro|ASSOCIATION|1:*|0:*",
+        "CREATE_RELATIONSHIP|Prestamo|Libro|ASSOCIATION|0:*|1:1",
+        "CREATE_RELATIONSHIP|Prestamo|Usuario|ASSOCIATION|0:*|1:1",
+        "CREATE_RELATIONSHIP|Usuario|Libro|ASSOCIATION|0:*|0:*"
+      ]
+    },
+    {
+      "id": "invalid-whiteboard-notes",
+      "image": "/assistant/vision/benchmark/hardening/invalid-whiteboard-notes.png",
+      "expectedOutcome": "REJECT",
+      "existingClasses": [],
+      "expectedSignatures": []
+    }
+  ]
+}

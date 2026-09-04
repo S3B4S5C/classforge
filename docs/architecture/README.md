@@ -1,6 +1,6 @@
 # Arquitectura de ClassForge
 
-**Estado:** arquitectura ejecutable en Ciclo 2 de Elaboración; CU-31 cerrado y CU-09 siguiente.
+**Estado:** arquitectura ejecutable en Ciclo 2 de Elaboración; CU-31 cerrado y CU-09 en progreso.
 
 ## Fuente de verdad
 
@@ -49,6 +49,7 @@ ProjectDocument
 | `realtime-client-sync.md` | pending/resync/convergencia | implementado |
 | `realtime-presence.md` | presencia efímera | implementado |
 | `assistant-command-pipeline.md` | texto/voz/IA/BATCH | implementado |
+| `vision-input-pipeline.md` | imagen -> VLM -> proposal -> IR/BATCH | C2-cu09-003 implementado; aceptación VLM pendiente |
 | `ui-button-system.md` | convenciones de botones | vigente |
 | `ui-icons.md` | Material Symbols local | vigente |
 
@@ -69,7 +70,7 @@ ProjectDocument
 
 ## Arquitectura todavía no implementada
 
-- adaptador imagen -> UML;
+
 - XMI 2.1 / Enterprise Architect;
 - `RelationalModel`;
 - generador Spring Boot/JPA;
@@ -78,7 +79,7 @@ ProjectDocument
 - frontend Angular generado;
 - Capacitor/Android generado;
 - asistente de la aplicación generada;
-- entrada visual Imagen → UML (CU-09);
+- selección/calibración final del VLM y evidencia de aceptación de Imagen → UML (CU-09);
 - auditoría persistente.
 
 ## UML académico

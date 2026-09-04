@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 
 import {
+  AssistantImagePlanResponse,
   AssistantPlanResponse,
   AssistantRuntimeHealthResponse,
 } from './assistant-model';
@@ -43,6 +44,31 @@ export class AssistantApiService {
 
     return this.http.post<AssistantPlanResponse>(
       `/api/projects/${projectId}/assistant/voice`,
+      form,
+    );
+  }
+
+  imagePlan(
+    projectId: string,
+    image: File,
+    baseRevision: number,
+  ) {
+    const form =
+      new FormData();
+
+    form.append(
+      'image',
+      image,
+      image.name,
+    );
+
+    form.append(
+      'baseRevision',
+      String(baseRevision),
+    );
+
+    return this.http.post<AssistantImagePlanResponse>(
+      `/api/projects/${projectId}/assistant/image/plan`,
       form,
     );
   }

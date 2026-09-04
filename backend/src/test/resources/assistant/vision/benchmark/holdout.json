@@ -1,0 +1,100 @@
+{
+  "suite": "holdout",
+  "cases": [
+    {
+      "id": "three-classes-chain",
+      "image": "/assistant/vision/benchmark/holdout/three-classes-chain.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|Cliente|id:UUID",
+        "CREATE_CLASS|LineaPedido|cantidad:INTEGER",
+        "CREATE_CLASS|Pedido|fecha:DATE",
+        "CREATE_RELATIONSHIP|Cliente|Pedido|ASSOCIATION|null:null|null:null",
+        "CREATE_RELATIONSHIP|Pedido|LineaPedido|ASSOCIATION|null:null|null:null"
+      ]
+    },
+    {
+      "id": "existing-mascota-attribute",
+      "image": "/assistant/vision/benchmark/holdout/existing-mascota-attribute.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [
+        {
+          "name": "Mascota",
+          "attributes": ["nombre"]
+        }
+      ],
+      "expectedSignatures": [
+        "ADD_ATTRIBUTES|Mascota|pesoKg:DECIMAL"
+      ]
+    },
+    {
+      "id": "generalization-clear",
+      "image": "/assistant/vision/benchmark/holdout/generalization-clear.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|Animal|",
+        "CREATE_CLASS|Mascota|",
+        "CREATE_RELATIONSHIP|Mascota|Animal|GENERALIZATION|null:null|null:null"
+      ]
+    },
+    {
+      "id": "composition-clear",
+      "image": "/assistant/vision/benchmark/holdout/composition-clear.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|LineaPedido|",
+        "CREATE_CLASS|Pedido|",
+        "CREATE_RELATIONSHIP|Pedido|LineaPedido|COMPOSITION|null:null|null:null"
+      ]
+    },
+    {
+      "id": "multiplicity-clear",
+      "image": "/assistant/vision/benchmark/holdout/multiplicity-clear.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|Cliente|",
+        "CREATE_CLASS|Pedido|",
+        "CREATE_RELATIONSHIP|Cliente|Pedido|ASSOCIATION|1:1|0:*"
+      ]
+    },
+    {
+      "id": "rotated-factura",
+      "image": "/assistant/vision/benchmark/holdout/rotated-factura.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|Factura|numero:LONG,total:DECIMAL"
+      ]
+    },
+    {
+      "id": "low-contrast-proveedor",
+      "image": "/assistant/vision/benchmark/holdout/low-contrast-proveedor.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|Proveedor|email:STRING"
+      ]
+    },
+    {
+      "id": "two-classes-no-relation",
+      "image": "/assistant/vision/benchmark/holdout/two-classes-no-relation.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|Perfil|",
+        "CREATE_CLASS|Usuario|"
+      ]
+    },
+    {
+      "id": "invalid-meeting-notes",
+      "image": "/assistant/vision/benchmark/holdout/invalid-meeting-notes.png",
+      "expectedOutcome": "REJECT",
+      "existingClasses": [],
+      "expectedSignatures": []
+    }
+  ]
+}

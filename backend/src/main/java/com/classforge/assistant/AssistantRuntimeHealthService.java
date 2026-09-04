@@ -12,57 +12,62 @@ public class AssistantRuntimeHealthService {
 
     private final ProjectService projectService;
     private final AssistantRuntimeProbe runtimeProbe;
+    private final AssistantVisionRuntimeProbe visionRuntimeProbe;
     private final String llamaUrl;
     private final String whisperUrl;
+    private final String visionUrl;
+    private final String visionModel;
 
     public AssistantRuntimeHealthService(
             ProjectService projectService,
             AssistantRuntimeProbe runtimeProbe,
+            AssistantVisionRuntimeProbe visionRuntimeProbe,
             @Value("${classforge.assistant.llama-url:http://127.0.0.1:8092}")
             String llamaUrl,
             @Value("${classforge.assistant.whisper-url:http://127.0.0.1:8093}")
-            String whisperUrl
+            String whisperUrl,
+            @Value("${classforge.assistant.vision.url:http://127.0.0.1:8094}")
+            String visionUrl,
+            @Value("${classforge.assistant.vision.model:vision-model}")
+            String visionModel
     ) {
-        this.projectService =
-                projectService;
-
-        this.runtimeProbe =
-                runtimeProbe;
-
-        this.llamaUrl =
-                llamaUrl;
-
-        this.whisperUrl =
-                whisperUrl;
+        this.projectService = projectService;
+        this.runtimeProbe = runtimeProbe;
+        this.visionRuntimeProbe = visionRuntimeProbe;
+        this.llamaUrl = llamaUrl;
+        this.whisperUrl = whisperUrl;
+        this.visionUrl = visionUrl;
+        this.visionModel = visionModel;
     }
 
     public AssistantRuntimeHealthResponse health(
             UUID userId,
             UUID projectId
     ) {
-        projectService.get(
-                userId,
-                projectId
+        projectService.get(userId, projectId);
+
+        AssistantRuntimeStatus llama = runtimeProbe.probe(
+                "llama.cpp",
+                llamaUrl
         );
 
-        AssistantRuntimeStatus llama =
-                runtimeProbe.probe(
-                        "llama.cpp",
-                        llamaUrl
-                );
+        AssistantRuntimeStatus whisper = runtimeProbe.probe(
+                "whisper.cpp",
+                whisperUrl
+        );
 
-        AssistantRuntimeStatus whisper =
-                runtimeProbe.probe(
-                        "whisper.cpp",
-                        whisperUrl
-                );
+        AssistantRuntimeStatus vision = visionRuntimeProbe.probe(
+                visionUrl,
+                visionModel
+        );
 
         return new AssistantRuntimeHealthResponse(
                 llama.available(),
-                llama.available()
-                        && whisper.available(),
+                llama.available() && whisper.available(),
+                vision.available(),
                 llama,
                 whisper,
+                vision,
                 Instant.now()
         );
     }

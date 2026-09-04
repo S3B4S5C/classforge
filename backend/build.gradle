@@ -25,6 +25,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'com.auth0:java-jwt:4.6.0'
+    implementation 'org.openpnp:opencv:4.9.0-0'
 
     runtimeOnly 'com.h2database:h2'
     runtimeOnly 'org.postgresql:postgresql'
@@ -39,6 +40,13 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+
+// CU09-CAL-011: OpenCV loads packaged native libraries. Java 21 permits this,
+// but future JDKs require explicit native-access opt-in; enable it for every Test task.
+tasks.withType(Test).configureEach {
+    jvmArgs '--enable-native-access=ALL-UNNAMED'
 }
 
 // CU08-FIX-010-ASSISTANT-E2E-RELIABILITY
@@ -77,6 +85,90 @@ tasks.register('assistantE2EReliability', Test) {
     if (reportFile) {
         systemProperty 'assistant.benchmark.reportFile', reportFile
     }
+
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+}
+
+// C2-CU09-002-VISION-BENCHMARK
+tasks.register('assistantVisionBenchmark', Test) {
+    group = 'verification'
+    description = 'Runs the real image->UML benchmark against the configured llama.cpp multimodal runtime.'
+
+    dependsOn testClasses
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching 'com.classforge.assistant.vision.AssistantVisionBenchmarkIntegrationTest'
+    }
+
+    def option = { String name, String defaultValue ->
+        project.findProperty(name)?.toString() ?: defaultValue
+    }
+
+    systemProperty 'assistant.vision.benchmark.enabled', 'true'
+    systemProperty 'assistant.vision.benchmark.suite', option('visionSuite', 'regression')
+    systemProperty 'assistant.vision.benchmark.attempts', option('attempts', '1')
+    systemProperty 'assistant.vision.benchmark.verbose', option('verbose', 'false')
+    systemProperty 'assistant.vision.benchmark.minSemanticPercent', option('minSemanticPercent', '0')
+    systemProperty 'assistant.vision.benchmark.minSafetyPercent', option('minSafetyPercent', '100')
+    systemProperty 'assistant.vision.benchmark.minSchemaPercent', option('minSchemaPercent', '100')
+    systemProperty 'assistant.vision.benchmark.timeoutSeconds', option('timeoutSeconds', '90')
+    systemProperty 'assistant.vision.benchmark.maxCompletionTokens', option('maxCompletionTokens', '2800')
+    systemProperty 'assistant.vision.benchmark.twoPass', option('visionTwoPass', 'false')
+    systemProperty 'assistant.vision.benchmark.relationshipMaxCompletionTokens', option('relationshipMaxCompletionTokens', '1800')
+    systemProperty 'assistant.vision.benchmark.imageStrategy', option('visionImageStrategy', 'original')
+    systemProperty 'assistant.vision.benchmark.hybridCv', option('visionHybridCv', 'false')
+    systemProperty 'assistant.vision.benchmark.hybridGeometryOnly', option('visionHybridGeometryOnly', 'false')
+    systemProperty 'assistant.vision.benchmark.hybridLocalizationTokens', option('hybridLocalizationTokens', '1200')
+    systemProperty 'assistant.vision.benchmark.hybridRelationshipTokens', option('hybridRelationshipTokens', '1800')
+    systemProperty 'assistant.vision.benchmark.caseFilter', option('visionCase', '')
+    systemProperty 'assistant.vision.benchmark.modelLabel', option('modelLabel', option('visionModel', 'vision-model'))
+    systemProperty 'classforge.assistant.vision.url', option('visionUrl', 'http://127.0.0.1:8094')
+    systemProperty 'classforge.assistant.vision.model', option('visionModel', 'vision-model')
+
+    def reportFile = option('reportFile', '')
+    if (reportFile) {
+        systemProperty 'assistant.vision.benchmark.reportFile', reportFile
+    }
+
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+}
+
+
+// C2-CU09-003-VISION-E2E-CLOSURE
+tasks.register('assistantVisionAcceptance', Test) {
+    group = 'verification'
+    description = 'Runs the real Vision -> semantic plan -> canonical command -> persisted ProjectDocument acceptance flow.'
+
+    dependsOn testClasses
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching 'com.classforge.assistant.vision.AssistantVisionAcceptanceIntegrationTest'
+    }
+
+    def option = { String name, String defaultValue ->
+        project.findProperty(name)?.toString() ?: defaultValue
+    }
+
+    systemProperty 'assistant.vision.acceptance.enabled', 'true'
+    systemProperty 'classforge.assistant.vision.url', option('visionUrl', 'http://127.0.0.1:8094')
+    systemProperty 'classforge.assistant.vision.model', option('visionModel', 'vision-model')
 
     testLogging {
         events 'passed', 'failed', 'skipped'
