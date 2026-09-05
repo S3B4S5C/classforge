@@ -107,7 +107,11 @@ class AssistantVisionBenchmarkIntegrationTest {
         );
         int hybridRelationshipTokens = integerProperty(
                 "assistant.vision.benchmark.hybridRelationshipTokens",
-                1800
+                512
+        );
+        int hybridMultiplicityTokens = integerProperty(
+                "assistant.vision.benchmark.hybridMultiplicityTokens",
+                128
         );
         VisionBenchmarkImageVariants.Strategy imageStrategy =
                 VisionBenchmarkImageVariants.Strategy.parse(
@@ -147,7 +151,8 @@ class AssistantVisionBenchmarkIntegrationTest {
                             model,
                             timeoutSeconds,
                             hybridLocalizationTokens,
-                            hybridRelationshipTokens
+                            hybridRelationshipTokens,
+                            hybridMultiplicityTokens
                     ),
                     new OpenCvUmlClassRegionDetector(),
                     new VisionGeometryClassMappingValidator(),
@@ -205,6 +210,7 @@ class AssistantVisionBenchmarkIntegrationTest {
         if (hybridCv) {
             System.out.println("Hybrid mapping: " + hybridLocalizationTokens + " tokens");
             System.out.println("Hybrid annotate:" + hybridRelationshipTokens + " tokens");
+            System.out.println("Hybrid multiplicity:" + hybridMultiplicityTokens + " tokens");
         }
         System.out.println("Attempts/case: " + attempts);
 
@@ -243,6 +249,7 @@ class AssistantVisionBenchmarkIntegrationTest {
         report.put("hybridGeometryOnly", hybridGeometryOnly);
         report.put("hybridLocalizationTokens", hybridLocalizationTokens);
         report.put("hybridRelationshipTokens", hybridRelationshipTokens);
+        report.put("hybridMultiplicityTokens", hybridMultiplicityTokens);
         report.put("imageStrategy", imageStrategy.wireName());
         report.put("relationshipMaxCompletionTokens", relationshipMaxCompletionTokens);
         report.put("attemptsPerCase", attempts);
@@ -477,6 +484,7 @@ class AssistantVisionBenchmarkIntegrationTest {
         Files.createDirectories(dir);
         Files.deleteIfExists(dir.resolve("annotation.json"));
         Files.deleteIfExists(dir.resolve("relationship-sheet.png"));
+        Files.deleteIfExists(dir.resolve("multiplicity-observations.json"));
         Files.deleteIfExists(dir.resolve("localization.json"));
         if (diagnostics.classRegionDetection() != null) {
             jsonMapper.writerWithDefaultPrettyPrinter().writeValue(
@@ -514,6 +522,18 @@ class AssistantVisionBenchmarkIntegrationTest {
             Files.write(
                     dir.resolve("relationship-sheet.png"),
                     diagnostics.relationshipEvidenceSheet().bytes()
+            );
+        }
+        for (VisionNormalizedImage panel : diagnostics.safeRelationshipPanels()) {
+            Files.write(dir.resolve(panel.originalFilename()), panel.bytes());
+        }
+        for (VisionNormalizedImage panel : diagnostics.safeMultiplicityEndpointPanels()) {
+            Files.write(dir.resolve(panel.originalFilename()), panel.bytes());
+        }
+        if (!diagnostics.safeMultiplicityObservations().isEmpty()) {
+            jsonMapper.writerWithDefaultPrettyPrinter().writeValue(
+                    dir.resolve("multiplicity-observations.json").toFile(),
+                    diagnostics.safeMultiplicityObservations()
             );
         }
     }

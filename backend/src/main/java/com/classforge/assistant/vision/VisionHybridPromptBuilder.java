@@ -51,61 +51,102 @@ public class VisionHybridPromptBuilder {
 
     public String relationshipSystemPrompt() {
         return """
-                Eres el anotador LOCAL de conectores UML de ClassForge.
-                Recibes una hoja de evidencia formada por paneles E1, E2, ...; cada panel corresponde a un PAR FIJO de clases.
-                Java/OpenCV ya fijo los dos endpoints candidatos. Tu tarea NO es elegir otras clases: decide solamente si el panel muestra una relacion directa entre A y B y, si existe, anota tipo y multiplicidades.
-
-                Reglas de topologia:
-                - Emite un edge solamente cuando una MISMA linea/conector visible une directamente las dos cajas etiquetadas A y B del panel.
-                - Una linea que pasa cerca, cruza el panel o conecta una de las cajas con una tercera caja NO cuenta.
-                - No inventes relaciones por proximidad, significado del dominio o porque sean habituales.
-                - Si el panel es ambiguo, omite ese edge. Precision antes que recall.
+                 Eres el anotador LOCAL de conectores UML de ClassForge.
+                 Recibes un unico panel de evidencia para un PAR FIJO de clases.
+                  OpenCV/Java ya confirmo que este panel corresponde a un connector fisico real entre A y B. No debes decidir si existe.
+                  Clasifica unicamente el tipo de ese connector y su marcador. El par fisico esta cerrado: no cambies ni omitas endpoints.
+                  Este request contiene exactamente UN edge. Devuelve un unico objeto; nunca repitas el edge.
+                 evidenceLabel: maximo 12 palabras. warnings=[] normalmente; como maximo un warning corto si existe una ambiguedad importante.
+                 No expliques razonamiento ni describas el proceso.
 
                 Marcadores:
                 - linea simple => ASSOCIATION, markerAt=NONE.
                 - rombo hueco/blanco => AGGREGATION; markerAt indica A o B segun la caja tocada por el rombo.
                 - rombo relleno/negro => COMPOSITION; markerAt indica A o B.
                 - triangulo hueco => GENERALIZATION; markerAt indica A o B segun la SUPERCLASE tocada por el triangulo.
+                - Si el marcador no es visible y solo existe una linea simple, usa ASSOCIATION y markerAt=NONE.
                 - No conviertas una linea simple en agregacion/composicion por conocimiento del dominio.
 
-                Multiplicidades:
-                - Lee exclusivamente los rotulos pequenos junto a los extremos A y B del conector confirmado.
-                - 1 => lower=1 upper=1 unbounded=false.
-                - 0..1 => lower=0 upper=1 unbounded=false.
-                - * o 0..* => lower=0 upper=null unbounded=true.
-                - 1..* => lower=1 upper=null unbounded=true.
-                - Si no es legible, usa null. Nunca inventes 0..1 o 1:1 por defecto.
-
                 Evidence:
-                - evidenceLabel debe describir brevemente lo visible en ese panel (nombres/marker/multiplicidades), no conocimiento inferido.
+                 - evidenceLabel describe solo lo visible en el panel, no conocimiento inferido.
                 - Solo puedes usar edgeId incluidos por el usuario.
                 Devuelve exclusivamente JSON conforme al schema.
                 """;
     }
 
-    public String relationshipUserPrompt(
-            List<VisionGeometryEdgeCandidate> candidates,
-            List<VisionClassProposal> classes
-    ) {
+    public String relationshipUserPrompt(VisionGeometryEdgeCandidate edge, List<VisionClassProposal> classes) {
         Map<String, VisionClassProposal> byRef = classes.stream()
                 .collect(Collectors.toMap(VisionClassProposal::ref, Function.identity()));
         StringBuilder out = new StringBuilder();
-        out.append("Paneles y pares cerrados:\n");
-        for (VisionGeometryEdgeCandidate edge : candidates) {
-            VisionClassProposal a = byRef.get(edge.aClassRef());
-            VisionClassProposal b = byRef.get(edge.bClassRef());
-            out.append("- ").append(edge.edgeId())
-                    .append(": A=").append(edge.aClassRef()).append(' ')
-                    .append(quote(a == null ? edge.aClassRef() : a.name()))
-                    .append("; B=").append(edge.bClassRef()).append(' ')
-                    .append(quote(b == null ? edge.bClassRef() : b.name()))
-                    .append("; geometryScore=")
-                    .append(String.format(java.util.Locale.ROOT, "%.3f", edge.geometryScore()))
-                    .append('\n');
-        }
+        VisionClassProposal a = byRef.get(edge.aClassRef());
+        VisionClassProposal b = byRef.get(edge.bClassRef());
+        out.append("Panel y par cerrado:\n- ").append(edge.edgeId())
+                .append(": A=").append(edge.aClassRef()).append(' ')
+                .append(quote(a == null ? edge.aClassRef() : a.name()))
+                .append("; B=").append(edge.bClassRef()).append(' ')
+                .append(quote(b == null ? edge.bClassRef() : b.name()))
+                .append("; geometryScore=")
+                .append(String.format(java.util.Locale.ROOT, "%.3f", edge.geometryScore()))
+                .append('\n');
         out.append("geometryScore es solo una pista CV; la evidencia visual del panel manda. ");
-        out.append("Omitir un edge ambiguo es correcto. No cambies endpoints.");
+        out.append("El par fisico esta cerrado. No cambies ni omitas endpoints.");
         return out.toString();
+    }
+
+    public String multiplicityTranscriptionSystemPrompt() {
+        return """
+                Ves un crop limpio centrado alrededor de un endpoint UML. Tu unica tarea es LEER y transcribir cualquier multiplicidad UML claramente legible proxima al centro.
+                No decidas a que connector pertenece. No infieras por dominio, tipo de relacion o convenciones UML.
+                Los formatos permitidos incluyen 1, *, 0..*, 1..*, 0..1 y N..M. Usa rawLabel=null solo si no hay texto de multiplicidad legible.
+                Devuelve unicamente JSON.
+                """;
+    }
+
+    public String multiplicityAttributionSystemPrompt() {
+        return """
+                 candidateRawLabel ya fue transcrito por otra etapa. NO lo retranscribas ni corrijas.
+                 LABEL SOURCE muestra donde se observo ese texto. CLASS CONTEXT muestra los connectors fisicos de la clase.
+                 RED y BLUE son ayudas visuales; cada connector tiene su edge ID. Devuelve el edge ID propietario del texto.
+                 Si no pertenece a ninguno usa NONE. Si no puedes distinguirlo usa AMBIGUOUS.
+                 No infieras por dominio, tipo UML ni endpoint opuesto. Devuelve unicamente JSON.
+                """;
+    }
+
+    public String multiplicityUserPrompt(
+            VisionGeometryEdgeCandidate edge,
+            VisionHybridEndpoint endpoint,
+            VisionClassProposal endpointClass
+    ) {
+        return edge.edgeId() + "\nendpoint=" + endpoint.name()
+                + "\nclassRef=" + endpointClass.ref()
+                + "\nclassName=" + quote(endpointClass.name());
+    }
+
+    public String multiplicityAttributionUserPrompt(
+            VisionGeometryEdgeCandidate edge,
+            VisionHybridEndpoint endpoint,
+            VisionClassProposal endpointClass,
+            String candidateRawLabel,
+            List<String> visibleCompetingEdgeIds
+    ) {
+        return multiplicityUserPrompt(edge, endpoint, endpointClass)
+                + "\ncandidateRawLabel=" + quote(candidateRawLabel)
+                + "\nallowedOwnerIds=" + String.join(",", java.util.stream.Stream.concat(
+                        java.util.stream.Stream.of(edge.edgeId()), visibleCompetingEdgeIds.stream().sorted()
+                ).toList());
+    }
+
+    @Deprecated
+    public String multiplicityOwnershipSystemPrompt() {
+        return multiplicityAttributionSystemPrompt();
+    }
+
+    @Deprecated
+    public String multiplicityOwnershipUserPrompt(
+            VisionGeometryEdgeCandidate edge, VisionHybridEndpoint endpoint,
+            VisionClassProposal endpointClass, String candidateRawLabel
+    ) {
+        return multiplicityAttributionUserPrompt(edge, endpoint, endpointClass, candidateRawLabel, List.of());
     }
 
     private String quote(String value) {

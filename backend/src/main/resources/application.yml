@@ -36,7 +36,8 @@ classforge:
         min-classes: ${CLASSFORGE_ASSISTANT_VISION_HYBRID_MIN_CLASSES:4}
         fallback-to-semantic: ${CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK:true}
         localization-max-completion-tokens: ${CLASSFORGE_ASSISTANT_VISION_HYBRID_LOCALIZATION_TOKENS:1200}
-        relationship-max-completion-tokens: ${CLASSFORGE_ASSISTANT_VISION_HYBRID_RELATIONSHIP_TOKENS:1800}
+        relationship-max-completion-tokens: ${CLASSFORGE_ASSISTANT_VISION_HYBRID_RELATIONSHIP_TOKENS:512}
+        multiplicity-max-completion-tokens: ${CLASSFORGE_ASSISTANT_VISION_HYBRID_MULTIPLICITY_TOKENS:128}
 
     image:
       max-bytes: 10485760

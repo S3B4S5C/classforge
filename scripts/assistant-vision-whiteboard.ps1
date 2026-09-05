@@ -11,7 +11,8 @@ param(
     [string]$ImageStrategy = 'original',
     [int]$RelationshipMaxCompletionTokens = 1800,
     [int]$HybridLocalizationTokens = 1200,
-    [int]$HybridRelationshipTokens = 1800,
+    [int]$HybridRelationshipTokens = 512,
+    [int]$HybridMultiplicityTokens = 128,
     [switch]$HybridGeometryOnly,
     [switch]$VerboseAttempts
 )
@@ -57,6 +58,7 @@ $report = Join-Path $repo (
     -RelationshipMaxCompletionTokens $RelationshipMaxCompletionTokens `
     -HybridLocalizationTokens $HybridLocalizationTokens `
     -HybridRelationshipTokens $HybridRelationshipTokens `
+    -HybridMultiplicityTokens $HybridMultiplicityTokens `
     -HybridGeometryOnly:$HybridGeometryOnly `
     -MinSemanticPercent 0 `
     -MinSafetyPercent 0 `

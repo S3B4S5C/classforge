@@ -176,7 +176,8 @@ pwsh -NoProfile -File .\scripts\assistant-vision-whiteboard.ps1 `
   -TimeoutSeconds 180 `
   -MaxCompletionTokens 3200 `
   -HybridLocalizationTokens 1200 `
-  -HybridRelationshipTokens 1800 `
+  -HybridRelationshipTokens 512 `
+  -HybridMultiplicityTokens 128 `
   -VerboseAttempts
 ```
 

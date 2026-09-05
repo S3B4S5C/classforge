@@ -27,10 +27,32 @@ public class UnconfiguredVisionHybridModelGateway implements VisionHybridModelGa
     }
 
     @Override
-    public VisionHybridRelationshipAnnotationProposal annotateRelationships(
-            VisionNormalizedImage evidenceSheet,
-            List<VisionGeometryEdgeCandidate> candidates,
+    public VisionHybridRelationshipClassificationProposal classifyRelationship(
+            VisionNormalizedImage evidencePanel,
+            VisionGeometryEdgeCandidate candidate,
             List<VisionClassProposal> classes
+    ) {
+        throw unavailable();
+    }
+
+    @Override
+    public VisionHybridMultiplicityTranscription transcribeMultiplicity(
+            VisionNormalizedImage transcriptionPanel,
+            VisionGeometryEdgeCandidate candidate,
+            VisionHybridEndpoint endpoint,
+            VisionClassProposal endpointClass
+    ) {
+        throw unavailable();
+    }
+
+    @Override
+    public VisionHybridMultiplicityAttribution attributeMultiplicity(
+            VisionNormalizedImage attributionPanel,
+            VisionGeometryEdgeCandidate candidate,
+            VisionHybridEndpoint endpoint,
+            VisionClassProposal endpointClass,
+            String candidateRawLabel,
+            List<String> visibleCompetingEdgeIds
     ) {
         throw unavailable();
     }

@@ -30,6 +30,7 @@ public class LlamaCppVisionHybridModelGateway implements VisionHybridModelGatewa
     private final Duration timeout;
     private final int localizationTokens;
     private final int relationshipTokens;
+    private final int multiplicityTokens;
 
     @Autowired
     public LlamaCppVisionHybridModelGateway(
@@ -39,7 +40,8 @@ public class LlamaCppVisionHybridModelGateway implements VisionHybridModelGatewa
             @Value("${classforge.assistant.vision.model:vision-model}") String model,
             @Value("${classforge.assistant.vision.request-timeout-seconds:180}") long timeoutSeconds,
             @Value("${classforge.assistant.vision.dense-hybrid.localization-max-completion-tokens:1200}") int localizationTokens,
-            @Value("${classforge.assistant.vision.dense-hybrid.relationship-max-completion-tokens:1800}") int relationshipTokens
+            @Value("${classforge.assistant.vision.dense-hybrid.relationship-max-completion-tokens:512}") int relationshipTokens,
+            @Value("${classforge.assistant.vision.dense-hybrid.multiplicity-max-completion-tokens:128}") int multiplicityTokens
     ) {
         this.jsonMapper = jsonMapper;
         this.promptBuilder = promptBuilder;
@@ -48,6 +50,7 @@ public class LlamaCppVisionHybridModelGateway implements VisionHybridModelGatewa
         this.timeout = Duration.ofSeconds(Math.max(1L, timeoutSeconds));
         this.localizationTokens = Math.max(256, localizationTokens);
         this.relationshipTokens = Math.max(256, relationshipTokens);
+        this.multiplicityTokens = Math.max(1, multiplicityTokens);
         this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
     }
 
@@ -75,27 +78,139 @@ public class LlamaCppVisionHybridModelGateway implements VisionHybridModelGatewa
     }
 
     @Override
-    public VisionHybridRelationshipAnnotationProposal annotateRelationships(
-            VisionNormalizedImage evidenceSheet,
-            List<VisionGeometryEdgeCandidate> candidates,
+    public VisionHybridRelationshipClassificationProposal classifyRelationship(
+            VisionNormalizedImage evidencePanel,
+            VisionGeometryEdgeCandidate candidate,
             List<VisionClassProposal> classes
     ) {
         try {
             String content = completion(
-                    evidenceSheet,
+                    evidencePanel,
                     promptBuilder.relationshipSystemPrompt(),
-                    promptBuilder.relationshipUserPrompt(candidates, classes),
-                    VisionHybridRelationshipJsonSchema.json(),
+                    promptBuilder.relationshipUserPrompt(candidate, classes),
+                    VisionHybridRelationshipJsonSchema.jsonForEdge(candidate.edgeId()),
                     relationshipTokens,
-                    "anotacion-local-de-relaciones"
+                    "anotacion-local-de-relacion:" + candidate.edgeId()
             );
-            return jsonMapper.readValue(content, VisionHybridRelationshipAnnotationProposal.class);
+            VisionHybridRelationshipClassificationProposal proposal = jsonMapper.readValue(
+                    content, VisionHybridRelationshipClassificationProposal.class
+            );
+            validateSingletonAnnotation(proposal, candidate.edgeId());
+            return proposal;
         } catch (VisionModelGatewayException exception) {
             throw exception;
         } catch (Exception exception) {
             throw outputContract("La anotacion local de relaciones no cumple su contrato JSON.", exception);
         }
     }
+
+    @Override
+    public VisionHybridMultiplicityTranscription transcribeMultiplicity(
+            VisionNormalizedImage transcriptionPanel,
+            VisionGeometryEdgeCandidate candidate,
+            VisionHybridEndpoint endpoint,
+            VisionClassProposal endpointClass
+    ) {
+        try {
+            String content = completion(
+                    transcriptionPanel,
+                    promptBuilder.multiplicityTranscriptionSystemPrompt(),
+                    promptBuilder.multiplicityUserPrompt(candidate, endpoint, endpointClass),
+                    VisionHybridMultiplicityTranscriptionJsonSchema.jsonForEndpoint(candidate.edgeId(), endpoint),
+                    multiplicityTokens,
+                    "multiplicidad-transcripcion:" + candidate.edgeId() + ":" + endpoint.name()
+            );
+            VisionHybridMultiplicityTranscription transcription = jsonMapper.readValue(
+                    content, VisionHybridMultiplicityTranscription.class
+            );
+            validateMultiplicityTranscription(transcription, candidate.edgeId(), endpoint);
+            return transcription;
+        } catch (VisionModelGatewayException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw outputContract("La transcripcion local de multiplicidad no cumple su contrato JSON.", exception);
+        }
+    }
+
+    @Override
+    public VisionHybridMultiplicityAttribution attributeMultiplicity(
+            VisionNormalizedImage attributionPanel,
+            VisionGeometryEdgeCandidate candidate,
+            VisionHybridEndpoint endpoint,
+            VisionClassProposal endpointClass,
+            String candidateRawLabel,
+            List<String> visibleCompetingEdgeIds
+    ) {
+        try {
+            String content = completion(
+                    attributionPanel,
+                    promptBuilder.multiplicityAttributionSystemPrompt(),
+                    promptBuilder.multiplicityAttributionUserPrompt(candidate, endpoint, endpointClass, candidateRawLabel, visibleCompetingEdgeIds),
+                    VisionHybridMultiplicityAttributionJsonSchema.jsonForMultiplicityAttribution(candidate.edgeId(), endpoint, visibleCompetingEdgeIds),
+                    multiplicityTokens,
+                    "multiplicidad-ownership:" + candidate.edgeId() + ":" + endpoint.name()
+            );
+            VisionHybridMultiplicityAttribution attribution = jsonMapper.readValue(
+                    content, VisionHybridMultiplicityAttribution.class
+            );
+            validateMultiplicityAttribution(attribution, candidate.edgeId(), endpoint, visibleCompetingEdgeIds);
+            return attribution;
+        } catch (VisionModelGatewayException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw outputContract("La verificacion de ownership de multiplicidad no cumple su contrato JSON.", exception);
+        }
+    }
+
+    private void validateSingletonAnnotation(VisionHybridRelationshipClassificationProposal proposal, String edgeId) {
+        List<VisionHybridEdgeClassification> edges = proposal == null ? null : proposal.edges();
+        if (edges == null || edges.size() != 1) {
+            throw outputContract("La clasificacion local debe contener exactamente un edge.", null);
+        }
+        if (!edgeId.equals(edges.getFirst().edgeId())) {
+            throw outputContract("La anotacion local devolvio un edgeId distinto del panel solicitado.", null);
+        }
+    }
+
+    private void validateMultiplicityTranscription(
+            VisionHybridMultiplicityTranscription transcription,
+            String edgeId,
+            VisionHybridEndpoint endpoint
+    ) {
+        if (transcription == null || !edgeId.equals(transcription.edgeId()) || endpoint != transcription.endpoint()) {
+            throw outputContract("La transcripcion local no corresponde al endpoint solicitado.", null);
+        }
+        if (transcription.rawLabel() != null
+                && (transcription.rawLabel().isBlank() || transcription.rawLabel().length() > 16)) {
+            throw outputContract("La etiqueta local de multiplicidad excede su contrato.", null);
+        }
+        if (!validConfidence(transcription.confidence())) {
+            throw outputContract("La confianza de transcripcion de multiplicidad no cumple su contrato.", null);
+        }
+    }
+
+    private void validateMultiplicityAttribution(
+            VisionHybridMultiplicityAttribution attribution,
+            String edgeId,
+            VisionHybridEndpoint endpoint,
+            List<String> visibleCompetingEdgeIds
+    ) {
+        if (attribution == null || !edgeId.equals(attribution.edgeId()) || endpoint != attribution.endpoint()) {
+            throw outputContract("La verificacion de ownership no corresponde al endpoint solicitado.", null);
+        }
+        if (!java.util.stream.Stream.concat(java.util.stream.Stream.of(edgeId, "AMBIGUOUS", "NONE"), visibleCompetingEdgeIds.stream())
+                .toList().contains(attribution.owner())) {
+            throw outputContract("El ownership de multiplicidad no cumple su contrato.", null);
+        }
+        if (!validConfidence(attribution.confidence())) {
+            throw outputContract("La confianza de ownership de multiplicidad no cumple su contrato.", null);
+        }
+    }
+
+    private boolean validConfidence(Double confidence) {
+        return confidence == null || (confidence >= 0.0 && confidence <= 1.0);
+    }
+
 
     private String completion(
             VisionNormalizedImage image,
@@ -145,12 +260,25 @@ public class LlamaCppVisionHybridModelGateway implements VisionHybridModelGatewa
                 throw outputContract("llama.cpp no devolvio choices en " + stage + ".", null);
             }
             JsonNode first = choices.get(0);
-            JsonNode finish = first.get("finish_reason");
-            if (finish != null && "length".equalsIgnoreCase(finish.asString())) {
-                throw outputContract("La respuesta de " + stage + " quedo truncada por max_tokens.", null);
-            }
             JsonNode message = first.get("message");
             JsonNode text = message == null ? null : message.get("content");
+            JsonNode reasoning = message == null ? null : message.get("reasoning_content");
+            String partialContent = stringValue(text);
+            String reasoningContent = stringValue(reasoning);
+            JsonNode usage = root.get("usage");
+            JsonNode completionTokens = usage == null ? null : usage.get("completion_tokens");
+            JsonNode finish = first.get("finish_reason");
+            if (finish != null && "length".equalsIgnoreCase(finish.asString())) {
+                throw outputContract(
+                        "La respuesta de " + stage + " quedo truncada por max_tokens. "
+                                + "completionTokens=" + scalarValue(completionTokens)
+                                + " contentLength=" + partialContent.length()
+                                + " contentPrefix=" + prefix(partialContent)
+                                + " reasoningLength=" + reasoningContent.length()
+                                + " reasoningPrefix=" + prefix(reasoningContent),
+                        null
+                );
+            }
             if (text == null || !text.isString() || text.asString().isBlank()) {
                 throw outputContract("llama.cpp no devolvio JSON textual en " + stage + ".", null);
             }
@@ -161,6 +289,18 @@ public class LlamaCppVisionHybridModelGateway implements VisionHybridModelGatewa
             Thread.currentThread().interrupt();
             throw transport("La inferencia fue interrumpida durante " + stage + ".", exception);
         }
+    }
+
+    private String stringValue(JsonNode value) {
+        return value != null && value.isString() ? value.asString() : "";
+    }
+
+    private String scalarValue(JsonNode value) {
+        return value == null || value.isNull() ? "unknown" : value.asString();
+    }
+
+    private String prefix(String value) {
+        return value.length() <= 400 ? value : value.substring(0, 400);
     }
 
     private VisionModelGatewayException outputContract(String message, Throwable cause) {

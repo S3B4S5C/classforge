@@ -5,6 +5,7 @@ import com.classforge.assistant.AssistantPlanningException;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public class VisionHybridAnalyzer implements VisionModelGateway {
 
@@ -16,6 +17,7 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
     private final UmlDiagramGeometryAnalyzer geometryAnalyzer;
     private final VisionRelationshipEvidenceSheetRenderer sheetRenderer;
     private final VisionHybridProposalAssembler assembler;
+    private final VisionMultiplicityParser multiplicityParser;
     private final boolean enabled;
     private final int minClasses;
     private final boolean fallbackToSemantic;
@@ -63,6 +65,7 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
         this.geometryAnalyzer = geometryAnalyzer;
         this.sheetRenderer = sheetRenderer;
         this.assembler = assembler;
+        this.multiplicityParser = new VisionMultiplicityParser();
         this.enabled = enabled;
         this.minClasses = Math.max(2, minClasses);
         this.fallbackToSemantic = fallbackToSemantic;
@@ -81,7 +84,7 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
                     image,
                     semantic.safeClasses().size()
             );
-            lastDiagnostics = new VisionHybridDiagnostics(detection, null, null, null, null);
+            lastDiagnostics = diagnostics(detection, null, null, null, null, List.of(), List.of(), List.of());
             VisionNormalizedImage labeledRegions = imageFactory.png(
                     "class-regions.png",
                     detection.overlayPng(),
@@ -93,14 +96,14 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
                     detection.safeRegions(),
                     semantic.safeClasses()
             );
-            lastDiagnostics = new VisionHybridDiagnostics(detection, mapping, null, null, null);
+            lastDiagnostics = diagnostics(detection, mapping, null, null, null, List.of(), List.of(), List.of());
             List<VisionGeometryClassRegion> mappedRegions = mappingValidator.validateAndBind(
                     mapping,
                     detection.safeRegions(),
                     semantic.safeClasses()
             );
             UmlDiagramGeometry geometry = geometryAnalyzer.analyze(image, mappedRegions);
-            lastDiagnostics = new VisionHybridDiagnostics(detection, mapping, geometry, null, null);
+            lastDiagnostics = diagnostics(detection, mapping, geometry, null, null, List.of(), List.of(), List.of());
 
             if (geometryOnly) {
                 List<String> warnings = new ArrayList<>(semantic.safeWarnings());
@@ -115,14 +118,13 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
                 throw new AssistantPlanningException("OpenCV no genero pares candidatos para el diagrama denso.");
             }
             VisionNormalizedImage sheet = sheetRenderer.render(image, geometry);
-            lastDiagnostics = new VisionHybridDiagnostics(detection, mapping, geometry, sheet, null);
-            VisionHybridRelationshipAnnotationProposal annotation = hybridGateway.annotateRelationships(
-                    sheet,
-                    geometry.safeEdgeCandidates(),
-                    semantic.safeClasses()
+            lastDiagnostics = diagnostics(detection, mapping, geometry, sheet, null, List.of(), List.of(), List.of());
+            EdgeAnnotations annotations = annotateEdges(image, geometry, semantic.safeClasses());
+            lastDiagnostics = diagnostics(
+                    detection, mapping, geometry, sheet, annotations.annotation(), annotations.relationshipPanels(),
+                    annotations.multiplicityPanels(), annotations.observations()
             );
-            lastDiagnostics = new VisionHybridDiagnostics(detection, mapping, geometry, sheet, annotation);
-            return assembler.assemble(semantic, geometry, annotation);
+            return assembler.assemble(semantic, geometry, annotations.annotation());
         } catch (RuntimeException exception) {
             if (!fallbackToSemantic) {
                 if (exception instanceof VisionModelGatewayException gatewayException) {
@@ -148,6 +150,195 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
 
     public VisionHybridDiagnostics lastDiagnostics() {
         return lastDiagnostics;
+    }
+
+    private EdgeAnnotations annotateEdges(
+            VisionNormalizedImage image,
+            UmlDiagramGeometry geometry,
+            List<VisionClassProposal> classes
+    ) {
+        List<VisionHybridEdgeAnnotation> edges = new ArrayList<>();
+        LinkedHashSet<String> warnings = new LinkedHashSet<>();
+        List<VisionNormalizedImage> relationshipPanels = new ArrayList<>();
+        List<VisionNormalizedImage> multiplicityPanels = new ArrayList<>();
+        List<VisionHybridMultiplicityObservationDiagnostic> observations = new ArrayList<>();
+        Double confidence = null;
+        for (VisionGeometryEdgeCandidate candidate : geometry.safeEdgeCandidates()) {
+            VisionNormalizedImage relationshipPanel = sheetRenderer.renderEdge(image, candidate);
+            relationshipPanels.add(relationshipPanel);
+            VisionHybridRelationshipClassificationProposal classification = hybridGateway.classifyRelationship(
+                    relationshipPanel, candidate, classes
+            );
+            if (classification == null || classification.safeEdges().size() != 1) {
+                throw new VisionModelGatewayException(
+                        VisionModelGatewayException.Reason.OUTPUT_CONTRACT,
+                        "La clasificacion por edge debe contener exactamente un resultado.", null
+                );
+            }
+            if (!candidate.edgeId().equals(classification.safeEdges().getFirst().edgeId())) {
+                throw new VisionModelGatewayException(
+                        VisionModelGatewayException.Reason.OUTPUT_CONTRACT,
+                        "La anotacion por edge devolvio un edgeId distinto del solicitado.", null
+                );
+            }
+            VisionClassProposal aClass = endpointClass(classes, candidate.aClassRef());
+            VisionClassProposal bClass = endpointClass(classes, candidate.bClassRef());
+            EndpointMultiplicityResult multiplicityA = observeMultiplicity(
+                    image, geometry.safeClassRegions(), geometry.safeEdgeCandidates(), candidate,
+                    VisionHybridEndpoint.A, aClass, multiplicityPanels
+            );
+            observations.add(multiplicityA.diagnostic());
+            EndpointMultiplicityResult multiplicityB = observeMultiplicity(
+                    image, geometry.safeClassRegions(), geometry.safeEdgeCandidates(), candidate,
+                    VisionHybridEndpoint.B, bClass, multiplicityPanels
+            );
+            observations.add(multiplicityB.diagnostic());
+            VisionHybridEdgeClassification edge = classification.safeEdges().getFirst();
+            edges.add(new VisionHybridEdgeAnnotation(
+                    edge.edgeId(), edge.type(), edge.markerAt(), multiplicityA.multiplicity(), multiplicityB.multiplicity(),
+                    edge.evidenceLabel(), edge.confidence()
+            ));
+            warnings.addAll(classification.safeWarnings());
+            if (classification.confidence() != null) {
+                confidence = confidence == null ? classification.confidence()
+                        : Math.min(confidence, classification.confidence());
+            }
+        }
+        return new EdgeAnnotations(
+                new VisionHybridRelationshipAnnotationProposal(List.copyOf(edges), List.copyOf(warnings), confidence),
+                List.copyOf(relationshipPanels), List.copyOf(multiplicityPanels), List.copyOf(observations)
+        );
+    }
+
+    private EndpointMultiplicityResult observeMultiplicity(
+            VisionNormalizedImage image,
+            List<VisionGeometryClassRegion> classRegions,
+            List<VisionGeometryEdgeCandidate> candidates,
+            VisionGeometryEdgeCandidate candidate,
+            VisionHybridEndpoint endpoint,
+            VisionClassProposal endpointClass,
+            List<VisionNormalizedImage> panels
+    ) {
+        VisionNormalizedImage transcriptionPanel = sheetRenderer.renderMultiplicityTranscriptionConditioned(
+                image, candidate, endpoint, endpointClass, candidates
+        );
+        panels.add(transcriptionPanel);
+        panels.addAll(sheetRenderer.renderMultiplicityTranscriptionMaskDiagnostics(
+                image, candidate, endpoint, endpointClass, candidates
+        ));
+        VisionHybridMultiplicityTranscription transcription = hybridGateway.transcribeMultiplicity(
+                transcriptionPanel, candidate, endpoint, endpointClass
+        );
+        if (transcription == null || !candidate.edgeId().equals(transcription.edgeId()) || endpoint != transcription.endpoint()
+                || (transcription.rawLabel() != null
+                && (transcription.rawLabel().isBlank() || transcription.rawLabel().length() > 16))
+                || !validConfidence(transcription == null ? null : transcription.confidence())) {
+            throw new VisionModelGatewayException(
+                    VisionModelGatewayException.Reason.OUTPUT_CONTRACT,
+                    "La transcripcion de multiplicidad no corresponde al endpoint solicitado.", null
+            );
+        }
+        if (transcription.rawLabel() == null) {
+            return new EndpointMultiplicityResult(
+                    null, new VisionHybridMultiplicityObservationDiagnostic(
+                            candidate.edgeId(), endpoint, endpointClass.ref(), null, transcription.confidence(),
+                            null, null, List.of(), null, null, null, false
+                    )
+            );
+        }
+        VisionGeometryClassRegion endpointClassRegion = endpointClassRegion(classRegions, endpointClass.ref());
+        List<String> visibleCompetingEdgeIds = sheetRenderer.ownershipRenderingMetadata(
+                image, candidate, endpoint, endpointClass.ref(), endpointClassRegion, candidates
+        ).competitors().stream().map(VisionRelationshipEvidenceSheetRenderer.OwnershipEndpointOverlay::edgeId).toList();
+        VisionNormalizedImage attributionPanel = sheetRenderer.renderMultiplicityAttribution(
+                image, candidate, endpoint, endpointClass, endpointClassRegion, candidates, transcription.rawLabel()
+        );
+        panels.add(attributionPanel);
+        VisionHybridMultiplicityAttribution attribution = hybridGateway.attributeMultiplicity(
+                attributionPanel, candidate, endpoint, endpointClass, transcription.rawLabel(), visibleCompetingEdgeIds
+        );
+        if (attribution == null || !candidate.edgeId().equals(attribution.edgeId()) || endpoint != attribution.endpoint()
+                || !allowedOwners(candidate.edgeId(), visibleCompetingEdgeIds).contains(attribution.owner())
+                || !validConfidence(attribution.confidence())) {
+            throw new VisionModelGatewayException(
+                    VisionModelGatewayException.Reason.OUTPUT_CONTRACT,
+                    "La verificacion de ownership no corresponde al endpoint solicitado.", null
+            );
+        }
+        VisionMultiplicityProposal multiplicity = candidate.edgeId().equals(attribution.owner())
+                ? multiplicityParser.parse(transcription.rawLabel()) : null;
+        String rejectionReason = multiplicity != null ? null
+                : visibleCompetingEdgeIds.contains(attribution.owner()) ? "OWNED_BY_COMPETING_EDGE" : attribution.owner();
+        return new EndpointMultiplicityResult(
+                multiplicity,
+                new VisionHybridMultiplicityObservationDiagnostic(
+                        candidate.edgeId(), endpoint, endpointClass.ref(), transcription.rawLabel(), transcription.confidence(),
+                        attribution.owner(), attribution.confidence(), visibleCompetingEdgeIds, attribution.owner(), rejectionReason,
+                        multiplicity, multiplicity != null
+                )
+        );
+    }
+
+    private VisionClassProposal endpointClass(List<VisionClassProposal> classes, String ref) {
+        return classes.stream().filter(umlClass -> ref.equals(umlClass.ref())).findFirst().orElseThrow(
+                () -> new AssistantPlanningException("El endpoint hibrido no apunta a una clase confirmada.")
+        );
+    }
+
+    private VisionGeometryClassRegion endpointClassRegion(List<VisionGeometryClassRegion> regions, String classRef) {
+        List<VisionGeometryClassRegion> matches = regions.stream()
+                .filter(region -> classRef.equals(region.classRef()))
+                .toList();
+        if (matches.size() != 1) {
+            throw new VisionModelGatewayException(
+                    VisionModelGatewayException.Reason.OUTPUT_CONTRACT,
+                    "La evidencia de ownership requiere exactamente una region geometrica para la clase del endpoint.", null
+            );
+        }
+        return matches.getFirst();
+    }
+
+    private boolean validConfidence(Double confidence) {
+        return confidence == null || (confidence >= 0.0 && confidence <= 1.0);
+    }
+
+    private Set<String> allowedOwners(String currentEdgeId, List<String> visibleCompetingEdgeIds) {
+        LinkedHashSet<String> owners = new LinkedHashSet<>();
+        owners.add(currentEdgeId);
+        owners.addAll(visibleCompetingEdgeIds);
+        owners.add("AMBIGUOUS");
+        owners.add("NONE");
+        return owners;
+    }
+
+
+    private VisionHybridDiagnostics diagnostics(
+            UmlClassRegionDetection detection,
+            VisionGeometryClassMappingProposal mapping,
+            UmlDiagramGeometry geometry,
+            VisionNormalizedImage sheet,
+            VisionHybridRelationshipAnnotationProposal annotation,
+            List<VisionNormalizedImage> relationshipPanels,
+            List<VisionNormalizedImage> multiplicityPanels,
+            List<VisionHybridMultiplicityObservationDiagnostic> observations
+    ) {
+        return new VisionHybridDiagnostics(
+                detection, mapping, geometry, sheet, annotation, relationshipPanels, multiplicityPanels, observations
+        );
+    }
+
+    private record EdgeAnnotations(
+            VisionHybridRelationshipAnnotationProposal annotation,
+            List<VisionNormalizedImage> relationshipPanels,
+            List<VisionNormalizedImage> multiplicityPanels,
+            List<VisionHybridMultiplicityObservationDiagnostic> observations
+    ) {
+    }
+
+    private record EndpointMultiplicityResult(
+            VisionMultiplicityProposal multiplicity,
+            VisionHybridMultiplicityObservationDiagnostic diagnostic
+    ) {
     }
 
     private String compact(String message) {

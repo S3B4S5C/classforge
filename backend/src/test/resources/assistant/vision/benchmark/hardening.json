@@ -89,8 +89,7 @@
         "CREATE_RELATIONSHIP|Biblioteca|Usuario|ASSOCIATION|1:1|0:*",
         "CREATE_RELATIONSHIP|Categoria|Libro|ASSOCIATION|1:*|0:*",
         "CREATE_RELATIONSHIP|Prestamo|Libro|ASSOCIATION|0:*|1:1",
-        "CREATE_RELATIONSHIP|Prestamo|Usuario|ASSOCIATION|0:*|1:1",
-        "CREATE_RELATIONSHIP|Usuario|Libro|ASSOCIATION|0:*|0:*"
+        "CREATE_RELATIONSHIP|Prestamo|Usuario|ASSOCIATION|0:*|1:1"
       ]
     },
     {

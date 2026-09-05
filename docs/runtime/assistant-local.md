@@ -253,7 +253,8 @@ CLASSFORGE_ASSISTANT_VISION_HYBRID=false
 CLASSFORGE_ASSISTANT_VISION_HYBRID_MIN_CLASSES=4
 CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK=true
 CLASSFORGE_ASSISTANT_VISION_HYBRID_LOCALIZATION_TOKENS=1200
-CLASSFORGE_ASSISTANT_VISION_HYBRID_RELATIONSHIP_TOKENS=1800
+CLASSFORGE_ASSISTANT_VISION_HYBRID_RELATIONSHIP_TOKENS=512
+CLASSFORGE_ASSISTANT_VISION_HYBRID_MULTIPLICITY_TOKENS=128
 ```
 
 Prueba focal recomendada con el 4B ya levantado en 8094:
@@ -267,7 +268,8 @@ pwsh -NoProfile -File .\scripts\assistant-vision-whiteboard.ps1 `
   -TimeoutSeconds 180 `
   -MaxCompletionTokens 3200 `
   -HybridLocalizationTokens 1200 `
-  -HybridRelationshipTokens 1800 `
+  -HybridRelationshipTokens 512 `
+  -HybridMultiplicityTokens 128 `
   -VerboseAttempts
 ```
 

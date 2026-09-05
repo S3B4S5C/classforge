@@ -14,7 +14,8 @@ param(
     [string]$ImageStrategy = 'original',
     [int]$RelationshipMaxCompletionTokens = 1800,
     [int]$HybridLocalizationTokens = 1200,
-    [int]$HybridRelationshipTokens = 1800,
+    [int]$HybridRelationshipTokens = 512,
+    [int]$HybridMultiplicityTokens = 128,
     [switch]$HybridGeometryOnly,
     [double]$MinSemanticPercent = 0,
     [double]$MinSafetyPercent = 100,
@@ -39,6 +40,7 @@ Require ($MaxCompletionTokens -ge 256) 'MaxCompletionTokens debe ser >= 256.'
 Require ($RelationshipMaxCompletionTokens -ge 256) 'RelationshipMaxCompletionTokens debe ser >= 256.'
 Require ($HybridLocalizationTokens -ge 256) 'HybridLocalizationTokens debe ser >= 256.'
 Require ($HybridRelationshipTokens -ge 256) 'HybridRelationshipTokens debe ser >= 256.'
+Require ($HybridMultiplicityTokens -ge 1) 'HybridMultiplicityTokens debe ser >= 1.'
 if ($ImageStrategy -ne 'original') {
     Require ($CaseId -eq 'library-whiteboard-realistic') 'board-crop/tiles solo estan habilitados para library-whiteboard-realistic.'
 }
@@ -81,6 +83,7 @@ $gradleArgs = @(
     ('-PvisionHybridGeometryOnly=' + $HybridGeometryOnly.IsPresent.ToString().ToLowerInvariant()),
     ('-PhybridLocalizationTokens=' + $HybridLocalizationTokens),
     ('-PhybridRelationshipTokens=' + $HybridRelationshipTokens),
+    ('-PhybridMultiplicityTokens=' + $HybridMultiplicityTokens),
     ('-PrelationshipMaxCompletionTokens=' + $RelationshipMaxCompletionTokens),
     ('-PminSemanticPercent=' + $MinSemanticPercent.ToString([Globalization.CultureInfo]::InvariantCulture)),
     ('-PminSafetyPercent=' + $MinSafetyPercent.ToString([Globalization.CultureInfo]::InvariantCulture)),

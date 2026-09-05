@@ -1,0 +1,36 @@
+# Cal-013 Tasks
+
+- [x] Render a singleton evidence panel for each geometry edge while retaining the diagnostic sheet.
+- [x] Invoke relationship annotation once per edge in deterministic geometry order.
+- [x] Enforce the singleton edge response contract and aggregate warnings/confidence in Java.
+- [x] Change the per-edge relationship completion default to 512 tokens.
+- [x] Add focused singleton schema and analyzer tests.
+- [x] Bound singleton free-form fields and add edge-specific truncation diagnostics.
+- [x] Align application and benchmark per-edge defaults at 512 tokens without escalation.
+- [ ] Inspect a real bounded partial response before evaluating a response_format change.
+- [x] Separate type/marker classification from endpoint-isolated multiplicity transcription.
+- [x] Add bounded endpoint schema, deterministic raw-label parser, and 128-token endpoint budget.
+- [x] Persist endpoint panels and multiplicity observations for diagnostics.
+- [ ] Validate fix-002 against a real hybrid benchmark without changing CV or token budgets.
+- [x] Make geometry the sole authority for edge existence and require one classification per candidate.
+- [ ] Validate geometry-owned topology against a real hybrid benchmark without changing CV or token budgets.
+- [x] Add optional component-scoped connector direction and dual-view endpoint evidence without changing topology.
+- [ ] Validate connector-scoped endpoint evidence against a real hybrid benchmark without changing CV or token budgets.
+- [x] Separate clean multiplicity transcription from guided connector ownership without changing geometry or endpoint contracts.
+- [ ] Validate clean transcription and guided connector ownership against a real hybrid benchmark without changing CV or token budgets.
+- [x] Split endpoint transcription and connector ownership into independent stateless VLM calls with deterministic Java acceptance.
+- [ ] Validate transcription-first ownership verification against a real hybrid benchmark without changing CV or token budgets.
+- [x] Correct fix-007 code/spec drift by rendering visible same-class competitors as BLUE/OTHER from shared ownership metadata.
+- [x] Verify A/B endpoint selection, crop visibility, and visual/guard transform alignment with deterministic renderer tests.
+- [ ] Validate the production fix-007 competing-connector panel against a real hybrid benchmark without changing CV or token budgets.
+- [x] Expose required normalized candidate-label centers in the closed ownership contract.
+- [x] Add a one-way deterministic competing-connector distance veto without changing visuals or topology.
+- [x] Persist localized ownership diagnostics and add deterministic guard and analyzer tests.
+- [ ] Validate fix-008 against a real hybrid benchmark without changing CV, visuals, or token budgets.
+- [x] Replace coordinate-authoritative ownership with class-context ownership evidence and remove localized veto from runtime acceptance.
+- [x] Render all incident class connectors and add class-context crop and A/B endpoint tests.
+- [ ] Validate fix-009 against a real hybrid benchmark without changing CV, topology, transcription, or token budgets.
+- [x] Replace binary ownership with source-grounded closed connector attribution.
+- [ ] Validate fix-010 attribution against a real hybrid benchmark without changing CV, topology, transcription, or token budgets.
+- [x] Add geometry-conditioned clean transcription that suppresses exclusive incident-competitor evidence.
+- [ ] Validate fix-011 conditioned transcription against a real hybrid benchmark without changing CV, topology, parser, or token budgets.
