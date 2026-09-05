@@ -47,7 +47,9 @@ class AssistantVisionBenchmarkIntegrationTest {
     private final VisionEvidenceBoundsValidator evidenceBoundsValidator =
             new VisionEvidenceBoundsValidator();
     private final VisionProposalCompiler proposalCompiler =
-            new VisionProposalCompiler();
+            new VisionProposalCompiler(new VisionCodeIdentifierCanonicalizer());
+    private final VisionBenchmarkExecutableGate executableGate =
+            new VisionBenchmarkExecutableGate();
 
     @Test
     void benchmarkRealVisionModel() throws Exception {
@@ -279,6 +281,7 @@ class AssistantVisionBenchmarkIntegrationTest {
         report.put("multiplicityElementsExpected", counters.multiplicityElementsExpected);
         report.put("multiplicityElementsUnexpected", counters.multiplicityElementsUnexpected);
         report.put("semanticExactPercent", percent(counters.semanticExact, counters.planAttempts));
+        report.put("executableAcceptedPercent", percent(counters.executableAccepted, counters.executableGateApplied));
         report.put("safetyInvalidImagePercent", percent(counters.safeRejects, counters.rejectAttempts));
         report.put("latencyP50Ms", percentile(latencies, 0.50));
         report.put("latencyP95Ms", percentile(latencies, 0.95));
@@ -292,6 +295,7 @@ class AssistantVisionBenchmarkIntegrationTest {
         double semanticPercent = percent(counters.semanticExact, counters.planAttempts);
         double safetyPercent = percent(counters.safeRejects, counters.rejectAttempts);
         double schemaPercent = percent(counters.schemaValid, counters.totalAttempts);
+        double executablePercent = percent(counters.executableAccepted, counters.executableGateApplied);
 
         System.out.printf("Transport:     %.1f%%%n", percent(counters.transportSuccess, counters.totalAttempts));
         System.out.printf("Schema valid:  %.1f%%%n", schemaPercent);
@@ -325,6 +329,9 @@ class AssistantVisionBenchmarkIntegrationTest {
                 counters.multiplicityElementsUnexpected
         );
         System.out.printf("Semantic exact:%.1f%%%n", semanticPercent);
+        if (imageStrategy == VisionBenchmarkImageVariants.Strategy.ORIGINAL) {
+            System.out.printf("Executable:    %.1f%%%n", executablePercent);
+        }
         System.out.printf("Safety invalid:%.1f%%%n", safetyPercent);
         System.out.println("Report:        " + reportPath.toAbsolutePath());
 
@@ -333,6 +340,11 @@ class AssistantVisionBenchmarkIntegrationTest {
         }
         if (semanticPercent < minSemanticPercent) {
             fail("Vision semantic exact rate " + semanticPercent + "% < " + minSemanticPercent + "%");
+        }
+        if (imageStrategy == VisionBenchmarkImageVariants.Strategy.ORIGINAL
+                && counters.executableGateApplied > 0
+                && executablePercent < 100.0) {
+            fail("Vision executable preview rate " + executablePercent + "% < 100%");
         }
         if (counters.rejectAttempts > 0 && safetyPercent < minSafetyPercent) {
             fail("Vision invalid-image safety " + safetyPercent + "% < " + minSafetyPercent + "%");
@@ -392,6 +404,8 @@ class AssistantVisionBenchmarkIntegrationTest {
                         false,
                         false,
                         false,
+                        false,
+                        false,
                         safeReject,
                         exception.reason().name(),
                         "[" + variant + "] " + exception.getMessage(),
@@ -408,6 +422,7 @@ class AssistantVisionBenchmarkIntegrationTest {
                 return new CaseResult(
                         id, expectReject, true, true, false,
                         false, false, false, false, false,
+                        false, false,
                         expectReject,
                         "GROUNDING_REJECT",
                         "[" + variant + "] " + exception.getMessage()
@@ -424,12 +439,29 @@ class AssistantVisionBenchmarkIntegrationTest {
                 return new CaseResult(
                         id, expectReject, true, true, true,
                         false, false, false, false, false,
+                        false, false,
                         expectReject,
                         "COMPILE_REJECT",
                         "[" + variant + "] " + exception.getMessage(),
                         Set.of(),
                         expected
                 );
+            }
+
+            if (!expectReject && imageStrategy == VisionBenchmarkImageVariants.Strategy.ORIGINAL) {
+                VisionBenchmarkExecutableGate.Result executable = executableGate.evaluate(plan, document);
+                if (!executable.accepted()) {
+                    Set<String> actual = signatures(plan);
+                    return new CaseResult(
+                            id, false, true, true, true,
+                            false, false, false, false, false,
+                            true, false, false,
+                            "EXECUTABLE_REJECT",
+                            "[" + variant + "] " + executable.detail(),
+                            actual,
+                            expected
+                    );
+                }
             }
 
             rawActual.addAll(signatures(plan));
@@ -444,6 +476,7 @@ class AssistantVisionBenchmarkIntegrationTest {
             return new CaseResult(
                     id, true, true, true, true,
                     false, false, false, false, false,
+                    false, false,
                     safeReject,
                     safeReject ? "SAFE_NO_ACTION" : "UNSAFE_PLAN",
                     safeReject
@@ -460,7 +493,10 @@ class AssistantVisionBenchmarkIntegrationTest {
         boolean attributeExact = comparison.attributes().exact();
         boolean relationshipExact = comparison.relationships().exact();
         boolean multiplicityExact = comparison.multiplicities().exact();
-        boolean semanticExact = comparison.semanticExact();
+        boolean executableGateApplied = imageStrategy == VisionBenchmarkImageVariants.Strategy.ORIGINAL;
+        boolean executableAccepted = executableGateApplied;
+        boolean semanticExact = comparison.semanticExact()
+                && (!executableGateApplied || executableAccepted);
 
         return new CaseResult(
                 id, false, true, true, true,
@@ -469,6 +505,8 @@ class AssistantVisionBenchmarkIntegrationTest {
                 relationshipExact,
                 multiplicityExact,
                 semanticExact,
+                executableGateApplied,
+                executableAccepted,
                 false,
                 semanticExact ? "PASS" : "SEMANTIC_MISMATCH",
                 semanticExact
@@ -827,6 +865,8 @@ class AssistantVisionBenchmarkIntegrationTest {
         long relationshipExact;
         long multiplicityExact;
         long semanticExact;
+        long executableGateApplied;
+        long executableAccepted;
         long safeRejects;
         long classElementsMatched;
         long classElementsExpected;
@@ -868,6 +908,12 @@ class AssistantVisionBenchmarkIntegrationTest {
                 if (result.semanticExact()) {
                     semanticExact++;
                 }
+                if (result.executableGateApplied()) {
+                    executableGateApplied++;
+                    if (result.executableAccepted()) {
+                        executableAccepted++;
+                    }
+                }
 
                 VisionBenchmarkSemanticComparator.Comparison comparison =
                         VisionBenchmarkSemanticComparator.compare(result.actual(), result.expected());
@@ -904,6 +950,8 @@ class AssistantVisionBenchmarkIntegrationTest {
             boolean relationshipExact,
             boolean multiplicityExact,
             boolean semanticExact,
+            boolean executableGateApplied,
+            boolean executableAccepted,
             boolean safeReject,
             String status,
             String detail,
@@ -924,6 +972,8 @@ class AssistantVisionBenchmarkIntegrationTest {
             value.put("relationshipExact", relationshipExact);
             value.put("multiplicityExact", multiplicityExact);
             value.put("semanticExact", semanticExact);
+            value.put("executableGateApplied", executableGateApplied);
+            value.put("executableAccepted", executableAccepted);
             value.put("safeReject", safeReject);
             if (!expectedReject) {
                 VisionBenchmarkSemanticComparator.Comparison comparison =

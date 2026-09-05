@@ -81,7 +81,7 @@
         "CREATE_CLASS|Autor|id:STRING,nombre:STRING",
         "CREATE_CLASS|Biblioteca|direccion:STRING,id:STRING,nombre:STRING",
         "CREATE_CLASS|Categoria|id:STRING,nombre:STRING",
-        "CREATE_CLASS|Libro|añoPublicacion:STRING,id:STRING,isbn:STRING,titulo:STRING",
+        "CREATE_CLASS|Libro|anoPublicacion:STRING,id:STRING,isbn:STRING,titulo:STRING",
         "CREATE_CLASS|Prestamo|fechaDevolucion:STRING,fechaPrestamo:STRING,id:STRING",
         "CREATE_CLASS|Usuario|email:STRING,id:STRING,nombre:STRING",
         "CREATE_RELATIONSHIP|Autor|Libro|ASSOCIATION|1:*|0:*",

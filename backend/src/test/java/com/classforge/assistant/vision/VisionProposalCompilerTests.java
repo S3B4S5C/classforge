@@ -20,10 +20,12 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class VisionProposalCompilerTests {
 
-    private final VisionProposalCompiler compiler = new VisionProposalCompiler();
+    private final VisionProposalCompiler compiler =
+            new VisionProposalCompiler(new VisionCodeIdentifierCanonicalizer());
 
     @Test
     void compilesNewClassesAttributesAndRelationshipIntoExistingSemanticIr() {
@@ -230,6 +232,108 @@ class VisionProposalCompilerTests {
         assertThrows(
                 AssistantPlanningException.class,
                 () -> compiler.compile(proposal, ProjectDocument.empty())
+        );
+    }
+
+    @Test
+    void canonicalizesVisualIdentifiersOnlyAtCompilationBoundary() {
+        VisionCompilationResult result = compiler.compile(new VisionUmlProposal(
+                "Categoria visual",
+                List.of(new VisionClassProposal(
+                        "c1",
+                        "Categoría",
+                        List.of(
+                                new VisionAttributeProposal(
+                                        "añoPublicacion", "STRING", null, "PRIVATE", true, false,
+                                        evidence("añoPublicacion")
+                                ),
+                                new VisionAttributeProposal(
+                                        "dirección postal", "CUSTOM", "Dirección Postal", "PRIVATE", true, false,
+                                        evidence("dirección postal")
+                                )
+                        ),
+                        evidence("Categoría")
+                )),
+                List.of(),
+                List.of(),
+                0.9
+        ), ProjectDocument.empty());
+
+        var action = result.plan().actions().getFirst();
+        assertEquals("Categoria", action.className());
+        assertEquals("anoPublicacion", action.safeAttributes().get(0).name());
+        assertEquals("Direccion_Postal", action.safeAttributes().get(1).customTypeName());
+        assertTrue(result.warnings().stream().anyMatch(warning -> warning.contains("Categoría") && warning.contains("Categoria")));
+        assertTrue(result.warnings().stream().anyMatch(warning -> warning.contains("añoPublicacion") && warning.contains("anoPublicacion")));
+        assertTrue(result.warnings().stream().anyMatch(warning -> warning.contains("Dirección Postal") && warning.contains("Direccion_Postal")));
+    }
+
+    @Test
+    void reusesExistingCanonicalClassForAccentedVisualName() {
+        ProjectDocument document = documentWithClass("Categoria", List.of());
+
+        VisionCompilationResult result = compiler.compile(new VisionUmlProposal(
+                "Categoria", List.of(new VisionClassProposal("c1", "Categoría", List.of(), evidence("Categoría"))),
+                List.of(), List.of(), 0.9
+        ), document);
+
+        assertEquals(0, result.plan().actions().size());
+    }
+
+    @Test
+    void reusesExistingCanonicalAttributeForAccentedVisualName() {
+        ProjectDocument document = documentWithClass("Libro", List.of(new UmlAttribute(
+                UUID.randomUUID(), "anoPublicacion", UmlDataType.STRING, null,
+                UmlVisibility.PRIVATE, true, false
+        )));
+
+        VisionCompilationResult result = compiler.compile(new VisionUmlProposal(
+                "Libro", List.of(new VisionClassProposal(
+                        "l1", "Libro", List.of(new VisionAttributeProposal(
+                                "añoPublicacion", "STRING", null, "PRIVATE", true, false,
+                                evidence("añoPublicacion")
+                        )), evidence("Libro")
+                )), List.of(), List.of(), 0.9
+        ), document);
+
+        assertEquals(0, result.plan().actions().size());
+    }
+
+    @Test
+    void rejectsClassCanonicalCollision() {
+        VisionUmlProposal proposal = new VisionUmlProposal(
+                "collision",
+                List.of(
+                        new VisionClassProposal("c1", "Categoría", List.of(), evidence("Categoría")),
+                        new VisionClassProposal("c2", "Categoria", List.of(), evidence("Categoria"))
+                ),
+                List.of(), List.of(), 0.9
+        );
+
+        assertThrows(AssistantPlanningException.class, () -> compiler.compile(proposal, ProjectDocument.empty()));
+    }
+
+    @Test
+    void rejectsAttributeCanonicalCollision() {
+        VisionUmlProposal proposal = new VisionUmlProposal(
+                "collision",
+                List.of(new VisionClassProposal(
+                        "c1", "Libro", List.of(
+                                new VisionAttributeProposal("año", "STRING", null, "PRIVATE", true, false, evidence("año")),
+                                new VisionAttributeProposal("ano", "STRING", null, "PRIVATE", true, false, evidence("ano"))
+                        ), evidence("Libro")
+                )),
+                List.of(), List.of(), 0.9
+        );
+
+        assertThrows(AssistantPlanningException.class, () -> compiler.compile(proposal, ProjectDocument.empty()));
+    }
+
+    private ProjectDocument documentWithClass(String name, List<UmlAttribute> attributes) {
+        return new ProjectDocument(
+                ProjectDocument.CURRENT_SCHEMA_VERSION,
+                new UmlModel(List.of(new UmlClass(UUID.randomUUID(), name, attributes)), List.of()),
+                new DiagramLayout(Map.of())
         );
     }
 

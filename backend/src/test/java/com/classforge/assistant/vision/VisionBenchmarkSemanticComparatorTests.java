@@ -7,12 +7,15 @@ import tools.jackson.databind.json.JsonMapper;
 import java.io.InputStream;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class VisionBenchmarkSemanticComparatorTests {
+
+    private static final Pattern CODE_NAME = Pattern.compile("^[A-Za-z_][A-Za-z0-9_]*$");
 
     @Test
     void ignoresDiacriticsForCanonicalClassAndAttributeComparison() {
@@ -106,5 +109,50 @@ class VisionBenchmarkSemanticComparatorTests {
                 "Prestamo|Usuario"
         ), pairs);
         assertFalse(pairs.contains("Libro|Usuario"));
+    }
+
+    @Test
+    void benchmarkManifestsUseCodeCompatibleIdentifiers() throws Exception {
+        for (String suite : Set.of("regression", "holdout", "hardening")) {
+            JsonNode manifest;
+            try (InputStream input = getClass().getResourceAsStream(
+                    "/assistant/vision/benchmark/" + suite + ".json"
+            )) {
+                assertTrue(input != null);
+                manifest = JsonMapper.builder().build().readTree(input);
+            }
+
+            for (JsonNode benchmarkCase : manifest.get("cases")) {
+                for (JsonNode existingClass : benchmarkCase.get("existingClasses")) {
+                    assertCodeName(existingClass.get("name").asString());
+                    for (JsonNode attribute : existingClass.get("attributes")) {
+                        assertCodeName(attribute.asString());
+                    }
+                }
+                for (JsonNode signature : benchmarkCase.get("expectedSignatures")) {
+                    assertSignatureCodeNames(signature.asString());
+                }
+            }
+        }
+    }
+
+    private void assertSignatureCodeNames(String signature) {
+        String[] parts = signature.split("\\|", -1);
+        if ("CREATE_CLASS".equals(parts[0]) || "ADD_ATTRIBUTES".equals(parts[0])) {
+            assertCodeName(parts[1]);
+            if (!parts[2].isBlank()) {
+                for (String attribute : parts[2].split(",")) {
+                    assertCodeName(attribute.substring(0, attribute.lastIndexOf(':')));
+                }
+            }
+        }
+        if ("CREATE_RELATIONSHIP".equals(parts[0])) {
+            assertCodeName(parts[1]);
+            assertCodeName(parts[2]);
+        }
+    }
+
+    private void assertCodeName(String value) {
+        assertTrue(CODE_NAME.matcher(value).matches(), () -> "Invalid code identifier: " + value);
     }
 }

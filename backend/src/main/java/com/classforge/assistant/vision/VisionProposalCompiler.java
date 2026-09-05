@@ -28,6 +28,14 @@ import java.util.Set;
 @Component
 public class VisionProposalCompiler {
 
+    private final VisionCodeIdentifierCanonicalizer identifierCanonicalizer;
+
+    public VisionProposalCompiler(
+            VisionCodeIdentifierCanonicalizer identifierCanonicalizer
+    ) {
+        this.identifierCanonicalizer = identifierCanonicalizer;
+    }
+
     public VisionCompilationResult compile(
             VisionUmlProposal proposal,
             ProjectDocument document
@@ -44,18 +52,21 @@ public class VisionProposalCompiler {
 
         for (VisionClassProposal proposedClass : proposal.safeClasses()) {
             String ref = required(proposedClass.ref(), "class.ref");
-            String name = required(proposedClass.name(), "class.name");
+            String rawName = required(proposedClass.name(), "class.name");
             if (!seenRefs.add(normalize(ref))) {
                 throw new AssistantPlanningException("La propuesta visual repite el ref '" + ref + "'.");
             }
-            if (!seenClassNames.add(normalize(name))) {
-                throw new AssistantPlanningException("La propuesta visual repite la clase '" + name + "'.");
+            if (!seenClassNames.add(normalize(rawName))) {
+                throw new AssistantPlanningException("La propuesta visual repite la clase '" + rawName + "'.");
             }
 
-            UmlClass existingClass = exactClass(document, name);
-            String canonicalName = existingClass == null ? name : existingClass.name();
+            UmlClass existingClass = exactClass(document, rawName);
+            String canonicalName = existingClass == null
+                    ? canonicalize(rawName, "class.name", warnings)
+                    : existingClass.name();
             referenceToClassName.put(normalize(ref), canonicalName);
-            referenceToClassName.putIfAbsent(normalize(name), canonicalName);
+            referenceToClassName.putIfAbsent(normalize(rawName), canonicalName);
+            referenceToClassName.putIfAbsent(normalize(canonicalName), canonicalName);
 
             List<AssistantAttributePlan> attributes = compileAttributes(
                     proposedClass.safeAttributes(),
@@ -66,7 +77,7 @@ public class VisionProposalCompiler {
             if (existingClass == null) {
                 actions.add(action(
                         AssistantActionType.CREATE_CLASS,
-                        name,
+                        canonicalName,
                         null,
                         attributes,
                         null,
@@ -187,17 +198,17 @@ public class VisionProposalCompiler {
         }
 
         for (VisionAttributeProposal proposal : proposals) {
-            String name = required(proposal.name(), "attribute.name");
-            String key = normalize(name);
+            String rawName = required(proposal.name(), "attribute.name");
+            String key = normalize(rawName);
             if (!seen.add(key)) {
-                throw new AssistantPlanningException("La propuesta visual repite el atributo '" + name + "'.");
+                throw new AssistantPlanningException("La propuesta visual repite el atributo '" + rawName + "'.");
             }
 
             UmlAttribute existingAttribute = existing.get(key);
             if (existingAttribute != null) {
                 List<String> conflicts = attributeConflicts(proposal, existingAttribute);
                 if (conflicts.isEmpty()) {
-                    warnings.add("El atributo '" + name + "' ya existe y se omitio.");
+                    warnings.add("El atributo '" + rawName + "' ya existe y se omitio.");
                 } else {
                     warnings.add(
                             "El atributo '" + existingClass.name() + "." + existingAttribute.name()
@@ -209,15 +220,20 @@ public class VisionProposalCompiler {
             }
 
             UmlDataType dataType = parseDataType(proposal.dataType(), proposal.customTypeName());
+            String canonicalName = canonicalize(rawName, "attribute.name", warnings);
             String customTypeName = dataType == UmlDataType.CUSTOM
-                    ? required(proposal.customTypeName(), "attribute.customTypeName")
+                    ? canonicalize(
+                            required(proposal.customTypeName(), "attribute.customTypeName"),
+                            "attribute.customTypeName",
+                            warnings
+                    )
                     : null;
             UmlVisibility visibility = parseVisibility(proposal.visibility());
             boolean nullable = proposal.nullable() == null || proposal.nullable();
             boolean identifier = proposal.identifier() != null && proposal.identifier();
 
             result.add(new AssistantAttributePlan(
-                    name,
+                    canonicalName,
                     dataType,
                     customTypeName,
                     visibility,
@@ -455,6 +471,21 @@ public class VisionProposalCompiler {
                 .replaceAll("\\p{M}+", "")
                 .toLowerCase(Locale.ROOT)
                 .replaceAll("[^a-z0-9]+", "");
+    }
+
+    private String canonicalize(
+            String raw,
+            String field,
+            List<String> warnings
+    ) {
+        String canonical = identifierCanonicalizer.canonicalize(raw, field);
+        if (!raw.equals(canonical)) {
+            warnings.add(
+                    "El nombre visual '" + raw + "' se adapto a '" + canonical
+                            + "' para usar un identificador compatible con codigo."
+            );
+        }
+        return canonical;
     }
 
     private AssistantPlanAction action(

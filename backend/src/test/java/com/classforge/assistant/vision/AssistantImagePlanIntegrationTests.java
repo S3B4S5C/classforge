@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:classforge-cu09-image-contract;DB_CLOSE_DELAY=-1",
@@ -160,6 +161,47 @@ class AssistantImagePlanIntegrationTests {
         assertEquals(1, reopened.document().umlModel().classes().size());
         assertEquals("Intervenida", reopened.document().umlModel().classes().getFirst().name());
         assertEquals(0, reopened.document().umlModel().relationships().size());
+    }
+
+    @Test
+    void accentedVisualNamesProduceReadyCanonicalBatchAndValidPreview() throws Exception {
+        UUID owner = UUID.randomUUID();
+        Project project = projectService.create(owner, "CU09 accented identifiers");
+        AssistantImagePlanService service = service((image, context) -> new VisionUmlProposal(
+                "Categorias y prestamos",
+                List.of(
+                        new VisionClassProposal("categoria", "Categoría", List.of(
+                                new VisionAttributeProposal("id", "STRING", null, "PRIVATE", false, true, evidence("id")),
+                                new VisionAttributeProposal("nombre", "STRING", null, "PRIVATE", true, false, evidence("nombre"))
+                        ), evidence("Categoría")),
+                        new VisionClassProposal("prestamo", "Préstamo", List.of(
+                                new VisionAttributeProposal("id", "STRING", null, "PRIVATE", false, true, evidence("id"))
+                        ), evidence("Préstamo")),
+                        new VisionClassProposal("libro", "Libro", List.of(
+                                new VisionAttributeProposal("añoPublicacion", "STRING", null, "PRIVATE", true, false, evidence("añoPublicacion"))
+                        ), evidence("Libro"))
+                ),
+                List.of(),
+                List.of(),
+                0.95
+        ));
+
+        AssistantImagePlanResponse response = service.plan(owner, project.id(), 0L, image());
+
+        assertEquals(AssistantImagePlanDisposition.READY, response.disposition());
+        assertEquals(UmlCommandType.BATCH, response.command().type());
+        assertTrue(response.plan().actions().stream().anyMatch(action -> "Categoria".equals(action.className())));
+        assertTrue(response.plan().actions().stream().anyMatch(action -> "Prestamo".equals(action.className())));
+        assertTrue(response.plan().actions().stream().anyMatch(action -> "Libro".equals(action.className())
+                && action.safeAttributes().stream().anyMatch(attribute -> "anoPublicacion".equals(attribute.name()))));
+        assertTrue(response.plan().actions().stream().noneMatch(action -> "Categoría".equals(action.className())
+                || "Préstamo".equals(action.className())
+                || action.safeAttributes().stream().anyMatch(attribute -> "añoPublicacion".equals(attribute.name()))));
+        assertTrue(response.evidence().stream().anyMatch(item -> "Categoría".equals(item.symbol())));
+        assertTrue(response.evidence().stream().anyMatch(item -> "Préstamo".equals(item.symbol())));
+        assertTrue(response.evidence().stream().anyMatch(item -> "Libro.añoPublicacion".equals(item.symbol())));
+
+        documentValidator.validate(commandResolver.preview(project.document(), response.command()));
     }
 
     @Test

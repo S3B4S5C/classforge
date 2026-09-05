@@ -69,6 +69,20 @@ ProjectOperation -> ProjectCollaborationService -> ProjectCommandExecutor -> per
 One BATCH produces one project revision. A stale plan is rejected; its BATCH is
 not automatically rebased.
 
+Vision identifiers preserve their literal visual form in `VisionUmlProposal` and
+evidence. At the compilation boundary, new class names, attribute names, and
+CUSTOM type names are deterministically canonicalized before entering
+`AssistantSemanticPlan`:
+
+```text
+VisionUmlProposal raw identifiers -> VisionProposalCompiler code identifier canonicalization
+  -> AssistantSemanticPlan -> resolve/preview/domain validation
+```
+
+This does not relax `ProjectDocument` identifiers and does not alter VLM or CV
+inference. Existing document names remain authoritative when raw visual names
+match them under normalization.
+
 ## Entrada
 
 Endpoint:
