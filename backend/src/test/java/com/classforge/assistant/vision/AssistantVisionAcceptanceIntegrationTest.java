@@ -1,6 +1,11 @@
 package com.classforge.assistant.vision;
 
-import com.classforge.collaboration.application.ProjectCommandExecutor;
+import com.classforge.assistant.UmlAssistantCommandResolver;
+import com.classforge.auth.persistence.UserEntity;
+import com.classforge.auth.persistence.UserRepository;
+import com.classforge.collaboration.application.ProjectCollaborationService;
+import com.classforge.collaboration.protocol.ProjectOperationApplied;
+import com.classforge.collaboration.protocol.ProjectOperationRequest;
 import com.classforge.project.application.ProjectService;
 import com.classforge.project.domain.Project;
 import com.classforge.project.domain.document.ProjectDocument;
@@ -11,6 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,11 +38,24 @@ class AssistantVisionAcceptanceIntegrationTest {
     private AssistantImagePlanService imagePlanService;
 
     @Autowired
-    private ProjectCommandExecutor commandExecutor;
+    private ProjectCollaborationService collaborationService;
+
+    @Autowired
+    private UmlAssistantCommandResolver commandResolver;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Test
     void realVisionPlanCanBeAppliedPersistedAndReopenedThroughCanonicalDocumentFlow() throws Exception {
         UUID owner = UUID.randomUUID();
+        userRepository.save(new UserEntity(
+                owner,
+                "CU09 Owner",
+                "cu09-acceptance-owner-" + owner + "@classforge.test",
+                "unused",
+                Instant.now()
+        ));
         Project project = projectService.create(owner, "CU09 real image acceptance");
 
         AssistantImagePlanResponse response = imagePlanService.plan(
@@ -50,16 +69,25 @@ class AssistantVisionAcceptanceIntegrationTest {
         assertNotNull(response.command());
         assertTrue(response.plan().actions().size() >= 1);
 
-        ProjectDocument next = commandExecutor.execute(project.document(), response.command());
-        Project saved = projectService.saveDocument(
+        ProjectDocument expectedPreview = commandResolver.preview(project.document(), response.command());
+        assertEquals(project.revision(), projectService.get(owner, project.id()).revision());
+
+        ProjectOperationApplied applied = collaborationService.apply(
                 owner,
                 project.id(),
-                project.revision(),
-                next
+                new ProjectOperationRequest(
+                        UUID.randomUUID(),
+                        project.id(),
+                        UUID.randomUUID(),
+                        response.baseRevision(),
+                        response.command()
+                )
         );
 
         Project reopened = projectService.get(owner, project.id());
-        assertEquals(saved.revision(), reopened.revision());
+        assertEquals(project.revision() + 1, applied.revision());
+        assertEquals(applied.revision(), reopened.revision());
+        assertEquals(expectedPreview, reopened.document());
         assertTrue(
                 reopened.document().umlModel().classes().stream()
                         .anyMatch(umlClass -> "Cliente".equals(umlClass.name()))

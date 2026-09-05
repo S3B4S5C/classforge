@@ -21,7 +21,7 @@ Completar el alcance funcional de Imagen → UML y dejar preparados los mecanism
 - omisión conservadora de conflictos explícitos con atributos/relaciones existentes;
 - dataset hardening y benchmark reutilizando el comparador semántico de CU09-002;
 - modo exploratorio sin thresholds;
-- E2E real de imagen → plan → comando canónico → persistencia → reopen;
+- E2E determinista de producto imagen → plan → BATCH → `ProjectCollaborationService.apply` → persistencia → reopen;
 - agregador de aceptación final con gates y regresión CU-08.
 
 ## No cambia
@@ -40,6 +40,11 @@ VisionUmlProposal
 ```
 
 No existe `VisionApply`, Image Command Bus ni escritura directa desde el VLM. Las imágenes tampoco pasan a formar parte de `ProjectDocument`.
+
+Cal-016 confirma que el E2E determinista de producto atraviesa
+`ProjectCollaborationService.apply`. El acceptance real-VLM se conectó a esa
+misma ruta canónica, pero su ejecución real sigue pendiente del gate de
+acceptance. El incremento permanece IMPLEMENTADO / VALIDACIÓN REAL PENDIENTE.
 
 ## Política para cambios existentes
 

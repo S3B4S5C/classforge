@@ -40,7 +40,7 @@ También están implementados como infraestructura transversal:
 
 Aún no están implementados:
 
-- CU-09 cierre final: política de fallback, E2E real, UX smoke y broader-board acceptance;
+- CU-09 cierre final: UX smoke + broader-board/acceptance pending;
 - CU-10/11 XMI Enterprise Architect;
 - CU-12 modelo relacional;
 - CU-13..18 generación backend/frontend/mobile;
@@ -49,7 +49,7 @@ Aún no están implementados:
 - CU-27 demo reproducible formal;
 - CU-31 cerrado: membership, invitaciones, STOMP, presencia y Assistant validados con OWNER/EDITOR/NONE.
 
-CU-31 quedó cerrado en C2-cu31-003. CU-09 — Imagen → UML — está EN PROGRESO: activación productiva y política fail-closed están completas, pero faltan E2E real, UX smoke, broader-board acceptance y cierre final.
+CU-31 quedó cerrado en C2-cu31-003. CU-09 — Imagen → UML — está EN PROGRESO: activación productiva, política fail-closed y E2E determinista de producto están completos, pero faltan UX smoke, broader-board/acceptance y cierre final.
 
 ## Arquitectura vigente
 

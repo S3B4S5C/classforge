@@ -2,6 +2,11 @@ package com.classforge.assistant.vision;
 
 import com.classforge.assistant.UmlAssistantCommandResolver;
 import com.classforge.assistant.AssistantPlanningException;
+import com.classforge.auth.persistence.UserEntity;
+import com.classforge.auth.persistence.UserRepository;
+import com.classforge.collaboration.application.ProjectCollaborationService;
+import com.classforge.collaboration.protocol.ProjectOperationRequest;
+import com.classforge.collaboration.protocol.UmlCommandPayload;
 import com.classforge.collaboration.protocol.UmlCommandType;
 import com.classforge.project.application.ProjectNotFoundException;
 import com.classforge.project.application.ProjectRevisionConflictException;
@@ -18,6 +23,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,6 +42,12 @@ class AssistantImagePlanIntegrationTests {
 
     @Autowired
     private ProjectMembershipRepository projectMembershipRepository;
+
+    @Autowired
+    private ProjectCollaborationService collaborationService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     private AssistantImageInputValidator imageInputValidator;
@@ -110,6 +122,44 @@ class AssistantImagePlanIntegrationTests {
                 () -> service.plan(owner, project.id(), 99L, image())
         );
         assertEquals(0, calls.get());
+    }
+
+    @Test
+    void revisionChangedDuringVisionIsRejectedBeforePreview() throws Exception {
+        UUID owner = UUID.randomUUID();
+        userRepository.save(new UserEntity(
+                owner,
+                "CU09 Vision Owner",
+                "cu09-vision-owner-" + owner + "@classforge.test",
+                "unused",
+                Instant.now()
+        ));
+        Project project = projectService.create(owner, "CU09 revision during vision");
+        AssistantImagePlanService service = service((image, context) -> {
+            collaborationService.apply(
+                    owner,
+                    project.id(),
+                    new ProjectOperationRequest(
+                            UUID.randomUUID(),
+                            project.id(),
+                            UUID.randomUUID(),
+                            0L,
+                            createClassCommand("Intervenida")
+                    )
+            );
+            return proposal();
+        });
+
+        assertThrows(
+                ProjectRevisionConflictException.class,
+                () -> service.plan(owner, project.id(), 0L, image())
+        );
+
+        Project reopened = projectService.get(owner, project.id());
+        assertEquals(1L, reopened.revision());
+        assertEquals(1, reopened.document().umlModel().classes().size());
+        assertEquals("Intervenida", reopened.document().umlModel().classes().getFirst().name());
+        assertEquals(0, reopened.document().umlModel().relationships().size());
     }
 
     @Test
@@ -194,6 +244,22 @@ class AssistantImagePlanIntegrationTests {
 
     private VisionEvidence evidence(String label) {
         return new VisionEvidence(label, 0.95, 10, 10, 120, 50);
+    }
+
+    private UmlCommandPayload createClassCommand(String name) {
+        return new UmlCommandPayload(
+                UUID.randomUUID(),
+                Instant.now(),
+                UmlCommandType.CREATE_CLASS,
+                null,
+                null,
+                new com.classforge.project.domain.document.UmlClass(UUID.randomUUID(), name, List.of()),
+                new com.classforge.project.domain.document.DiagramNodeLayout(80, 80, 260, 160),
+                null,
+                null,
+                null,
+                null
+        );
     }
 
     private MockMultipartFile image() throws Exception {

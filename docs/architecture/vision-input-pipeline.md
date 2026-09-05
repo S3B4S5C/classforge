@@ -58,6 +58,17 @@ BATCH -> preview -> Apply -> Command Bus
 ProjectDocument
 ```
 
+`AssistantImagePlanService` never persists. A `READY` response returns the
+canonical `BATCH` plus its `baseRevision`; preview is calculated over the
+`ProjectDocument` at that revision. Apply traverses the collaboration authority:
+
+```text
+ProjectOperation -> ProjectCollaborationService -> ProjectCommandExecutor -> persistence
+```
+
+One BATCH produces one project revision. A stale plan is rejected; its BATCH is
+not automatically rebased.
+
 ## Entrada
 
 Endpoint:

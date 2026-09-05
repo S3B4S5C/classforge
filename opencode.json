@@ -1,1 +1,2 @@
-"plugin": ["@warp-dot-dev/opencode-warp"]
+{
+  "$schema": "https://opencode.ai/config.json","plugin": ["@warp-dot-dev/opencode-warp"]}
