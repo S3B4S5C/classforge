@@ -49,7 +49,7 @@ Aún no están implementados:
 - CU-27 demo reproducible formal;
 - CU-31 cerrado: membership, invitaciones, STOMP, presencia y Assistant validados con OWNER/EDITOR/NONE.
 
-CU-31 quedó cerrado en C2-cu31-003. CU-09 — Imagen → UML — está EN PROGRESO: la activación productiva está completa, pero faltan E2E real, UX smoke, broader-board acceptance y cierre final.
+CU-31 quedó cerrado en C2-cu31-003. CU-09 — Imagen → UML — está EN PROGRESO: activación productiva y política fail-closed están completas, pero faltan E2E real, UX smoke, broader-board acceptance y cierre final.
 
 ## Arquitectura vigente
 

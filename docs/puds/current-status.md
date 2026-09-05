@@ -99,7 +99,7 @@ Además:
 ## Limitaciones vigentes
 
 1. No existe eliminación de membership activa ni revocación inmediata de una sesión STOMP ya conectada; sigue fuera del alcance de CU-31.
-2. CU-09 — Imagen → UML — EN PROGRESO. Cal-011 class regions, Cal-012 topology, Cal-013 focal hardening y Cal-014 production activation están cerrados. `library-whiteboard-realistic` obtuvo 3/3 Exact; hybrid-CV está habilitado por defecto para >=4 clases semánticas, los diagramas pequeños siguen semantic-only y los fallos híbridos conservan fallback semántico. Pendiente: decisión final de failure policy, E2E, UX, broader boards, acceptance y builds finales.
+2. CU-09 — Imagen → UML — EN PROGRESO. Cal-011 class regions, Cal-012 topology, Cal-013 focal hardening, Cal-014 production activation y Cal-015 hybrid fail-closed policy están cerrados. `library-whiteboard-realistic` obtuvo 3/3 Exact; hybrid-CV está habilitado por defecto para >=4 clases semánticas, los diagramas pequeños siguen semantic-only y un fallo hybrid devuelve error `VISION` con retry. Pendiente: E2E, UX, broader boards, acceptance y builds finales.
 3. XMI/Enterprise Architect no está implementado.
 4. Modelo relacional y generadores no están implementados.
 5. La aplicación generada y su asistente de voz aún no existen.
@@ -117,6 +117,7 @@ CU-09 — Imagen -> UML (EN PROGRESO)
   Cal-012 -> CLOSED: physical topology
   Cal-013 -> CLOSED: focal hardening
   Cal-014 -> CLOSED: hybrid-CV production activation
+  Cal-015 -> CLOSED: hybrid fail-closed policy
 ```
 
 CU-31 está cerrado. El Ciclo 2 permanece ABIERTO hasta cerrar CU-09.

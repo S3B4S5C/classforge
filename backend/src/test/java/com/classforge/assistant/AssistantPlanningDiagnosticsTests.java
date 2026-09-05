@@ -1,5 +1,6 @@
 package com.classforge.assistant;
 
+import com.classforge.assistant.vision.VisionModelGatewayException;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -76,5 +77,22 @@ class AssistantPlanningDiagnosticsTests {
                         "prompt"
                 )
         );
+    }
+
+    @Test
+    void imageDiagnosticPreservesVisionReason() {
+        assertVisionReason(VisionModelGatewayException.Reason.OUTPUT_CONTRACT);
+        assertVisionReason(VisionModelGatewayException.Reason.TRANSPORT);
+    }
+
+    private void assertVisionReason(VisionModelGatewayException.Reason reason) {
+        AssistantPlanningException exception = new VisionModelGatewayException(reason, "hybrid rejected")
+                .withDiagnostic(AssistantPlanningStage.VISION, "IMAGE", "imagen: board.png", null);
+        Map<String, Object> body = new AssistantController(null, null, null, null, null).handle(exception);
+
+        assertEquals("ASSISTANT_PLANNING_ERROR", body.get("error"));
+        assertEquals("VISION", body.get("stage"));
+        assertEquals("IMAGE", body.get("source"));
+        assertEquals(reason.name(), body.get("visionReason"));
     }
 }

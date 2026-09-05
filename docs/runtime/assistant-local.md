@@ -251,7 +251,7 @@ Configuración por defecto:
 ```text
 CLASSFORGE_ASSISTANT_VISION_HYBRID=true
 CLASSFORGE_ASSISTANT_VISION_HYBRID_MIN_CLASSES=4
-CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK=true
+CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK=false
 CLASSFORGE_ASSISTANT_VISION_HYBRID_LOCALIZATION_TOKENS=1200
 CLASSFORGE_ASSISTANT_VISION_HYBRID_RELATIONSHIP_TOKENS=512
 CLASSFORGE_ASSISTANT_VISION_HYBRID_MULTIPLICITY_TOKENS=128
@@ -286,4 +286,4 @@ backend/build/reports/assistant-vision/geometry/library-whiteboard-realistic/
   relationship-sheet.png
 ```
 
-El kill switch `CLASSFORGE_ASSISTANT_VISION_HYBRID=false` fuerza semantic-only. Los diagramas con menos de cuatro clases siguen semantic-only; `fallback-to-semantic=true` se conserva. El semantic pass usa `CLASSFORGE_ASSISTANT_VISION_MAX_TOKENS=3200`; mapping, relationship y multiplicity usan 1200, 512 y 128 respectivamente.
+El kill switch `CLASSFORGE_ASSISTANT_VISION_HYBRID=false` fuerza semantic-only. Los diagramas con menos de cuatro clases siguen semantic-only. Con fallback `false`, un fallo hybrid devuelve error `VISION` y la UI permite reintentar; `CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK=true` es sólo rollback/debug. El semantic pass usa `CLASSFORGE_ASSISTANT_VISION_MAX_TOKENS=3200`; mapping, relationship y multiplicity usan 1200, 512 y 128 respectivamente.

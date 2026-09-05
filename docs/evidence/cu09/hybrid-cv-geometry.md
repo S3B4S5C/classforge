@@ -9,10 +9,12 @@
 - Cal-012: topology CLOSED.
 - Cal-013: annotation focal CLOSED.
 - Cal-014: production activation CLOSED.
+- Cal-015: production hybrid failure policy fail-closed CLOSED.
 
 `library-whiteboard-realistic` obtuvo 3/3 Exact. Producción usa
-`hybrid=true`, `minClasses=4` y `fallback=true`. CU-09 sigue abierto hasta el
-E2E de producto y broader-board acceptance.
+`hybrid=true`, `minClasses=4` y `fallback=false`. El rollback explícito usa
+`fallback=true`. CU-09 sigue abierto hasta el E2E de producto y broader-board
+acceptance.
 
 ## Motivación
 

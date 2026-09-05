@@ -79,12 +79,37 @@ class HybridVisionModelGatewayTests {
         assertEquals(VisionModelGatewayException.Reason.OUTPUT_CONTRACT, exception.reason());
     }
 
+    @Test
+    void propagatesTransportFailureWhenFallbackIsDisabled() {
+        VisionModelGatewayException exception = assertThrows(
+                VisionModelGatewayException.class,
+                () -> gateway(
+                        proposal(4), true, 4, false, new AtomicInteger(),
+                        new VisionModelGatewayException(VisionModelGatewayException.Reason.TRANSPORT, "hybrid unavailable")
+                ).analyze(null, null)
+        );
+
+        assertEquals(VisionModelGatewayException.Reason.TRANSPORT, exception.reason());
+    }
+
     private HybridVisionModelGateway gateway(
             VisionUmlProposal semantic,
             boolean enabled,
             int minClasses,
             boolean fallbackToSemantic,
             AtomicInteger detectorCalls
+    ) {
+        return gateway(semantic, enabled, minClasses, fallbackToSemantic, detectorCalls,
+                new IllegalStateException("hybrid detector reached"));
+    }
+
+    private HybridVisionModelGateway gateway(
+            VisionUmlProposal semantic,
+            boolean enabled,
+            int minClasses,
+            boolean fallbackToSemantic,
+            AtomicInteger detectorCalls,
+            RuntimeException failure
     ) {
         LlamaCppVisionModelGateway llama = mock(LlamaCppVisionModelGateway.class);
         when(llama.analyze(any(), any())).thenReturn(semantic);
@@ -95,7 +120,7 @@ class HybridVisionModelGatewayTests {
         ObjectProvider<UnconfiguredVisionModelGateway> unconfiguredProvider = mock(ObjectProvider.class);
         UmlClassRegionDetector detector = (image, expectedClassCount) -> {
             detectorCalls.incrementAndGet();
-            throw new IllegalStateException("hybrid detector reached");
+            throw failure;
         };
         return new HybridVisionModelGateway(
                 llamaProvider, unconfiguredProvider, null, detector, null, null, null, null, null,

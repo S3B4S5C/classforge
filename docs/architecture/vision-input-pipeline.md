@@ -15,6 +15,10 @@ Image -> semantic VLM first pass -> class/attribute proposal
 
 Hybrid-CV está habilitado por defecto. Geometry es la autoridad de topología
 física. Producción no retiene diagnostics pesados; benchmark sí puede hacerlo.
+Cuando el routing selecciona hybrid-CV, un fallo devuelve `VISION` fail-closed
+por defecto, sin proposal ni preview. El rollback operativo explícito es
+`CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK=true`; los diagramas con menos de
+cuatro clases siguen semantic-only por estrategia, no por fallback.
 
 ## Regla de arquitectura
 

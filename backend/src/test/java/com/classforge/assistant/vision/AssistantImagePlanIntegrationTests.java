@@ -1,6 +1,7 @@
 package com.classforge.assistant.vision;
 
 import com.classforge.assistant.UmlAssistantCommandResolver;
+import com.classforge.assistant.AssistantPlanningException;
 import com.classforge.collaboration.protocol.UmlCommandType;
 import com.classforge.project.application.ProjectNotFoundException;
 import com.classforge.project.application.ProjectRevisionConflictException;
@@ -128,6 +129,25 @@ class AssistantImagePlanIntegrationTests {
         assertEquals(AssistantImagePlanDisposition.NO_ACTIONABLE_UML, response.disposition());
         assertEquals(null, response.command());
         assertEquals(0, response.plan().actions().size());
+    }
+
+    @Test
+    void hybridGatewayFailureProducesVisionDiagnosticAndNoPlan() throws Exception {
+        UUID owner = UUID.randomUUID();
+        Project project = projectService.create(owner, "CU09 hybrid failure");
+        AssistantImagePlanService service = service((image, context) -> {
+            throw new VisionModelGatewayException(VisionModelGatewayException.Reason.OUTPUT_CONTRACT, "hybrid rejected");
+        });
+
+        AssistantPlanningException exception = assertThrows(
+                AssistantPlanningException.class,
+                () -> service.plan(owner, project.id(), 0L, image())
+        );
+
+        assertEquals(com.classforge.assistant.AssistantPlanningStage.VISION, exception.stage());
+        assertEquals("IMAGE", exception.source());
+        VisionModelGatewayException cause = (VisionModelGatewayException) exception.getCause();
+        assertEquals(VisionModelGatewayException.Reason.OUTPUT_CONTRACT, cause.reason());
     }
 
     private AssistantImagePlanService service(VisionModelGateway gateway) {

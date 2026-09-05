@@ -34,7 +34,7 @@ public class HybridVisionModelGateway implements VisionModelGateway {
             VisionHybridProposalAssembler assembler,
             @Value("${classforge.assistant.vision.dense-hybrid.enabled:true}") boolean enabled,
             @Value("${classforge.assistant.vision.dense-hybrid.min-classes:4}") int minClasses,
-            @Value("${classforge.assistant.vision.dense-hybrid.fallback-to-semantic:true}") boolean fallbackToSemantic
+            @Value("${classforge.assistant.vision.dense-hybrid.fallback-to-semantic:false}") boolean fallbackToSemantic
     ) {
         this.llamaGateway = llamaGateway;
         this.unconfiguredGateway = unconfiguredGateway;
