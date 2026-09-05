@@ -79,44 +79,28 @@ Texto requiere llama.cpp.
 Voz requiere llama.cpp + whisper.cpp.
 ## Diagnóstico de puertos
 
-El indicador verde ya no depende únicamente de `/health`. ClassForge verifica además la identidad del proceso esperado. Si otro proceso ocupa 8092 o 8093 y responde un health genérico, el panel mostrará `MISMATCH` en lugar de READY.
+El indicador verde ya no depende únicamente de `/health`. ClassForge verifica además la identidad del proceso esperado. Si otro proceso ocupa 8092, 8093 o 8094 y responde un health genérico, el panel mostrará `MISMATCH` en lugar de READY.
 
 En Windows, si aparece `MISMATCH`, conviene comprobar qué proceso escucha el puerto antes de iniciar los runtimes locales:
 
 ```powershell
-Get-NetTCPConnection -LocalPort 8092,8093 -State Listen |
+Get-NetTCPConnection -LocalPort 8092,8093,8094 -State Listen |
   Select-Object LocalPort, OwningProcess
 ```
 
 Después puede inspeccionarse el proceso con `Get-Process -Id <PID>`.
 
-<!-- C2-CU09-001-VISION-RUNTIME -->
-## Runtime visual CU-09
+## Runtime visual CU-09 — configuración vigente
 
-C2-cu09-001 incorpora `VisionModelGateway`, pero no fija aún un VLM de producción. El bean fallback `UnconfiguredVisionModelGateway` devuelve un error explícito `VISION` para evitar que el sistema simule análisis visual con el modelo textual. C2-cu09-002 elegirá el VLM local por benchmark antes de documentar un comando de arranque definitivo.
-
-<!-- C2-CU09-002-QWEN3-VL-RUNTIME -->
-## Runtime visual seleccionado — Qwen3-VL-4B Q4_K_M
-
-CU09 mantiene planner textual y Vision en procesos distintos:
+CU-09 está CERRADO. El runtime multimodal seleccionado es independiente del planner textual y de whisper.cpp:
 
 ```text
 8092 -> Qwen2.5-3B-Instruct Q4_K_M / native tools
 8093 -> whisper.cpp
-8094 -> Qwen3-VL-4B-Instruct Q4_K_M / VisionModelGateway
+8094 -> Qwen3-VL-4B-Instruct Q4_K_M / Vision
 ```
 
-Tras comparar 2B y 4B, el runtime visual seleccionado es:
-
-```text
-Qwen3-VL-4B-Instruct
-Q4_K_M
-llama.cpp / Vulkan0
-contexto recomendado: 6144
-parallel: 1
-```
-
-Arranque directo desde Hugging Face:
+Arranque recomendado del runtime visual:
 
 ```powershell
 llama-server.exe `
@@ -131,7 +115,7 @@ llama-server.exe `
   --fit-target 768
 ```
 
-Variables de ClassForge:
+Variables principales:
 
 ```text
 CLASSFORGE_ASSISTANT_VISION_PROVIDER=llama-cpp
@@ -139,116 +123,7 @@ CLASSFORGE_ASSISTANT_VISION_URL=http://127.0.0.1:8094
 CLASSFORGE_ASSISTANT_VISION_MODEL=vision-model
 CLASSFORGE_ASSISTANT_VISION_TIMEOUT_SECONDS=180
 CLASSFORGE_ASSISTANT_VISION_MAX_TOKENS=3200
-```
 
-`GET /api/projects/{projectId}/assistant/health` solo marca Vision READY cuando `/health` está listo, `/v1/models` contiene `vision-model` bajo llama.cpp y `/props` informa `modalities.vision=true`.
-
-Smoke real de transporte multimodal:
-
-```powershell
-pwsh -NoProfile -File .\scripts\assistant-vision-smoke.ps1
-```
-
-### Evidencia de selección 2B vs 4B
-
-Con el mismo pipeline/schema y GTX 1660 SUPER de 6 GiB:
-
-- 4B: regression 100 % semantic exact, holdout 100 %, safety 100 %; pizarra real completó 2/2 JSON válidos con 3200 tokens/180 s; pico observado ~5464 MiB.
-- 2B: en la pizarra real truncó 2/2 por `max_tokens` incluso con 4000 completion tokens; pico observado ~4417 MiB.
-
-Por ello CU09-Cal-006 congela el 4B como runtime visual seleccionado. El 2B se conserva solo como evidencia comparativa; no se seguirá calibrando como candidato principal.
-
-### Caso rápido de pizarra real
-
-```powershell
-pwsh -NoProfile -File .\scripts\assistant-vision-whiteboard.ps1 `
-  -Attempts 2 `
-  -ModelLabel "Qwen3-VL-4B Q4_K_M" `
-  -TimeoutSeconds 180 `
-  -MaxCompletionTokens 3200 `
-  -VerboseAttempts
-```
-
-Ejecuta únicamente `library-whiteboard-realistic` y conserva un reporte separado por modelo. `finish_reason=length` sigue siendo `OUTPUT_CONTRACT`; JSON truncado nunca se repara y grounding continúa fail-closed.
-
-<!-- C2-CU09-003-CALIBRATION-AFTER-IMPLEMENTATION -->
-## CU09-003 — calibración después de terminar la implementación
-
-El parche CU09-003 no arranca ni benchmarkea automáticamente Qwen3-VL. El build normal mantiene deshabilitadas las pruebas que requieren un runtime visual real. Esto permite terminar primero el código y después iterar modelo/prompt de forma controlada.
-
-Exploración sin gates de calidad:
-
-```powershell
-pwsh -NoProfile -File .\scripts\assistant-vision-explore.ps1 `
-  -Attempts 2 `
-  -ModelLabel "Qwen3-VL candidate" `
-  -VerboseAttempts
-```
-
-También puede ejecutarse únicamente hardening:
-
-```powershell
-pwsh -NoProfile -File .\scripts\assistant-vision-hardening.ps1 -Attempts 2 -VerboseAttempts
-```
-
-Cuando modelo/prompt estén estabilizados, la aceptación estricta es:
-
-```powershell
-pwsh -NoProfile -File .\scripts\assistant-vision-acceptance.ps1 `
-  -Attempts 2 `
-  -ModelLabel "modelo seleccionado" `
-  -VerboseAttempts
-```
-
-Por defecto exige semantic exact `regression >= 95 %`, `holdout >= 85 %`, `hardening >= 75 %`, schema/safety 100 %, E2E real de persistencia y regresión de CU-08. Solo después de esa evidencia debe actualizarse la documentación de estado a `CU-09: CERRADO`.
-
-## Vision dense input experiments (CU09-Cal-009)
-
-La corrida focal post-Cal-008 confirmó que la segunda inferencia `relationships-only` no mejora la pizarra real: conserva clases/atributos, pero reduce la topología útil y sigue sin recuperar multiplicidades. Por ello `dense-two-pass-enabled` vuelve a `false` por defecto. El código experimental permanece disponible con `CLASSFORGE_ASSISTANT_VISION_TWO_PASS=true`, pero no forma parte del runtime seleccionado.
-
-La calibración cambia ahora la **entrada visual** sin modificar prompt, grounding ni compiler. El runner focal acepta tres estrategias exclusivamente para `library-whiteboard-realistic`:
-
-```text
-original    = fotografía original sin transformación
-board-crop  = rota la foto 90° CCW cuando es vertical y recorta marco/márgenes
-tiles       = board-crop dividido en 4 regiones solapadas y ampliadas 1.5x
-```
-
-`board-crop` sigue ejecutando una sola inferencia normal. `tiles` ejecuta cuatro inferencias single-pass y combina **solo dentro del benchmark** sus firmas semánticas para medir si el aumento de escala recupera relaciones/multiplicidades; este merge no existe en producción ni puede mutar `ProjectDocument`.
-
-Prueba rápida recomendada:
-
-```powershell
-pwsh -NoProfile -File .\scripts\assistant-vision-whiteboard.ps1 `
-  -ImageStrategy board-crop `
-  -Attempts 2 `
-  -ModelLabel "Qwen3-VL-4B Q4_K_M" `
-  -TimeoutSeconds 180 `
-  -MaxCompletionTokens 3200 `
-  -VerboseAttempts
-```
-
-Si `board-crop` mejora claramente frente a la foto original, puede probarse después:
-
-```powershell
-pwsh -NoProfile -File .\scripts\assistant-vision-whiteboard.ps1 `
-  -ImageStrategy tiles `
-  -Attempts 1 `
-  -ModelLabel "Qwen3-VL-4B Q4_K_M" `
-  -TimeoutSeconds 180 `
-  -MaxCompletionTokens 3200 `
-  -VerboseAttempts
-```
-
-`tiles` requiere `VisionMode=single-pass`. Los reportes incluyen estrategia y modo en el nombre, por ejemplo `whiteboard-qwen3-vl-4b-q4-k-m-board-crop-single-pass.json`.
-
-## Vision hybrid CV — producción
-
-Cal-010 agrega OpenCV 4.9 mediante `org.openpnp:opencv:4.9.0-0`. La primera compilación necesita descargar aproximadamente 110 MiB desde Maven Central; no se instala Python, CUDA adicional ni un segundo modelo. El native se carga de forma perezosa únicamente al ejecutar el modo híbrido.
-
-Configuración por defecto:
-
-```text
 CLASSFORGE_ASSISTANT_VISION_HYBRID=true
 CLASSFORGE_ASSISTANT_VISION_HYBRID_MIN_CLASSES=4
 CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK=false
@@ -257,13 +132,31 @@ CLASSFORGE_ASSISTANT_VISION_HYBRID_RELATIONSHIP_TOKENS=512
 CLASSFORGE_ASSISTANT_VISION_HYBRID_MULTIPLICITY_TOKENS=128
 ```
 
-Prueba focal recomendada con el 4B ya levantado en 8094:
+`CLASSFORGE_ASSISTANT_VISION_HYBRID=false` fuerza semantic-only como kill switch. `CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK=true` reactiva temporalmente el fallback semántico para rollback/debug; no es el default de producto.
+
+### Health
+
+`GET /api/projects/{projectId}/assistant/health` marca Vision READY sólo si:
+
+1. `/health` responde correctamente;
+2. `/v1/models` publica el alias configurado;
+3. `/props` publica `modalities.vision=true`.
+
+Smoke de transporte multimodal:
+
+```powershell
+pwsh -NoProfile -File .\scripts\assistant-vision-smoke.ps1
+```
+
+### Benchmark focal
+
+Con el runtime levantado:
 
 ```powershell
 pwsh -NoProfile -File .\scripts\assistant-vision-whiteboard.ps1 `
   -VisionMode hybrid-cv `
   -ImageStrategy original `
-  -Attempts 2 `
+  -Attempts 3 `
   -ModelLabel "Qwen3-VL-4B Q4_K_M" `
   -TimeoutSeconds 180 `
   -MaxCompletionTokens 3200 `
@@ -273,17 +166,46 @@ pwsh -NoProfile -File .\scripts\assistant-vision-whiteboard.ps1 `
   -VerboseAttempts
 ```
 
-Los artefactos de diagnóstico se escriben en:
+La evidencia final registrada para `library-whiteboard-realistic` fue 3/3 Exact, con 100 % en transporte, schema, grounding, clases, atributos, relaciones, multiplicidades, semantic exact y safety.
+
+### Diagnostics de benchmark
+
+Producción no retiene diagnostics pesados. Los modos de benchmark pueden escribir, según etapa:
 
 ```text
-backend/build/reports/assistant-vision/geometry/library-whiteboard-realistic/
-  localization.json
-  geometry.json
-  annotation.json
-  threshold.png
-  segments.png
-  overlay.png
-  relationship-sheet.png
+class-regions.json
+class-regions-threshold.png
+class-regions.png
+mapping.json
+geometry.json
+threshold.png
+segments.png
+overlay.png
+relationship-sheet.png
+relationship-*.png
+multiplicity-*-transcription-conditioned.png
+multiplicity-*-current-support-mask.png
+multiplicity-*-competitor-*-mask.png
+multiplicity-*-final-suppression-mask.png
+multiplicity-*-mask-debug-overlay.png
+multiplicity-*-attribution.png
+multiplicity-observations.json
 ```
 
-El kill switch `CLASSFORGE_ASSISTANT_VISION_HYBRID=false` fuerza semantic-only. Los diagramas con menos de cuatro clases siguen semantic-only. Con fallback `false`, un fallo hybrid devuelve error `VISION` y la UI permite reintentar; `CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK=true` es sólo rollback/debug. El semantic pass usa `CLASSFORGE_ASSISTANT_VISION_MAX_TOKENS=3200`; mapping, relationship y multiplicity usan 1200, 512 y 128 respectivamente.
+### Acceptance automatizada
+
+El agregador disponible es:
+
+```powershell
+pwsh -NoProfile -File .\scripts\assistant-vision-acceptance.ps1 `
+  -Attempts 2 `
+  -VisionModel "vision-model" `
+  -ModelLabel "Qwen3-VL-4B Q4_K_M" `
+  -VerboseAttempts
+```
+
+Este script sigue siendo la forma recomendada de producir una corrida agregada regression/holdout/hardening/E2E/CU-08. La decisión de cierre funcional del 5 de septiembre de 2026 se tomó con la evidencia consolidada en `docs/evidence/cu09/cu09-acceptance.json`; una corrida archivada post-Cal-017 de este agregador quedó explícitamente diferida y no debe presentarse como ejecutada.
+
+### Nota histórica
+
+Los experimentos `two-pass`, `board-crop`, `tiles` y la primera versión VLM->bbox se conservan como evidencia de calibración. No forman parte del routing productivo seleccionado. La arquitectura vigente está documentada en `docs/architecture/vision-input-pipeline.md`.

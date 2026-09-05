@@ -1482,7 +1482,7 @@ Modelo:
 
 No se incluye todavía eliminación de membership activa, VIEWER, roles personalizados, SMTP ni transferencia de ownership.
 
-C2-cu31-003 valida OWNER/EDITOR/NONE en STOMP operations, presence y Assistant, y serializa invite/accept por proyecto para evitar duplicados concurrentes. CU-31 queda CERRADO; CU-09 es el siguiente caso del Ciclo 2.
+C2-cu31-003 valida OWNER/EDITOR/NONE en STOMP operations, presence y Assistant, y serializa invite/accept por proyecto para evitar duplicados concurrentes. CU-31 queda CERRADO. Posteriormente, CU-09 también se cierra dentro del Ciclo 2 mediante el pipeline visual híbrido documentado en `docs/architecture/vision-input-pipeline.md`.
 
 ## Endpoints iniciales
 
@@ -1761,7 +1761,7 @@ El Assistant usa Qwen2.5-3B-Instruct Q4_K_M mediante native function calling de 
 
 C2-cu09-001 abre Imagen → UML con un contrato desacoplado del VLM. PNG/JPEG/WEBP se validan y normalizan; el modelo multimodal futuro debe devolver `VisionUmlProposal` con refs temporales y `VisionEvidence`. Java valida provenance, referencias, tipos, relaciones y multiplicidades, compila a `AssistantSemanticPlan` y conserva preview/BATCH/Command Bus como única ruta de mutación.
 
-El VLM definitivo continúa **TBD** y se seleccionará en C2-cu09-002 mediante benchmark de precisión UML, VRAM, latencia, resolución y compatibilidad llama.cpp. La imagen no se persiste en C2-cu09-001.
+Este bloque describe la apertura histórica de CU-09. La decisión posterior de C2-cu09-002 seleccionó Qwen3-VL-4B-Instruct Q4_K_M sobre llama.cpp; la imagen continúa sin persistirse dentro de `ProjectDocument`.
 
 <!-- C2-CU09-002-QWEN3-VL -->
 ## Addendum CU-09 — runtime visual y benchmark
@@ -1770,7 +1770,7 @@ C2-cu09-002 materializa el adapter multimodal sin cambiar la autoridad del domin
 
 El health del Assistant separa `readyForImage` de texto/voz y exige que el runtime de 8094 publique el modelo esperado y `modalities.vision=true`. El frontend bloquea Analizar cuando Vision no está READY.
 
-La suite `assistantVisionBenchmark` compara planes semánticos contra ground truth en regression y holdout y produce métricas de transporte, schema, grounding, exactitud estructural, safety, latencia y memoria GPU observada. C2-cu09-002 queda implementado pero no cerrado hasta ejecutar esa evidencia en la máquina local de referencia.
+La suite `assistantVisionBenchmark` compara planes semánticos contra ground truth en regression y holdout y produce métricas de transporte, schema, grounding, exactitud estructural, safety, latencia y memoria GPU observada. La evidencia posterior seleccionó Qwen3-VL-4B Q4_K_M y el benchmark terminó incorporando hardening focal y un executable gate antes del cierre de CU-09.
 
 
 <!-- C2-CU09-003-VISION-UX-HARDENING -->
@@ -1780,4 +1780,4 @@ C2-cu09-003 completa la experiencia de Imagen → UML sin declarar prematurament
 
 El resultado puede ser `READY`, `NO_CHANGES` o `NO_ACTIONABLE_UML`. Solo `READY` expone un comando aplicable; los demás estados son éxitos seguros sin mutación. Conflictos con el modelo UML existente se omiten con advertencias antes que convertir Imagen → UML en una ruta de edición destructiva.
 
-La fase de producto queda funcionalmente implementada, pero CU-09 continuará `EN PROGRESO` mientras se calibren Qwen3-VL/modelos alternativos y el prompt. El comando de exploración no impone thresholds; el comando de aceptación sí exige regression, holdout, hardening, E2E real y no regresión de CU-08.
+La calibración posterior cerró CU-09 el 5 de septiembre de 2026. La solución final usa Qwen3-VL-4B + OpenCV + Java, fail-closed, E2E por la autoridad colaborativa y canonicalización determinista de identificadores visuales. El hardening focal obtuvo 3/3 Exact. La validación con dos pizarras adicionales y una corrida archivada post-Cal-017 del agregador completo quedaron registradas como validación adicional diferida, no como evidencia ejecutada.

@@ -26,4 +26,4 @@ Consultar `cycle-01/`.
 
 ## Ciclo 2
 
-Consultar `cycle-02/`. El ciclo está ABIERTO con CU-31 cerrado y CU-09 como siguiente caso.
+Consultar `cycle-02/`. El ciclo está CERRADO con CU-31 y CU-09 cerrados.

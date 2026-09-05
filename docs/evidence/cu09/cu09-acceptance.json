@@ -1,0 +1,150 @@
+{
+  "useCase": "CU-09",
+  "name": "Crear UML desde imagen/fotografia",
+  "status": "CERRADO",
+  "closureDate": "2026-09-05",
+  "acceptanceDecision": "PASS_WITH_EXPLICIT_DEFERRED_VALIDATION",
+  "acceptanceRationale": "El flujo funcional, fail-closed, concurrencia, aplicacion canonica, persistencia y smoke real quedaron validados. La ampliacion estadistica a dos pizarras adicionales y una corrida archivada post-Cal-017 del agregador completo se difieren y se registran como riesgo residual, no como evidencia ejecutada.",
+  "runtime": {
+    "model": "Qwen3-VL-4B-Instruct Q4_K_M",
+    "modelAlias": "vision-model",
+    "endpoint": "http://127.0.0.1:8094",
+    "semanticMaxCompletionTokens": 3200,
+    "mappingTokens": 1200,
+    "relationshipTokens": 512,
+    "multiplicityTokens": 128,
+    "hybridEnabledByDefault": true,
+    "hybridMinClasses": 4,
+    "hybridFallbackToSemanticByDefault": false
+  },
+  "focalHardening": {
+    "fixture": "library-whiteboard-realistic",
+    "visionMode": "hybrid-cv",
+    "imageStrategy": "original",
+    "attempts": 3,
+    "exactAttempts": 3,
+    "transportPercent": 100.0,
+    "schemaValidPercent": 100.0,
+    "groundingPercent": 100.0,
+    "classes": {
+      "matched": 18,
+      "expected": 18,
+      "unexpected": 0,
+      "percent": 100.0
+    },
+    "attributes": {
+      "matched": 51,
+      "expected": 51,
+      "unexpected": 0,
+      "percent": 100.0
+    },
+    "relationships": {
+      "matched": 18,
+      "expected": 18,
+      "unexpected": 0,
+      "percent": 100.0
+    },
+    "multiplicityEndpoints": {
+      "matched": 30,
+      "expected": 30,
+      "unexpected": 0,
+      "percent": 100.0
+    },
+    "semanticExactPercent": 100.0,
+    "safetyInvalidImagePercent": 100.0,
+    "gpuPeakMiB": 5455,
+    "elapsed": "PT8M45S",
+    "interpretation": "Stability evidence over one realistic focal board repeated three times; not a statistical generalization rate."
+  },
+  "geometryEvidence": {
+    "classRegionsExpected": 6,
+    "classRegionsRecovered": 6,
+    "physicalRelationshipPairsExpected": 6,
+    "physicalRelationshipPairsRecovered": 6,
+    "unexpectedPhysicalPairs": 0,
+    "oracleCorrection": "Usuario-Libro removed because no physical connector exists in the source image."
+  },
+  "productE2E": {
+    "calibration": "Cal-016",
+    "result": "PASS",
+    "planDoesNotPersist": true,
+    "readyReturnsCanonicalBatch": true,
+    "previewEqualsPersistedDocument": true,
+    "reopenEqualsPreview": true,
+    "batchIncrementsExactlyOneRevision": true,
+    "stalePlanRejected": true,
+    "stalePlanPartialMutation": false,
+    "revisionChangeDuringVisionRejectsReady": true,
+    "applyAuthority": "ProjectCollaborationService.apply"
+  },
+  "failClosedPolicy": {
+    "calibration": "Cal-015",
+    "result": "PASS",
+    "transportPreserved": true,
+    "contractFailureReason": "OUTPUT_CONTRACT",
+    "semanticFallbackDefault": false,
+    "explicitRollbackFallbackSupported": true,
+    "retryAvailableInUi": true
+  },
+  "identifierCanonicalization": {
+    "calibration": "Cal-017",
+    "result": "PASS",
+    "rawEvidencePreserved": true,
+    "domainValidatorRelaxed": false,
+    "examples": {
+      "CategoriaWithAccent": "Categoria",
+      "PrestamoWithAccent": "Prestamo",
+      "anioPublicacion": "anoPublicacion"
+    },
+    "benchmarkExecutableGateImplemented": true,
+    "realProductSmokeAfterFix": "PASS",
+    "postCal017ExecutableBenchmarkPercent": null
+  },
+  "manualUxSmoke": {
+    "date": "2026-09-05",
+    "result": "PASS",
+    "checksPassed": 5,
+    "checks": [
+      "Happy path READY -> preview -> Apply -> reload/reopen",
+      "Image preparation rotate/crop/reset/cancel without pre-Apply mutation",
+      "Fail-closed Vision error + Analizar nuevamente retry",
+      "Stale plan rejection and regeneration",
+      "OWNER/EDITOR allowed and no-edit user prevented from mutation"
+    ]
+  },
+  "backendValidation": {
+    "focusedGates": "PASS",
+    "fullBackendGates": "PASS as reported during Cal-014, Cal-015 and Cal-016"
+  },
+  "deferredValidation": {
+    "broaderRealBoards": {
+      "executed": false,
+      "plannedCount": 2,
+      "status": "DEFERRED",
+      "acceptedResidualRisk": true
+    },
+    "postCal017FullAcceptanceScript": {
+      "executed": false,
+      "status": "DEFERRED",
+      "script": "scripts/assistant-vision-acceptance.ps1"
+    },
+    "finalFrontendProductionBuild": {
+      "executedAsSeparateClosureGate": false,
+      "status": "NOT_RECORDED",
+      "interactiveFrontendSmoke": "PASS"
+    }
+  },
+  "closedCalibrations": [
+    "Cal-011 outer-frame reconstruction",
+    "Cal-012 relationship geometry",
+    "Cal-013 per-edge relationship annotation",
+    "Cal-014 vision production activation",
+    "Cal-015 hybrid fail-closed policy",
+    "Cal-016 image product E2E",
+    "Cal-017 vision identifier canonicalization"
+  ],
+  "cycle": {
+    "id": "Ciclo 2",
+    "statusAfterClosure": "CERRADO"
+  }
+}

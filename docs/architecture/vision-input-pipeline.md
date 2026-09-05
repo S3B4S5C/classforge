@@ -1,91 +1,131 @@
-# Pipeline visual — CU-09
+# Pipeline visual — CU-09 Imagen -> UML
 
-**Estado:** CU-09 EN PROGRESO. Cal-014 activa hybrid-CV por defecto para diagramas densos; aceptación de producto y broader-board permanecen pendientes.
+**Estado:** arquitectura vigente de CU-09 CERRADO.  
+**Último corte:** 5 de septiembre de 2026.
 
-## Ruta actual
+## 1. Objetivo arquitectónico
 
-```text
-Image -> semantic VLM first pass -> class/attribute proposal
-  < 4 classes -> semantic result
-  >= 4 classes -> OpenCV class regions -> closed Bx -> classRef mapping
-                -> OpenCV physical topology -> per-edge classification
-                -> conditioned multiplicity transcription -> attribution
-                -> Java multiplicity parser -> assembled proposal
-```
+CU-09 permite interpretar una imagen/fotografía de un diagrama de clases UML sin introducir una segunda fuente de verdad ni una ruta alternativa de mutación.
 
-Hybrid-CV está habilitado por defecto. Geometry es la autoridad de topología
-física. Producción no retiene diagnostics pesados; benchmark sí puede hacerlo.
-Cuando el routing selecciona hybrid-CV, un fallo devuelve `VISION` fail-closed
-por defecto, sin proposal ni preview. El rollback operativo explícito es
-`CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK=true`; los diagramas con menos de
-cuatro clases siguen semantic-only por estrategia, no por fallback.
+La regla principal es:
 
-## Regla de arquitectura
+> La imagen y el VLM sólo producen evidencia y propuesta. El proyecto cambia únicamente después de compilar esa propuesta a comandos canónicos, previsualizarlos y aplicarlos por la misma autoridad colaborativa que usa el resto de ClassForge.
 
-La imagen nunca modifica `ProjectDocument` directamente.
+## 2. Flujo completo
 
 ```text
 PNG / JPEG / WEBP
         |
         v
 AssistantImageInputValidator
+- firma real
+- MIME
+- bytes
+- dimensiones
         |
         v
 VisionImageNormalizer
+- orientación
+- representación normalizada
         |
         v
-VisionModelGateway
+VisionModelGateway (@Primary HybridVisionModelGateway)
         |
         v
-VisionUmlProposal + evidencia
+Qwen3-VL semantic first pass
+- clases
+- atributos
+- evidence
         |
-        v
-VisionProposalGroundingValidator
-        |
-        v
-VisionProposalCompiler
-        |
-        v
-AssistantSemanticPlan
-        |
-        v
-UmlAssistantCommandResolver
-        |
-        v
-BATCH -> preview -> Apply -> Command Bus
-        |
-        v
-ProjectDocument
+        +------------------------------+
+        |                              |
+ semantic classes < 4           semantic classes >= 4
+        |                              |
+        |                              v
+        |                     OpenCV class regions
+        |                     B1..Bn + bbox físicos
+        |                              |
+        |                              v
+        |                     closed VLM mapping
+        |                     Bx -> classRef
+        |                              |
+        |                              v
+        |                     Java bijection validator
+        |                              |
+        |                              v
+        |                     OpenCV relationship geometry
+        |                     unordered physical pairs
+        |                              |
+        |                              v
+        |                     per-edge Qwen annotation
+        |                     type + marker
+        |                              |
+        |                              v
+        |                     per-endpoint conditioned crop
+        |                     competing connector suppression
+        |                              |
+        |                              v
+        |                     Qwen raw multiplicity transcription
+        |                              |
+        |                              v
+        |                     explicit edge attribution
+        |                              |
+        |                              v
+        |                     Java VisionMultiplicityParser
+        |                              |
+        +---------------+--------------+
+                        |
+                        v
+                VisionUmlProposal
+                + VisionEvidence
+                        |
+                        v
+        VisionProposalGroundingValidator
+        VisionEvidenceBoundsValidator
+                        |
+                        v
+          VisionProposalCompiler
+          + deterministic identifier
+            canonicalization
+                        |
+                        v
+             AssistantSemanticPlan
+                        |
+                        v
+        UmlAssistantCommandResolver
+                        |
+                        v
+             canonical BATCH
+                        |
+                        v
+                     preview
+                        |
+                  user reviews
+                        |
+                      Apply
+                        |
+                        v
+               local Command Bus
+                        |
+                        v
+              ProjectOperation
+                        |
+                        v
+       ProjectCollaborationService
+       - permission
+       - baseRevision
+       - execute BATCH
+       - validate document
+       - persist once
+                        |
+                        v
+              ProjectDocument
+              revision + 1
 ```
 
-`AssistantImagePlanService` never persists. A `READY` response returns the
-canonical `BATCH` plus its `baseRevision`; preview is calculated over the
-`ProjectDocument` at that revision. Apply traverses the collaboration authority:
+## 3. Entrada y normalización
 
-```text
-ProjectOperation -> ProjectCollaborationService -> ProjectCommandExecutor -> persistence
-```
-
-One BATCH produces one project revision. A stale plan is rejected; its BATCH is
-not automatically rebased.
-
-Vision identifiers preserve their literal visual form in `VisionUmlProposal` and
-evidence. At the compilation boundary, new class names, attribute names, and
-CUSTOM type names are deterministically canonicalized before entering
-`AssistantSemanticPlan`:
-
-```text
-VisionUmlProposal raw identifiers -> VisionProposalCompiler code identifier canonicalization
-  -> AssistantSemanticPlan -> resolve/preview/domain validation
-```
-
-This does not relax `ProjectDocument` identifiers and does not alter VLM or CV
-inference. Existing document names remain authoritative when raw visual names
-match them under normalization.
-
-## Entrada
-
-Endpoint:
+Endpoint productivo:
 
 ```http
 POST /api/projects/{projectId}/assistant/image/plan
@@ -94,191 +134,261 @@ Content-Type: multipart/form-data
 
 Campos:
 
-- `image`: PNG, JPEG o WEBP;
-- `baseRevision`: revisión exacta sobre la que se solicita el análisis.
+- `image`;
+- `baseRevision`.
 
-Restricciones iniciales:
+El contrato inicial admite PNG, JPEG y WEBP. Backend valida firma real, tamaño y dimensiones. La preparación de UI (rotate/crop/reset) no reemplaza la validación backend.
 
-- máximo 10 MiB;
-- dimensión mínima 64 px por lado;
-- dimensión máxima 8192 px por lado;
-- MIME declarado debe coincidir con la firma real;
-- JPEG/PNG se normalizan internamente a PNG RGB;
-- orientación EXIF JPEG se aplica antes del análisis;
-- WEBP se valida por cabecera y se conserva, porque ImageIO estándar no incluye decoder WEBP.
+La imagen no se guarda dentro de `ProjectDocument`.
 
-La imagen no se persiste en C2-cu09-001.
+## 4. Primera pasada semántica
 
-## Contrato visual
+Qwen3-VL recibe la imagen y un contexto estructurado reducido del proyecto. La primera pasada identifica principalmente clases, atributos y evidencia visual.
 
-`VisionModelGateway` recibe la imagen normalizada y un `VisionProjectContext` que contiene únicamente contexto estructurado del proyecto actual.
+No recibe autoridad para generar UUID ni mutar el proyecto.
 
-Devuelve `VisionUmlProposal`:
-
-- clases con `ref` temporal, nombre, atributos y evidencia;
-- relaciones entre refs temporales o clases existentes;
-- multiplicidades;
-- warnings;
-- confidence global.
-
-Los refs temporales permiten representar en una sola imagen varias clases nuevas relacionadas sin que el VLM genere UUID.
-
-## Provenance y fail-closed
-
-Toda clase y atributo propuestos deben incluir `VisionEvidence` con etiqueta y confidence. Los bounding boxes quedan preparados en el contrato y son opcionales en C2-cu09-001.
-
-ClassForge rechaza:
-
-- refs duplicados;
-- nombres vacíos;
-- evidencia que no respalda el símbolo declarado;
-- confidence fuera de `[0,1]`;
-- referencias de relación que no existen ni en la propuesta ni en el `ProjectDocument`;
-- tipos/visibilidades/relaciones no soportados;
-- multiplicidades inválidas;
-- previews que no pasan `ProjectDocumentValidator`.
-
-Una clase visual cuyo nombre coincide exactamente —ignorando case/diacríticos/separadores— con una clase existente se trata como referencia existente y no se duplica. No se usa fuzzy matching visual en C2-cu09-001 para evitar sustituciones silenciosas.
-
-## Concurrencia
-
-`baseRevision` se comprueba antes de invocar el VLM y nuevamente al terminar la inferencia. Si el proyecto cambió mientras el VLM procesaba la imagen, se responde conflicto y el preview se descarta.
-
-## VLM
-
-C2-cu09-001 no adopta un modelo multimodal concreto. `UnconfiguredVisionModelGateway` falla explícitamente en etapa `VISION`. Los tests usan gateways fake para demostrar que todo el pipeline posterior funciona.
-
-C2-cu09-002 debe seleccionar un VLM mediante benchmark local de:
-
-- precisión estructural UML;
-- VRAM;
-- latencia;
-- resolución útil;
-- compatibilidad con llama.cpp;
-- calidad de evidencia/provenance.
-
-<!-- C2-CU09-002-REAL-VLM -->
-## C2-cu09-002 — VLM real
-
-El adapter oficial de evaluación es `LlamaCppVisionModelGateway`. El baseline se ejecuta con Qwen3-VL-2B-Instruct Q4_K_M y mmproj Q8_0 en 8094; el 4B se prueba como challenger, no como reemplazo automático.
-
-El request multimodal contiene un prompt visual dedicado y `image_url` Base64. `VisionUmlProposalJsonSchema` limita clases, atributos, tipos, relaciones y evidence mediante `additionalProperties=false`. La respuesta debe ser JSON directamente deserializable; ClassForge no corrige la salida del VLM.
-
-`VisionPromptBuilder` serializa del proyecto solo nombres de clases y atributos. Los UUID continúan siendo exclusivamente responsabilidad de Java. El contexto existente no prueba que un símbolo aparezca en la imagen.
-
-El benchmark mantiene regression y holdout separados y compara el plan semántico posterior al grounding/compiler, por lo que mide el efecto funcional real sobre ClassForge sin aplicar cambios al proyecto.
-
-
-<!-- C2-CU09-003-VISION-HARDENING -->
-## C2-cu09-003 — UX, estados seguros y hardening
-
-La preparación de imagen del frontend (rotate/crop/reset) ocurre antes del upload y no conoce `ProjectDocument`. Backend vuelve a validar formato, tamaño, dimensiones y evidencia. Los bounding boxes opcionales deben estar completos y además caber dentro de `width × height` de la imagen normalizada.
-
-El pipeline reconoce estados terminales sin comando:
+El routing productivo usa:
 
 ```text
-proposal sin símbolos accionables -> NO_ACTIONABLE_UML -> command=null
-proposal equivalente al documento -> NO_CHANGES       -> command=null
-proposal con cambios válidos       -> READY            -> BATCH/preview
+CLASSFORGE_ASSISTANT_VISION_HYBRID=true
+CLASSFORGE_ASSISTANT_VISION_HYBRID_MIN_CLASSES=4
 ```
 
-Los atributos o relaciones existentes que contradicen explícitamente a la imagen no se actualizan de forma implícita: se omiten con warning. Esta política evita convertir incertidumbre visual en edición destructiva.
+- menos de 4 clases semánticas: semantic-only;
+- 4 o más: hybrid-CV.
 
-`regression`, `holdout` y `hardening` miden planes semánticos y pueden ejecutarse en modo exploratorio con thresholds 0 mientras se itera el VLM. `assistantVisionAcceptance` prueba además con modelo real que una imagen produzca un comando canónico que pueda persistirse y reabrirse. Ninguna de esas suites dependientes del VLM forma parte del build determinista ordinario.
+El camino pequeño no se considera fallback; es una estrategia explícita.
 
+## 5. Class regions: OpenCV es autoridad espacial
 
-<!-- CU09-CAL-001-PROMPT-SAFETY-UML-SEMANTICS -->
-## Calibración visual: safety y semántica UML
+La primera aproximación híbrida (Cal-010) pidió al VLM coordenadas de cajas. La pizarra real mostró que esa frontera era incorrecta.
 
-La primera corrida hardening real mostró que el contrato técnico puede estar verde y aun existir errores semánticos sistemáticos. El prompt visual aplica desde cal-001 un procedimiento conservador: primero decide si existe UML de clases accionable; notas, listas, círculos y flechas libres no bastan. Ante duda devuelve una propuesta vacía que el backend convierte en `NO_ACTIONABLE_UML`.
-
-Los tipos escritos después de `:` se preservan mediante un mapeo explícito (`UUID`, `Boolean`, `Decimal`, etc.) y STRING deja de ser un fallback permitido cuando hay un tipo visible distinto. Las multiplicidades se leen por extremo y GENERALIZATION se canonicaliza con `source=subclase`, `target=superclase`, porque el triángulo hueco apunta a la superclase. Estas reglas permanecen en el adaptador/prompt; no agregan una ruta de mutación ni autoridad nueva al VLM.
-
-El dataset también se audita como parte de la calibración: `shadow-association.png` representa visualmente `Cliente — Factura`, por lo que su oracle debe reflejar ese diagrama y no otro fixture.
-
-<!-- CU09-CAL-010-HYBRID-CV-GEOMETRY -->
-## Cal-010 — geometría híbrida para diagramas densos (histórico)
-
-Las corridas de la pizarra real mostraron una separación estable de capacidades: Qwen3-VL-4B reconoce clases y atributos, pero seguir líneas largas/cruzadas y leer multiplicidades pequeñas es menos fiable. Cal-010 deja de pedir al VLM que sea simultáneamente OCR, detector geométrico y reconstruidor del grafo.
-
-El modo entonces experimental `hybrid-cv` usaba tres fuentes de evidencia:
+Cal-011 fija la autoridad así:
 
 ```text
-imagen original
-   |
-   +--> semantic pass Qwen3-VL-4B
-   |      -> VisionClassProposal[] + atributos
-   |
-   +--> class localization pass (lista cerrada de refs)
-          -> bbox por clase
-          -> VisionClassLocalizationValidator
-                 |
-                 v
-          OpenCvUmlDiagramGeometryAnalyzer
-          - adaptive threshold
-          - supresión completa de cajas/clase
-          - cierre morfológico 0/45/90/135 grados
-          - HoughLinesP
-          - merge de fragmentos casi colineales
-          - clustering de endpoints
-          - crossing != junction
-          - contacto contra borde
-          - sólo componentes que tocan exactamente 2 clases
-                 |
-                 v
-          VisionGeometryEdgeCandidate[]
-                 |
-                 v
-          RelationshipEvidenceSheetRenderer
-          -> crop del par + crops ampliados de ambos endpoints
-                 |
-                 v
-          Qwen local annotation
-          -> edgeId fijo + type + markerAt + multiplicidades
-                 |
-                 v
-          VisionHybridProposalAssembler
-                 |
-                 v
-          VisionUmlProposal canónico
+OpenCV
+ -> detecta B1..Bn físicos
+
+Qwen
+ -> sólo mapea Bx -> classRef
+
+Java
+ -> exige bijección cerrada
 ```
 
-### Fronteras de autoridad
+`OpenCvUmlClassRegionDetector` reconstruye rectángulos exteriores y compartimentos mediante threshold/contours, companion chains y soporte Hough/raster. No conoce nombres de clases.
 
-- La pasada semántica puede declarar clases/atributos, pero sus relaciones se reemplazan en modo híbrido.
-- La localización recibe refs cerrados; no puede crear ni renombrar clases.
-- OpenCV no conoce nombres UML: sólo `B1`, `B2`, segmentos y contactos.
-- La anotación local sólo puede devolver `edgeId` generados por Java. No puede escoger un tercer endpoint.
-- Un componente que toca más de dos cajas se considera ambiguo y se descarta en vez de inferir una conexión.
-- Una intersección de segmentos en su parte media no es un junction; sólo endpoints suficientemente próximos se agrupan.
-- JSON truncado, refs/edgeIds inventados, marker incompatible o multiplicidad inválida siguen siendo fail-closed.
+El VLM no puede inventar nuevos `geometryId`, repetir mappings ni producir coordenadas.
 
-### Por qué OpenCV se mantiene CPU-only
+## 6. Topología: geometry es autoridad de conectividad
 
-Qwen3-VL-4B ya usa aproximadamente 5.4 GiB de la GTX 1660 SUPER. Cal-010 no añade YOLO/HAWP/PyTorch ni otro modelo GPU. `org.openpnp:opencv:4.9.0-0` empaqueta bindings Java + natives y sólo se carga cuando el modo híbrido se ejecuta.
+Cal-012 establece que `OpenCvUmlDiagramGeometryAnalyzer` es la autoridad de pares físicos.
 
-### Activación
+Principios:
 
-Esta etapa conservaba `dense-hybrid.enabled=false` hasta obtener evidencia. Cal-014 activa hybrid-CV por defecto; `fallback-to-semantic=true` conserva el retorno al semantic pass con warning.
+- un crossing sin junction no crea conexión;
+- se aceptan bridges/fallback raster únicamente con evidencia local suficiente;
+- la geometría trabaja con pares de regiones físicas, todavía sin decidir semántica UML;
+- el VLM no puede eliminar un edge físicamente confirmado ni crear un tercer endpoint.
 
-<!-- CU09-CAL-011-CV-FIRST-CLASS-REGIONS -->
-## Cal-011 — CV-first class regions
+En la pizarra focal la auditoría final identificó 6 conectores físicos reales y 0 extras. El antiguo oracle `Usuario-Libro` se corrigió porque ese conector no estaba dibujado.
 
-La evidencia de Cal-010 mostró que el VLM reconoce nombres/contenido de las clases pero no debe ser autoridad de coordenadas de píxel. El pipeline híbrido invierte esa frontera:
+## 7. Anotación per-edge
+
+Cada edge físico se clasifica de forma independiente y stateless.
+
+La etapa decide:
+
+- `ASSOCIATION` / `AGGREGATION` / `COMPOSITION` / `GENERALIZATION` cuando corresponde;
+- marker/orientación permitida por el contrato.
+
+El schema exige exactamente una clasificación para el edge dado. La inferencia no decide existencia física.
+
+## 8. Multiplicidades: transcription + attribution
+
+### 8.1 Transcription
+
+Cada endpoint se procesa de forma independiente. Qwen sólo devuelve un `rawLabel` pequeño (`1`, `*`, `0..*`, `1..*`, etc.) o `null`.
+
+Java convierte posteriormente ese string mediante `VisionMultiplicityParser`.
+
+### 8.2 Competitor-conditioned source
+
+Un problema real apareció cuando dos conectores incidían cerca de la misma clase. Un label legítimo de E4 contaminaba E6.
+
+La solución final construye máscaras geométricas deterministas:
 
 ```text
-Qwen semantic pass
-    -> clases/atributos
-OpenCV class-region detector
-    -> B1..Bn + bbox físicos
-Qwen closed mapper
-    -> Bx -> classRef (sin coordenadas)
-Java bijection validator
-    -> regiones mapeadas
-OpenCV geometry analyzer
-    -> masking + segmentos + edge candidates
+current support:
+  guide length = 90 px
+  half width   = 36 px
+  contact rad  = 40 px
+
+competitor:
+  guide length = 90 px
+  half width   = 28 px
+  contact rad  = 40 px
+
+suppression = competitorMask AND NOT currentSupportMask
 ```
 
-`OpenCvUmlClassRegionDetector` detecta rectángulos exteriores con contours sobre threshold adaptativo y suprime compartimentos/nested rectangles. Se exige `detectedBoxes == semanticClasses`; Java no rellena cajas faltantes por proximidad. El mapper VLM recibe un overlay con labels B1..Bn y sólo puede escoger refs existentes. Una mapping repetida, incompleta o inventada falla cerrado.
+La visibilidad de un competitor se decide por el footprint rasterizado que realmente entra al crop, no sólo por si su centerline está dentro.
 
-Para depuración, el benchmark escribe `class-regions.json`, `class-regions-threshold.png`, `class-regions.png` y `mapping.json` antes de la fase de relaciones. `-HybridGeometryOnly` detiene el experimento después de reconstruir la geometría para validar esta frontera de forma aislada.
+### 8.3 Attribution
+
+Si transcription devuelve label no nulo, una segunda inferencia recibe:
+
+- LABEL SOURCE;
+- CLASS CONTEXT;
+- current edge;
+- competing edge IDs.
+
+Devuelve `owner = edgeId | AMBIGUOUS | NONE`.
+
+Java sólo acepta la multiplicidad cuando:
+
+```text
+owner == current edgeId
+```
+
+No existe regla especial que elimine multiplicidades por ser aggregation/composition; UML permite multiplicidades en asociaciones de agregación/composición.
+
+## 9. Identificadores visuales y contrato de código
+
+Cal-017 descubrió una frontera adicional durante el smoke real:
+
+```text
+texto leído de la imagen    identificador válido del modelo
+Categoría                    Categoria
+Préstamo                     Prestamo
+añoPublicacion                anoPublicacion
+```
+
+La evidencia visual debe permanecer literal. No se obliga al VLM a “escribir sin tildes”.
+
+Antes de cruzar desde `VisionUmlProposal` a `AssistantSemanticPlan`, el compiler canonicaliza determinísticamente nuevos nombres de clase, atributos y custom types al contrato de código del dominio.
+
+El `ProjectDocumentValidator` no se relajó.
+
+## 10. Grounding, compiler y executable gate
+
+Antes de producir un comando:
+
+- las refs deben existir;
+- evidence debe respaldar símbolos;
+- bounding boxes, cuando existen, deben estar dentro de la imagen;
+- conflictos con elementos existentes se resuelven conservadoramente;
+- nombres del modelo deben cumplir el contrato de código.
+
+El benchmark de estrategia `original` incorpora un executable gate:
+
+```text
+AssistantSemanticPlan
+ -> resolve BATCH
+ -> preview
+ -> ProjectDocumentValidator
+```
+
+Un plan semánticamente equivalente pero no ejecutable no puede considerarse Exact.
+
+## 11. Estados de salida
+
+```text
+sin UML accionable           -> NO_ACTIONABLE_UML, command=null
+sin cambios respecto modelo  -> NO_CHANGES,       command=null
+cambios válidos              -> READY,            BATCH + preview
+fallo híbrido                -> VISION error,      no preview
+conflicto revisión           -> revision conflict, no Apply
+```
+
+## 12. Fail-closed y rollback
+
+Default productivo:
+
+```text
+CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK=false
+```
+
+Si el routing ya seleccionó hybrid-CV:
+
+- error de transporte se conserva como `TRANSPORT`;
+- error contractual/interno se representa como `OUTPUT_CONTRACT`;
+- no se retorna la propuesta semantic-only inicial;
+- la UI ofrece `Analizar nuevamente`.
+
+Rollback/debug explícito:
+
+```text
+CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK=true
+```
+
+## 13. Concurrencia
+
+La revisión se protege en varias fronteras:
+
+1. antes de iniciar Vision;
+2. después de terminar la inferencia y antes de devolver preview;
+3. frontend antes de Apply;
+4. `ProjectCollaborationService` al recibir `ProjectOperation`.
+
+Un plan stale no se rebasea automáticamente y ningún child del BATCH se persiste parcialmente.
+
+## 14. Apply y persistencia
+
+`AssistantImagePlanService` no persiste.
+
+`READY` contiene el mismo BATCH que se usa para preview. Al aceptar:
+
+```text
+BATCH
+ -> Command Bus
+ -> ProjectOperation(baseRevision)
+ -> ProjectCollaborationService.apply
+ -> ProjectCommandExecutor
+ -> ProjectDocumentValidator
+ -> repository/save
+```
+
+Un BATCH completo incrementa la revisión exactamente una vez, aunque contenga múltiples child commands.
+
+Cal-016 demostró que el documento reabierto es exactamente igual al preview determinista del BATCH aplicado.
+
+## 15. Diagnostics
+
+Producción usa `collectDiagnostics=false` y evita generar/retener artifacts pesados que sólo sirven para calibración.
+
+Benchmark/geometry mode conserva diagnostics como:
+
+- class regions;
+- mapping;
+- geometry;
+- segments/overlay;
+- relationship panels;
+- conditioned transcription panels;
+- mask diagnostics;
+- attribution panels;
+- multiplicity observations.
+
+## 16. Runtime validado
+
+```text
+Model: Qwen3-VL-4B-Instruct Q4_K_M
+Vision endpoint: 127.0.0.1:8094
+semantic tokens: 3200
+mapping:         1200
+relationship:     512
+multiplicity:     128
+```
+
+La corrida focal final observó ~5.4 GiB de VRAM (5455 MiB en la corrida 3/3).
+
+## 17. Evidencia y trazabilidad
+
+- especificación del CU: `docs/puds/use-cases.md`;
+- cierre del Ciclo 2: `docs/puds/cycles/cycle-02-elaboration.md`;
+- incrementos: `docs/puds/iterations/cycle-02/C2-cu09-001..003`;
+- selección de modelo: `docs/evidence/cu09/vision-model-selection.md`;
+- class regions: `docs/evidence/cu09/cv-first-class-regions.md`;
+- evolución híbrida: `docs/evidence/cu09/hybrid-cv-geometry.md`;
+- cierre integral: `docs/evidence/cu09/cu09-closure-report.md`;
+- evidencia estructurada: `docs/evidence/cu09/cu09-acceptance.json`.

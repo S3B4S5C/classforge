@@ -1,134 +1,161 @@
-# C2-cu09-003 — Vision UX, hardening y E2E closure
+# C2-cu09-003 — UX, hardening, E2E y cierre de Imagen -> UML
 
-**Estado del incremento:** IMPLEMENTADO / VALIDACIÓN REAL PENDIENTE  
-**CU asociado:** CU-09 — Crear UML desde imagen/fotografía  
-**Decisión de proceso:** terminar toda la implementación antes de calibrar y seleccionar definitivamente el VLM.
+**Caso de uso:** CU-09 — Crear UML desde imagen/fotografía  
+**Estado final:** COMPLETADO  
+**Fecha de cierre:** 5 de septiembre de 2026
 
 ## Objetivo
 
-Completar el alcance funcional de Imagen → UML y dejar preparados los mecanismos de experimentación y aceptación necesarios para cerrar CU-09 después de iterar el modelo visual. Este incremento no convierte una corrida no realizada en evidencia ni marca el CU como cerrado.
+Completar la experiencia de producto y cerrar los riesgos que permanecían después de conectar el VLM: preparación de imagen, estados seguros, geometría densa, multiplicidades, política de fallo, aplicabilidad del plan, concurrencia y persistencia canónica.
 
-## Alcance implementado
+## UX entregada
 
-- preparación de imagen desde selector, drag & drop, clipboard y cámara compatible;
-- rotación, recorte conservador y reset local;
-- cancelación/retry de análisis sin mutación;
-- overlay de `VisionEvidence` cuando el proposal incluye bounding boxes;
-- confidence visible únicamente como información;
-- validación backend de bounding boxes contra dimensiones normalizadas;
-- disposiciones `READY`, `NO_CHANGES` y `NO_ACTIONABLE_UML`;
-- `command=null` para resultados sin cambios accionables;
-- omisión conservadora de conflictos explícitos con atributos/relaciones existentes;
-- dataset hardening y benchmark reutilizando el comparador semántico de CU09-002;
-- modo exploratorio sin thresholds;
-- E2E determinista de producto imagen → plan → BATCH → `ProjectCollaborationService.apply` → persistencia → reopen;
-- agregador de aceptación final con gates y regresión CU-08.
+- selector de archivo;
+- drag & drop;
+- clipboard;
+- cámara compatible;
+- rotación;
+- crop conservador;
+- reset;
+- cancelación/retry;
+- evidence overlay cuando existe geometría;
+- `READY`, `NO_CHANGES` y `NO_ACTIONABLE_UML`;
+- `command=null` cuando no hay cambios accionables;
+- botón `Analizar nuevamente` ante fallo de Vision.
 
-## No cambia
+La preparación de imagen no muta `ProjectDocument`.
 
-La única ruta de mutación continúa siendo:
-
-```text
-VisionUmlProposal
- -> grounding/compiler
- -> AssistantSemanticPlan
- -> UmlAssistantCommandResolver
- -> BATCH/preview
- -> Apply
- -> Command Bus
- -> ProjectDocument
-```
-
-No existe `VisionApply`, Image Command Bus ni escritura directa desde el VLM. Las imágenes tampoco pasan a formar parte de `ProjectDocument`.
-
-Cal-016 confirma que el E2E determinista de producto atraviesa
-`ProjectCollaborationService.apply`. El acceptance real-VLM se conectó a esa
-misma ruta canónica, pero su ejecución real sigue pendiente del gate de
-acceptance. El incremento permanece IMPLEMENTADO / VALIDACIÓN REAL PENDIENTE.
-
-## Política para cambios existentes
-
-Si una clase/atributo/relación visual ya está representada, se omite y puede conducir a `NO_CHANGES`. Si la imagen contradice explícitamente tipo, visibilidad, nullability, identifier o multiplicidad de un elemento existente, CU09 no realiza un update silencioso: produce warning y omite ese cambio.
-
-## Fase de calibración posterior
-
-Aplicar este parche no requiere Qwen3-VL levantado. Los tests deterministas usan gateways fake/local HTTP fake y el build normal no habilita `AssistantVisionAcceptanceIntegrationTest`.
-
-Para empezar la calibración después de terminar la implementación:
-
-```powershell
-pwsh -NoProfile -File .\scripts\assistant-vision-explore.ps1 -Attempts 2 -VerboseAttempts
-```
-
-Puede repetirse cambiando `-ModelLabel`, modelo cargado, cuantización y/o prompt. Los thresholds son 0 en este modo para que los reportes informen el resultado sin bloquear la iteración.
-
-## Aceptación de cierre
-
-Cuando la calibración termine:
-
-```powershell
-pwsh -NoProfile -File .\scripts\assistant-vision-acceptance.ps1 -Attempts 2 -VerboseAttempts
-```
-
-Gates iniciales:
-
-- regression semantic exact >= 95 %;
-- holdout semantic exact >= 85 %;
-- hardening semantic exact >= 75 %;
-- schema valid = 100 %;
-- safety invalid-image = 100 %;
-- E2E real de persistencia verde;
-- regresión de CU-08 verde.
-
-Los thresholds pueden revisarse documentalmente si la evidencia demuestra que una métrica distinta representa mejor el riesgo, pero no deben reducirse ad hoc para fabricar un PASS.
-
-## Estado PUDS
-
-Después de aplicar CU09-003:
+## Arquitectura final del análisis visual
 
 ```text
-CU-09: EN PROGRESO
+imagen validada/normalizada
+  -> semantic first pass Qwen3-VL
+  -> si <4 clases: semantic-only
+  -> si >=4 clases:
+       OpenCV class regions B1..Bn
+       -> closed Bx -> classRef mapping
+       -> OpenCV physical relationship topology
+       -> per-edge type/marker classification
+       -> per-endpoint conditioned transcription
+       -> explicit connector attribution
+       -> Java multiplicity parser
+  -> VisionUmlProposal
+  -> code identifier canonicalization
+  -> grounding/compiler
+  -> AssistantSemanticPlan
+  -> BATCH + preview
+```
+
+### Autoridad física
+
+OpenCV/Java posee la topología física del modo híbrido. El VLM puede clasificar un edge ya confirmado y leer texto local, pero no añadir o eliminar arbitrariamente pares físicos.
+
+### Multiplicidades
+
+La solución final no usa reglas semánticas como “aggregation no tiene multiplicidad”. Cada endpoint se procesa visualmente. Cuando varios conectores inciden cerca de una clase, Java condiciona el crop suprimiendo evidencia exclusiva de competidores; si existe un label, una segunda inferencia lo atribuye explícitamente a un edge. Java sólo acepta la multiplicidad si `owner == current edgeId` y luego la parsea determinísticamente.
+
+## Calibraciones principales
+
+| Cal | Resultado |
+|---|---|
+| 011 | class regions físicas reconstruidas; VLM deja de producir bbox |
+| 012 | 6 pares físicos reales en la pizarra focal, 0 extras |
+| 013 | anotación per-edge y multiplicidades; 3/3 Exact |
+| 014 | hybrid-CV productivo por defecto para >=4 clases |
+| 015 | fail-closed por defecto; fallback semántico sólo rollback/debug |
+| 016 | E2E por autoridad colaborativa real |
+| 017 | canonicalización de nombres visuales + executable plan gate |
+
+## Política fail-closed
+
+Producción usa:
+
+```text
+hybrid enabled = true
+minClasses = 4
+fallback-to-semantic = false
+```
+
+Si el routing ya seleccionó hybrid-CV y una etapa falla:
+
+- `TRANSPORT` se conserva como `VISION/TRANSPORT`;
+- error contractual/interno se representa como `VISION/OUTPUT_CONTRACT`;
+- no se devuelve la propuesta semántica inicial;
+- no existe preview ni Apply;
+- la UI permite reintentar.
+
+Los diagramas con menos de cuatro clases usan semantic-only por estrategia, no por fallback.
+
+## Cal-016 — E2E canónico
+
+Los tests integrados prueban el flujo real:
+
+```text
+AssistantImagePlanService.plan
+ -> READY + BATCH + baseRevision
+ -> preview del mismo BATCH
+ -> ProjectOperationRequest
+ -> ProjectCollaborationService.apply
+ -> ProjectCommandExecutor
+ -> validate
+ -> save
+ -> reopen
+```
+
+Se verificó:
+
+- `plan()` no persiste;
+- preview == documento persistido/reabierto;
+- BATCH con múltiples hijos => exactamente `revision + 1`;
+- stale plan => `REVISION_CONFLICT`;
+- stale rejection => 0 mutación parcial assistant;
+- cambio de revisión durante Vision => no `READY`.
+
+El acceptance con VLM real quedó cableado a la misma autoridad de Apply, aunque no se ejecutó como corrida final archivada en este corte.
+
+## Cal-017 — identificadores visuales vs. dominio
+
+El smoke real detectó una brecha que el benchmark semántico no veía: Qwen podía leer correctamente `Categoría`, `Préstamo` y `añoPublicacion`, pero `ProjectDocumentValidator` exige identificadores `^[A-Za-z_][A-Za-z0-9_]*$`.
+
+La corrección preserva dos verdades distintas:
+
+```text
+EVIDENCIA VISUAL        IDENTIFICADOR DEL MODELO
+Categoría               Categoria
+Préstamo                Prestamo
+añoPublicacion           anoPublicacion
+```
+
+La adaptación ocurre determinísticamente en la frontera del compiler; no se restringe la transcripción del VLM y no se relaja el dominio. El benchmark añadió un executable gate para evitar que un plan semánticamente exacto sea declarado válido si no puede producir un preview aceptado por el dominio.
+
+## Smoke manual final
+
+Los cinco checks de producto fueron ejecutados y aprobados:
+
+1. **Happy path:** la misma pizarra real del benchmark llegó a `READY`, se previsualizó, aplicó y persistió tras reload/reopen.
+2. **Preparación de imagen:** selector/drag & drop y controles rotate/crop/reset/cancel no mutaron el proyecto antes de Apply.
+3. **Fail-closed + retry:** con Vision detenido no hubo preview ni mutación; `Analizar nuevamente` permitió recuperarse al restaurar el runtime.
+4. **Stale plan:** un plan generado sobre una revisión vieja fue rechazado y pudo regenerarse.
+5. **Permisos:** OWNER y EDITOR pudieron usar el flujo; un usuario sin edición no pudo mutar el proyecto.
+
+## Evidencia de benchmark focal
+
+Después de fix-011, antes del smoke de canonicalización, el fixture `library-whiteboard-realistic` obtuvo 3/3 Exact con todas las métricas estructurales al 100 %. Cal-017 cerró posteriormente la brecha de aplicabilidad descubierta por la UI.
+
+## Validación adicional diferida
+
+Se había propuesto medir al menos dos pizarras reales adicionales para obtener un porcentaje de generalización. Esa campaña no se ejecutó antes de la decisión de cierre y no se presenta como evidencia realizada. También quedó sin una ejecución archivada post-Cal-017 del agregador completo `assistant-vision-acceptance.ps1`.
+
+La decisión de cierre acepta explícitamente ese riesgo residual porque el caso de uso funcional, su seguridad de mutación, concurrencia, persistencia y smoke real quedaron demostrados.
+
+## Estado PUDS final
+
+```text
 C2-cu09-001: COMPLETADO
-C2-cu09-002: IMPLEMENTADO / CALIBRACIÓN PENDIENTE
-C2-cu09-003: IMPLEMENTADO / VALIDACIÓN FINAL PENDIENTE
-```
-
-Después de una aceptación real verde se crea/actualiza la evidencia y recién entonces se promueve:
-
-```text
+C2-cu09-002: COMPLETADO
+C2-cu09-003: COMPLETADO
 CU-09: CERRADO
+Ciclo 2: CERRADO
 ```
 
-## Definition of Done técnico del parche
-
-- código de UX/hardening/E2E presente;
-- tests deterministas CU09 verdes;
-- backend `clean build` verde;
-- frontend build verde;
-- ninguna prueba real de VLM exigida durante la aplicación;
-- scripts de exploración y aceptación disponibles;
-- documentación expresa que el cierre formal depende de evidencia posterior.
-
-
-## Cal-001 — primera iteración sobre evidencia real
-
-La primera ejecución hardening posterior a la implementación obtuvo infraestructura 100 % estable pero `semantic exact=42.9 %` y `safety invalid=0 %`. No se cambia de modelo todavía: primero se endurece el prompt del baseline 2B contra cuatro patrones observados (tipos explícitos, multiplicidades, GENERALIZATION y rechazo de no-UML).
-
-Durante la revisión se detectó además un error de ground truth: `shadow-association.png` muestra `Cliente(email:String) — Factura(total:Decimal)`, mientras el manifest esperaba `Pedido — LineaPedido`. Cal-001 corrige el manifest para que el benchmark mida al modelo y no una expectativa equivocada. CU-09 continúa `EN PROGRESO` hasta repetir explore y, finalmente, ejecutar acceptance.
-
-
-## Cal-006 — Qwen3-VL-4B seleccionado y hardening de pizarra densa
-
-Se congela Qwen3-VL-4B-Instruct Q4_K_M como candidato seleccionado para CU-09. La decisión se basa en evidencia reproducible: el 4B obtuvo 100 % semantic exact en regression y holdout, 100 % safety y completó 2/2 respuestas estructuradas de la pizarra real con 3200 tokens; el 2B truncó 2/2 aun con 4000 tokens. La selección no cierra CU-09: la topología y multiplicidades de la pizarra real siguen en calibración.
-
-Cal-006 no relaja el fail-closed. Ajusta el contrato de grounding para aceptar un atributo cuando su `evidence.label` individual sufre un artefacto de separador pero el `evidence` de la clase contenedora respalda exactamente el símbolo; si ninguno lo respalda, se rechaza. `NO_ACTIONABLE_UML` pasa a ser incoherencia rechazable cuando coexistente con clases o relaciones.
-
-El prompt se endurece sin cambiar el schema ni el compiler:
-
-- atributo sin tipo visible => `dataType` omitido; no inferir DATE/INTEGER por nombre;
-- evidence de atributo corto/literal, sin prefijar la clase;
-- relaciones densas trazadas físicamente extremo a extremo; cruces sin nodo no conectan;
-- segunda pasada exclusiva para conexiones faltantes y multiplicidades;
-- `NO_ACTIONABLE_UML` solo con `classes=[]` y `relationships=[]`.
-
-La acceptance formal se ejecutará únicamente después de volver verde el caso focal de pizarra y repetir las suites completas.
+La evidencia detallada está en `docs/evidence/cu09/cu09-closure-report.md`.

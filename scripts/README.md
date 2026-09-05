@@ -144,7 +144,7 @@ Cuando el VLM ya esté calibrado:
 pwsh -NoProfile -File .\scripts\assistant-vision-acceptance.ps1 -Attempts 2 -VerboseAttempts
 ```
 
-La aceptación agrega regression >=95 %, holdout >=85 %, hardening >=75 %, schema/safety 100 %, E2E real y regression CU-08. Produce `backend/build/reports/assistant-vision/cu09-acceptance.json`. Ese reporte, y no la mera aplicación del parche, es la evidencia que habilita cerrar formalmente CU-09.
+La aceptación agrega regression >=95 %, holdout >=85 %, hardening >=75 %, schema/safety 100 %, E2E real y regression CU-08. Produce `backend/build/reports/assistant-vision/cu09-acceptance.json`. Sigue siendo la forma recomendada de generar una corrida agregada. El cierre funcional de CU-09 del 5 de septiembre de 2026 quedó documentado en `docs/evidence/cu09/cu09-acceptance.json`; la ejecución archivada post-Cal-017 de este agregador quedó explícitamente diferida y no debe presentarse como realizada.
 
 ### Pizarra real: original vs crop vs tiles (CU09-Cal-009)
 

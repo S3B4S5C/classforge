@@ -1,6 +1,6 @@
 # Casos de uso de ClassForge — especificación vigente
 
-**Corte:** 29 de agosto de 2026.
+**Corte:** 5 de septiembre de 2026.
 
 Este documento es la fuente normativa de los casos de uso.
 
@@ -13,7 +13,7 @@ En ClassForge llamamos **Ciclo** a una **iteración PUDS**.
 ```text
 Fase: Elaboración
 Ciclo 1: CERRADO
-Ciclo 2: ABIERTO
+Ciclo 2: CERRADO
 ```
 
 ## 2. Actores
@@ -55,7 +55,7 @@ Participa en validación, persistencia, auditoría y generación.
 | CU-06 | Colaborar en tiempo real | CERRADO |
 | CU-07 | Visualizar presencia colaborativa | CERRADO |
 | CU-08 | Crear/modificar UML mediante lenguaje natural y voz | CERRADO |
-| CU-09 | Crear UML desde imagen/fotografía | EN PROGRESO |
+| CU-09 | Crear UML desde imagen/fotografía | CERRADO |
 | CU-10 | Importar XMI de Enterprise Architect | PLANIFICADO |
 | CU-11 | Exportar XMI para Enterprise Architect | PLANIFICADO |
 | CU-12 | Transformar UML a modelo relacional | PLANIFICADO |
@@ -228,13 +228,88 @@ Backend valida credenciales y emite JWT para sesión stateless.
 
 Backend deriva usuario actual del token y solo devuelve proyectos cuyo `ownerId` coincide.
 
-## 6. Casos planificados / en progreso
+## 6. CU-09 cerrado y casos posteriores
 
-### CU-09 — Imagen a UML
+### CU-09 — Crear UML desde imagen/fotografía
 
-**Estado:** EN PROGRESO.
+**Estado:** CERRADO.  
+**Actor principal:** Modelador con permiso de edición (`OWNER` o `EDITOR`).  
+**Actor de soporte:** Sistema local de visión (`llama.cpp` + Qwen3-VL), backend ClassForge y servicios de colaboración.
 
-Interpretar fotografía/imagen y producir propuesta estructurada editable. La implementación funcional y la activación productiva hybrid-CV para diagramas densos están completas; CU-09 permanece EN PROGRESO hasta E2E real, UX smoke, broader-board acceptance y cierre final.
+#### Propósito
+
+Permitir que el usuario capture, pegue o seleccione una imagen/fotografía de un diagrama de clases UML y obtenga una propuesta estructurada, revisable y aplicable sobre el mismo `ProjectDocument` utilizado por el modelado manual, realtime y el Asistente de texto/voz.
+
+El caso de uso no convierte la imagen ni el VLM en fuente de verdad. La salida visual debe converger en `AssistantSemanticPlan -> BATCH -> preview -> Apply -> ProjectDocument`.
+
+#### Precondiciones
+
+1. El usuario está autenticado.
+2. El usuario tiene acceso de edición al proyecto como OWNER o EDITOR.
+3. El proyecto está abierto y dispone de una revisión conocida.
+4. La imagen cumple el contrato PNG/JPEG/WEBP y los límites de tamaño/dimensiones.
+5. Para el flujo con modelo real, el runtime multimodal local está disponible en la configuración de Vision.
+
+#### Flujo principal
+
+1. El usuario prepara una imagen mediante selector, drag & drop, clipboard o cámara compatible.
+2. Puede rotar, recortar conservadoramente o restaurar la imagen antes de enviarla.
+3. Frontend envía la imagen junto con `baseRevision`.
+4. Backend valida firma, formato, tamaño y dimensiones; normaliza orientación y representación cuando corresponde.
+5. Qwen3-VL ejecuta una primera lectura semántica de clases y atributos visibles.
+6. Si se detectan menos de cuatro clases, ClassForge conserva la estrategia semantic-only.
+7. Si se detectan cuatro o más clases, entra `hybrid-cv`:
+   - OpenCV detecta regiones físicas de clases `B1..Bn`;
+   - Qwen realiza un mapping cerrado `Bx -> classRef`;
+   - OpenCV reconstruye pares físicos de relaciones;
+   - Qwen clasifica por edge el tipo/marker;
+   - cada endpoint usa transcription condicionada por competidores;
+   - una atribución explícita decide a qué edge pertenece el label;
+   - Java parsea multiplicidades de forma determinista.
+8. El resultado se ensambla como `VisionUmlProposal` con evidencia visual.
+9. La frontera de compilación adapta identificadores visuales a nombres compatibles con código sin modificar la evidencia literal.
+10. Grounding/compiler producen `AssistantSemanticPlan`.
+11. `UmlAssistantCommandResolver` genera un `BATCH` canónico y calcula preview sobre la revisión base.
+12. Si no hay cambios accionables se devuelve `NO_ACTIONABLE_UML` o `NO_CHANGES` con `command=null`.
+13. Si hay cambios válidos se devuelve `READY` con `baseRevision`, plan, evidencia, warnings, `BATCH` y preview.
+14. El usuario revisa y pulsa `Apply`.
+15. El mismo `BATCH` pasa por Command Bus/`ProjectOperation` y `ProjectCollaborationService`.
+16. Backend verifica permisos y revisión, ejecuta el BATCH, valida `ProjectDocument`, persiste una vez e incrementa la revisión exactamente una vez.
+17. Al reabrir el proyecto, el `ProjectDocument` persistido reproduce el preview aceptado.
+
+#### Flujos alternos y fallos seguros
+
+- **Imagen sin UML accionable:** `NO_ACTIONABLE_UML`; no hay comando ni mutación.
+- **La imagen no aporta cambios nuevos:** `NO_CHANGES`; no hay comando ni mutación.
+- **Runtime Vision no disponible / transporte:** error `VISION` con `visionReason=TRANSPORT`; no hay semantic fallback después de haber seleccionado hybrid-CV; la UI permite `Analizar nuevamente`.
+- **Salida VLM/contrato inválido:** error `VISION` con `visionReason=OUTPUT_CONTRACT`; no hay proposal aplicable.
+- **Revisión cambia durante la inferencia:** se rechaza antes de preview.
+- **Plan se vuelve stale antes de Apply:** `REVISION_CONFLICT`; ningún child del BATCH se persiste parcialmente.
+- **Usuario sin edición:** se rechaza antes de mutar el proyecto.
+- **Conflicto con elemento existente:** se aplica la política conservadora del compiler; no se fuerza un update silencioso.
+
+#### Reglas de autoridad
+
+1. `ProjectDocument/UmlModel` es la fuente de verdad.
+2. JointJS es proyección.
+3. El VLM nunca escribe directamente.
+4. En `hybrid-cv`, OpenCV/Java posee la topología física; el VLM no puede crear endpoints arbitrarios.
+5. Java posee grounding, parser de multiplicidad, canonicalización de identificadores, validación de comandos y control de revisión.
+6. La evidencia visual puede conservar Unicode natural (`Categoría`, `Préstamo`, `añoPublicacion`), pero los identificadores que ingresan al modelo cumplen el contrato de código.
+7. Un BATCH completo representa una única operación colaborativa y una única revisión persistida.
+
+#### Postcondiciones
+
+- Si el usuario no aplica, el proyecto permanece intacto.
+- Si aplica un plan vigente y válido, el modelo canónico queda actualizado y persistido en una revisión nueva.
+- La imagen no se incorpora al `ProjectDocument`.
+- Un fallo o conflicto no produce mutación parcial.
+
+#### Evidencia de aceptación
+
+La evidencia final está consolidada en `docs/evidence/cu09/cu09-closure-report.md` y `docs/evidence/cu09/cu09-acceptance.json`. El fixture realista `library-whiteboard-realistic` obtuvo 3/3 intentos Exact con 100 % en transporte, schema, grounding, clases, atributos, relaciones, multiplicidades, semantic exact y safety; Cal-016 cerró el E2E canónico y el smoke manual final validó happy path, preparación de imagen, fail-closed/retry, stale plan y permisos.
+
+La generalización estadística con dos pizarras adicionales y la ejecución archivada del agregador completo de acceptance se registran como validación adicional diferida y no se presentan como ejecutadas. La aceptación funcional de CU-09 fue concedida con ese riesgo residual explícito.
 
 ### CU-10 — Importar XMI
 Importar subconjunto XMI 2.1 compatible con Enterprise Architect.
@@ -390,29 +465,17 @@ Entidades de referencia:
 
 ## 11. Ciclo 2
 
-Ciclo 2 está formalmente ABIERTO con CU-31 y CU-09.
+El Ciclo 2 está formalmente **CERRADO**.
 
-C2-cu31-001, C2-cu31-002 y C2-cu31-003 están completados. CU-31 está CERRADO y CU-09 es el siguiente caso del Ciclo 2.
+```text
+CU-31: CERRADO
+CU-09: CERRADO
+```
 
-El historial del plan original se conserva en `history/`.
+C2-cu31-001/002/003 cerraron colaboración entre cuentas reales. C2-cu09-001/002/003 y las calibraciones Cal-011..017 cerraron la entrada visual al modelo canónico.
 
-<!-- CU08-FIX-013-NATIVE-TOOLS -->
-### Histórico de decisión post-CU08 — evaluación de tool calling nativo
+La evidencia detallada del cierre de Imagen -> UML está en `docs/evidence/cu09/cu09-closure-report.md`.
 
-Durante fix-013, con CU-08 ya CERRADO y antes de CU-09, se evaluó sustituir el contrato LLM -> `AssistantSemanticPlan` por un catálogo de tools UML nativas. El candidato conservó preview/Apply/Command Bus y obligó a resolver referencias existentes contra UUID reales. El planner anterior se mantuvo únicamente para benchmark A/B y fue retirado en fix-014 después de que native tools demostrara mayor fiabilidad y safety 100 %. Este bloque se conserva como evidencia histórica; la arquitectura vigente es la documentada en la nota fix-014 siguiente.
+La validación multi-pizarra adicional y una corrida archivada post-Cal-017 del agregador completo de acceptance quedan registradas como riesgo residual aceptado, no como evidencia ejecutada.
 
-<!-- CU08-FIX-014 -->
-**Nota CU-08:** la implementación final de texto/voz usa native tool calling como única ruta LLM. `AssistantSemanticPlan` es representación interna y toda mutación continúa convergiendo en preview + BATCH + Command Bus. Se admiten peticiones compuestas dentro de las operaciones UML soportadas.
-
-<!-- CU08-FIX-014-V1.6-FINAL-HOLDOUT -->
-**Evidencia vigente CU-08:** después de fix-014 v1.6, la suite holdout obtuvo `33/33 = 100.0 %`, con `SAFETY_UNKNOWN_REFERENCE=100 %` y `MULTI_TOOL_COMPOUND=100 %`. El build finalizó correctamente. La regression post-v1.6 de 20 intentos por categoría queda como checkpoint de no regresión antes de abrir formalmente `C2-cu09-001`; CU-09 sigue siendo el siguiente caso funcional.
-
-
-<!-- C2-CU09-003-CLOSURE-IMPLEMENTATION -->
-## 12. Addendum CU-09 — cierre implementado, aceptación pendiente
-
-C2-cu09-003 termina el código previsto para CU-09 antes de iniciar la fase de ajuste empírico del VLM. Las fuentes de imagen soportadas por la UI son selector, drag & drop, paste y cámara del dispositivo cuando el navegador expone `capture`. Rotación y recorte se realizan localmente y producen una nueva imagen normalizada para el endpoint existente; no constituyen una ruta de mutación UML.
-
-La respuesta visual distingue tres disposiciones: `READY` (hay comandos revisables), `NO_CHANGES` (lo reconocido ya está representado) y `NO_ACTIONABLE_UML` (no existe UML respaldado suficiente). Los dos últimos devuelven `command=null`, impiden Apply y preservan el documento. Conflictos explícitos con atributos o relaciones existentes se reportan y omiten de forma conservadora.
-
-La evidencia espacial puede mostrarse como overlay, pero confidence/bounding boxes son telemetría/provenance, no autoridad. El cierre formal queda condicionado a una fase posterior de calibración: ejecutar `assistant-vision-explore.ps1`, iterar modelo/prompt sin usar los gates como objetivo de entrenamiento y, cuando el comportamiento sea estable, ejecutar `assistant-vision-acceptance.ps1`. Solo ese PASS constituye evidencia suficiente para cambiar el estado del CU a `CERRADO`.
+El historial de decisiones previas a CU-09 se conserva en `history/` y en las iteraciones técnicas correspondientes.

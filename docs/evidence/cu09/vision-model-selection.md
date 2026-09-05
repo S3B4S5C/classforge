@@ -1,72 +1,124 @@
-# CU-09 — evidencia de selección del VLM
+# CU-09 — Evidencia de selección del VLM
 
-**Fecha:** 29 de agosto de 2026.
+**Estado:** decisión cerrada.  
+**Fecha de cierre de CU-09:** 5 de septiembre de 2026.
 
 ## Decisión
 
-Runtime visual seleccionado: **Qwen3-VL-4B-Instruct Q4_K_M** sobre llama.cpp/Vulkan, puerto 8094, `--parallel 1`, contexto recomendado 6144.
+Runtime visual seleccionado para CU-09:
 
-La selección es técnica y no equivale todavía a `CU-09 CERRADO`; falta estabilizar la pizarra real y ejecutar acceptance completa.
+```text
+Qwen3-VL-4B-Instruct Q4_K_M
+mmproj Q8_0
+llama.cpp/Vulkan
+puerto 8094
+alias vision-model
+parallel 1
+contexto recomendado 6144
+```
 
-## Evidencia 4B
+La selección del modelo se mantuvo durante las calibraciones posteriores; el trabajo se concentró en cambiar fronteras de autoridad entre VLM, OpenCV y Java, no en seguir escalando el modelo.
 
-- regression: semantic exact 100 %, schema 100 %, grounding 100 %, safety 100 %;
-- holdout: semantic exact 100 %, clases/atributos/relaciones/multiplicidades 100 %, safety 100 %;
-- hardening sintético previo a la pizarra: todos los casos completados PASS exacto;
-- pizarra real focal, 3200 completion tokens / timeout 180 s: 2/2 respuestas transportadas y schema-valid; ambas llegaron a grounding;
-- pico GPU observado en la corrida focal: 5464 MiB.
+## Comparación 2B vs 4B
 
-La pizarra reveló errores restantes de grounding/evidencia y topología, no de transporte/schema. Cal-006 los aborda sin relajar fail-closed.
+### Qwen3-VL-2B
 
-## Evidencia 2B
+En la pizarra realista densa, con timeout 180 s y hasta 4000 completion tokens:
 
-- pizarra real focal, 4000 completion tokens / timeout 180 s: 2/2 respuestas terminaron `OUTPUT_CONTRACT` por truncamiento `max_tokens`;
+- 2/2 intentos terminaron `OUTPUT_CONTRACT` por truncamiento `max_tokens`;
 - pico GPU observado: 4417 MiB.
 
-El 2B queda descartado como runtime principal para CU-09 por no completar de forma estable el caso realista denso con el budget probado.
+El 2B se descartó como runtime principal porque no completó de forma estable el caso realista bajo el budget probado.
 
-## Riesgo y criterio restante
+### Qwen3-VL-4B
 
-El 4B debe todavía demostrar que sigue físicamente las conexiones de diagramas densos, preserva multiplicidades y no infiere tipos ausentes. Después de volver verde `library-whiteboard-realistic`, se repetirán regression + holdout + hardening y finalmente `assistant-vision-acceptance.ps1`.
+Antes del hardening geométrico, el 4B ya había demostrado:
 
+- regression semantic exact 100 %;
+- holdout semantic exact 100 %;
+- safety 100 %;
+- respuestas estructuradas completas sobre la pizarra con 3200 completion tokens;
+- pico GPU alrededor de 5.4 GiB.
 
-## Evidencia posterior a Cal-006
+El problema restante era de topología y multiplicidades, no de transporte/schema.
 
-La corrida focal del 4B después de Cal-006 confirmó que el caso realista ya atraviesa transporte, schema y grounding al 100 % con 3200 completion tokens / 180 s y un pico observado de 5462 MiB.
+## Qué hacía bien el 4B
 
-Lectura semántica observada:
+La evidencia fue estable en:
 
-- clases visibles: 6/6 detectadas; `Categoría`/`Préstamo` difieren del oracle únicamente por diacríticos;
-- atributos visibles: todos los atributos esperados quedaron presentes y los tipos no explícitos permanecieron en `STRING`;
-- topología de asociaciones: 6 de 7 relaciones esperadas estuvieron presentes si se trata `ASSOCIATION` como no dirigida;
-- relación faltante: `Usuario — Libro`;
-- relación espuria: `Categoría — Préstamo`;
-- multiplicidades de la pizarra: omitidas (`null`) en la propuesta;
-- `Biblioteca ◇— Libro` fue reconocido correctamente como `AGGREGATION`.
+- nombres de clases;
+- atributos;
+- tipos cuando eran explícitos;
+- interpretación semántica local de markers;
+- lectura de labels pequeños cuando se le mostraban crops apropiados.
 
-Cal-007 no cambia el VLM seleccionado ni relaja validaciones. Corrige el comparador del benchmark para aplicar la misma normalización conservadora de diacríticos del backend y considerar las asociaciones sin dirección, manteniendo GENERALIZATION/AGGREGATION/COMPOSITION direccionales. Además agrega métricas parciales por elemento para que un único caso denso no aparezca engañosamente como 0 % cuando existe reconocimiento parcial.
+La debilidad principal apareció al pedirle simultáneamente:
 
-La calibración de prompt se limita a trazado físico de líneas y una segunda inspección local de multiplicidades. El objetivo siguiente sigue siendo dejar verde `library-whiteboard-realistic` antes de ejecutar acceptance completa.
+- localizar cajas en píxeles;
+- seguir conectores largos/cruzados;
+- decidir qué multiplicidad pertenece a qué connector.
 
-## Evidencia posterior a Cal-007 y decisión Cal-008
+## Evolución después de la selección
 
-La corrida focal post-Cal-007 confirmó una regresión específica del prompt monolítico: clases y atributos permanecieron en 100 %, pero el refuerzo de trazado dentro de la misma inferencia hizo que el 4B sobreinterpretara conectores como `AGGREGATION 0..1 ↔ 0..1`. La topología cayó respecto a Cal-006. Por tanto Cal-008 conserva las mejoras del comparador de Cal-007, pero revierte únicamente ese refuerzo relacional del prompt principal al comportamiento conservador de Cal-006.
+### Cal-006
 
-Cal-008 introduce una segunda inferencia `relationships-only` para diagramas densos. La primera pasada sigue detectando clases y atributos; si hay al menos cuatro clases y `dense-two-pass-enabled=true`, el mismo Qwen3-VL-4B recibe otra vez la imagen junto con una lista cerrada `ref = clase` y un schema reducido que solo admite relaciones, multiplicidades, warnings y confidence. La segunda pasada no puede crear clases ni usar refs que no hayan sido confirmados en la primera; cualquier ref extraño, JSON truncado o contrato inválido se rechaza fail-closed.
+Se congela el 4B como modelo seleccionado. La pizarra ya atraviesa transporte/schema/grounding, pero topología y multiplicidades siguen incompletas.
 
-El merge conserva clases/atributos de la primera pasada y reemplaza exclusivamente `relationships` con la salida relationships-only. No existe una nueva ruta de mutación: el `VisionUmlProposal` resultante continúa por grounding, evidence bounds, compiler, semantic plan, resolver, preview y Command Bus existentes.
+### Cal-007/008/009
 
-El runner focal permite comparar `single-pass` y `two-pass` sobre la misma pizarra y guarda reportes separados por modelo/modo. Qwen3-VL-4B Q4_K_M continúa siendo el VLM seleccionado; CU-09 permanece EN PROGRESO hasta validar la pizarra con two-pass y repetir acceptance completa.
+Se experimenta con:
 
+- prompt geométrico más explícito;
+- segunda pasada global `relationships-only`;
+- crop/tiles benchmark-only.
 
-## Evidencia post-Cal-008 y decisión Cal-009
+Ninguno supera consistentemente el mejor single-pass en la pizarra real.
 
-El modo two-pass de Cal-008 no supera el mejor single-pass previo sobre `library-whiteboard-realistic`: las clases/atributos permanecen correctos, pero la segunda pasada produjo aproximadamente 4/7 relaciones esperadas por intento, 1 relación espuria y 0 multiplicidades recuperadas. Se descarta por tanto como default de producción y `dense-two-pass-enabled` vuelve a `false`.
+### Cal-010..013
 
-La hipótesis siguiente es de escala/encuadre, no de capacidad textual: la foto original está girada, incluye marco/márgenes y las multiplicidades ocupan pocos píxeles. Cal-009 añade estrategias benchmark-only `board-crop` y `tiles` para medir esa hipótesis sin volver a modificar el prompt ni introducir un merge visual en el runtime. El 4B sigue siendo el modelo seleccionado; el resultado de crop/tiling decidirá si vale la pena diseñar un preprocesamiento visual permanente antes de acceptance.
+Se cambia la arquitectura:
 
-## Cal-010 — decisión híbrida después de los experimentos densos
+```text
+VLM -> semántica local
+OpenCV -> geometría física
+Java -> contratos, matching, parser, fail-closed
+```
 
-El 4B permanece seleccionado. Cal-007 (prompt geométrico), Cal-008 (relationships-only global) y Cal-009 (board-crop) no superaron el mejor single-pass en la topología de la pizarra. Esto desplaza la calibración desde "más prompt" a separación de percepción geométrica y semántica.
+Esto permite mantener el 4B y resolver los fallos sin añadir un segundo modelo GPU.
 
-Cal-010 evalúa OpenCV CPU para derivar únicamente pares físicamente conectados y usa Qwen3-VL-4B sobre una hoja de evidence local para clasificar marker/multiplicidades. La anotación local no puede inventar endpoints. Esta estrategia es experimental y no modifica el VLM seleccionado ni habilita todavía el cierre de CU-09.
+## Evidencia focal final
+
+Fixture `library-whiteboard-realistic`, `hybrid-cv`, estrategia original, 3 intentos consecutivos:
+
+```text
+PASS Exact      3/3
+Transport       100.0 %
+Schema valid    100.0 %
+Grounding       100.0 %
+Classes         18/18, 0 unexpected
+Attributes      51/51, 0 unexpected
+Relationships   18/18, 0 unexpected
+Multiplicity    30/30, 0 unexpected
+Semantic exact  100.0 %
+Safety invalid  100.0 %
+GPU peak        5455 MiB
+Elapsed         8m45s
+```
+
+La memoria observada confirma que el 4B cabe en la GPU de referencia con el resto del diseño CPU-only de OpenCV.
+
+## Configuración productiva asociada
+
+```text
+semantic completion tokens = 3200
+mapping tokens             = 1200
+relationship tokens        = 512
+multiplicity tokens        = 128
+hybrid enabled             = true
+hybrid min classes         = 4
+hybrid fallback            = false
+```
+
+## Conclusión
+
+Qwen3-VL-4B Q4_K_M queda seleccionado no porque resuelva por sí solo toda la reconstrucción UML, sino porque ofrece suficiente capacidad semántica/local cuando se le asignan tareas delimitadas. La precisión final depende de la separación de responsabilidades implementada por Cal-011/012/013.

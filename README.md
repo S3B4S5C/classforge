@@ -8,7 +8,7 @@ La visión completa del producto está en `docs/product/product.md`. El estado r
 
 ## Estado actual
 
-**Ciclo 1 cerrado. Ciclo 2 de Elaboración ABIERTO — CU-31 CERRADO; CU-09 EN PROGRESO.**
+**Ciclos 1 y 2 de Elaboración CERRADOS — CU-31 y CU-09 CERRADOS.**
 
 En ClassForge llamamos **Ciclo** a una **iteración PUDS**.
 
@@ -29,7 +29,7 @@ El incremento ejecutable actual incluye:
 - whisper.cpp como Speech-to-Text local;
 - preview, grounding, validación, BATCH atómico y protección por revisión;
 - health de runtimes locales y diagnóstico del pipeline.
-- CU-09 Imagen -> UML: pipeline local VLM + OpenCV funcional y habilitado por defecto para diagramas densos.
+- CU-09 Imagen -> UML: pipeline local Qwen3-VL + OpenCV + Java, fail-closed, BATCH/preview/Apply canónico y persistencia validada.
 
 También están implementados como infraestructura transversal:
 
@@ -40,16 +40,14 @@ También están implementados como infraestructura transversal:
 
 Aún no están implementados:
 
-- CU-09 cierre final: UX smoke + broader-board/acceptance pending;
 - CU-10/11 XMI Enterprise Architect;
 - CU-12 modelo relacional;
 - CU-13..18 generación backend/frontend/mobile;
 - CU-19..23 voz sobre la aplicación generada;
 - CU-26 auditoría histórica completa;
 - CU-27 demo reproducible formal;
-- CU-31 cerrado: membership, invitaciones, STOMP, presencia y Assistant validados con OWNER/EDITOR/NONE.
 
-CU-31 quedó cerrado en C2-cu31-003. CU-09 — Imagen → UML — está EN PROGRESO: activación productiva, política fail-closed y E2E determinista de producto están completos, pero faltan UX smoke, broader-board/acceptance y cierre final.
+CU-31 quedó cerrado en C2-cu31-003. CU-09 — Imagen → UML — quedó cerrado el 5 de septiembre de 2026 después del hardening hybrid-CV, política fail-closed, E2E canónico, canonicalización de identificadores y smoke manual de producto. La validación multi-pizarra adicional se conserva como recomendación de robustez y no se presenta como evidencia ejecutada.
 
 ## Arquitectura vigente
 
@@ -126,8 +124,9 @@ El proxy Angular reenvía `/api/*` a `http://localhost:8082`.
 ## Runtimes locales del Asistente
 
 ```text
-llama-server   127.0.0.1:8092
-whisper-server 127.0.0.1:8093
+llama-server texto   127.0.0.1:8092
+whisper-server       127.0.0.1:8093
+llama-server Vision  127.0.0.1:8094
 ```
 
 Consultar `docs/runtime/assistant-local.md`.
@@ -152,6 +151,8 @@ Un posible archivo `*.classforge` continúa siendo un formato portable futuro, n
 
 ## Próximo hito
 
-El **Ciclo 2 está formalmente ABIERTO**; CU-31 está cerrado y CU-09 permanece EN PROGRESO.
+Los **Ciclos 1 y 2 están formalmente CERRADOS**. CU-31 y CU-09 están cerrados.
 
-Antes de implementar el siguiente CU se debe seleccionar el objetivo del nuevo ciclo desde `docs/puds/use-cases.md` y registrar su objetivo, riesgos y criterios de salida.
+Antes de implementar el siguiente CU se debe abrir un nuevo Ciclo desde `docs/puds/use-cases.md` y registrar explícitamente su objetivo, riesgos y criterios de salida.
+
+La evidencia completa de CU-09 está en `docs/evidence/cu09/cu09-closure-report.md`.
