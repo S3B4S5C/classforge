@@ -165,7 +165,7 @@ pwsh -NoProfile -File .\scripts\assistant-vision-whiteboard.ps1 -ImageStrategy t
 
 ### Pizarra real: hybrid-cv (CU09-Cal-010)
 
-Cal-010 añade un modo experimental inspirado en pipelines híbridos de extracción de diagramas: Qwen conserva clases/atributos, OpenCV CPU reconstruye candidatos geométricos y una inferencia local anota tipo/multiplicidades. No reemplaza todavía el single-pass por defecto.
+Cal-014 activa hybrid-CV en producción para diagramas densos. Este benchmark conserva selección explícita de modo para comparar `single-pass`, `two-pass` y `hybrid-cv`: Qwen conserva clases/atributos, OpenCV CPU reconstruye candidatos geométricos y una inferencia local anota tipo/multiplicidades.
 
 ```powershell
 pwsh -NoProfile -File .\scripts\assistant-vision-whiteboard.ps1 `

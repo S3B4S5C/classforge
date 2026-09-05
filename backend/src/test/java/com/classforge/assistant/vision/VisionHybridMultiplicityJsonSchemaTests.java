@@ -21,9 +21,13 @@ class VisionHybridMultiplicityJsonSchemaTests {
         assertFalse(schema.get("additionalProperties").asBoolean());
         assertEquals("E7", properties.get("edgeId").get("enum").get(0).asString());
         assertEquals("B", properties.get("endpoint").get("enum").get(0).asString());
+        assertTrue(schema.get("required").toString().contains("confidence"));
+        assertEquals(1, rawLabel.get("minLength").asInt());
         assertEquals(16, rawLabel.get("maxLength").asInt());
         assertEquals("string", rawLabel.get("type").get(0).asString());
         assertEquals("null", rawLabel.get("type").get(1).asString());
+        assertEquals(0, properties.get("confidence").get("minimum").asInt());
+        assertEquals(1, properties.get("confidence").get("maximum").asInt());
         assertFalse(schema.toString().contains("array"));
         assertFalse(schema.get("properties").has("warnings"));
     }

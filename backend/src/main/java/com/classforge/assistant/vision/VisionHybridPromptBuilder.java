@@ -136,19 +136,6 @@ public class VisionHybridPromptBuilder {
                 ).toList());
     }
 
-    @Deprecated
-    public String multiplicityOwnershipSystemPrompt() {
-        return multiplicityAttributionSystemPrompt();
-    }
-
-    @Deprecated
-    public String multiplicityOwnershipUserPrompt(
-            VisionGeometryEdgeCandidate edge, VisionHybridEndpoint endpoint,
-            VisionClassProposal endpointClass, String candidateRawLabel
-    ) {
-        return multiplicityAttributionUserPrompt(edge, endpoint, endpointClass, candidateRawLabel, List.of());
-    }
-
     private String quote(String value) {
         String safe = value == null ? "" : value;
         return "\"" + safe

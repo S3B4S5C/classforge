@@ -234,7 +234,7 @@ Backend deriva usuario actual del token y solo devuelve proyectos cuyo `ownerId`
 
 **Estado:** EN PROGRESO.
 
-Interpretar fotografía/imagen y producir propuesta estructurada editable. C2-cu09-001 implementa upload/validación/normalización y la convergencia canónica; C2-cu09-002 conecta llama.cpp/Qwen3-VL y prepara benchmark reproducible; C2-cu09-003 completa UX, estados seguros sin acción, evidence overlay, hardening y E2E/acceptance tooling. La implementación funcional está completa, pero la calibración real del VLM y la aceptación cuantitativa se ejecutarán después; hasta entonces CU-09 permanece EN PROGRESO.
+Interpretar fotografía/imagen y producir propuesta estructurada editable. La implementación funcional y la activación productiva hybrid-CV para diagramas densos están completas; CU-09 permanece EN PROGRESO hasta E2E real, UX smoke, broader-board acceptance y cierre final.
 
 ### CU-10 — Importar XMI
 Importar subconjunto XMI 2.1 compatible con Enterprise Architect.

@@ -55,14 +55,15 @@ class VisionHybridAnalyzerTests {
             }
 
             @Override
-            public VisionHybridMultiplicityOwnership verifyMultiplicityOwnership(
+            public VisionHybridMultiplicityAttribution attributeMultiplicity(
                     VisionNormalizedImage panel,
-                    VisionGeometryEdgeCandidate ignored,
+                    VisionGeometryEdgeCandidate candidate,
                     VisionHybridEndpoint endpoint,
                     VisionClassProposal endpointClass,
-                    String candidateRawLabel
+                    String candidateRawLabel,
+                    List<String> visibleCompetingEdgeIds
             ) {
-                throw new AssertionError("Ownership must not run after an empty classification");
+                throw new AssertionError("Attribution must not run after an empty classification");
             }
         };
         VisionHybridAnalyzer analyzer = new VisionHybridAnalyzer(
@@ -70,7 +71,7 @@ class VisionHybridAnalyzerTests {
                 (image, expected) -> new UmlClassRegionDetection(regions, new byte[]{1}, new byte[]{1}),
                 new VisionGeometryClassMappingValidator(), new VisionHybridImageFactory(),
                 (image, mapped) -> new UmlDiagramGeometry(mapped, List.of(candidate), new byte[]{1}, new byte[]{1}, new byte[]{1}),
-                new VisionRelationshipEvidenceSheetRenderer(), new VisionHybridProposalAssembler(), true, 2, false
+                new VisionRelationshipEvidenceSheetRenderer(), new VisionHybridProposalAssembler(), true, 2, false, false
         );
 
         VisionModelGatewayException exception = assertThrows(
@@ -124,15 +125,16 @@ class VisionHybridAnalyzerTests {
             }
 
             @Override
-            public VisionHybridMultiplicityOwnership verifyMultiplicityOwnership(
+            public VisionHybridMultiplicityAttribution attributeMultiplicity(
                     VisionNormalizedImage panel,
                     VisionGeometryEdgeCandidate candidate,
                     VisionHybridEndpoint endpoint,
                     VisionClassProposal endpointClass,
-                    String candidateRawLabel
+                    String candidateRawLabel,
+                    List<String> visibleCompetingEdgeIds
             ) {
-                calls.add(candidate.edgeId() + " " + endpoint.name() + " ownership");
-                return new VisionHybridMultiplicityOwnership(candidate.edgeId(), endpoint, "BELONGS", 0.8);
+                calls.add(candidate.edgeId() + " " + endpoint.name() + " attribution");
+                return new VisionHybridMultiplicityAttribution(candidate.edgeId(), endpoint, candidate.edgeId(), 0.8);
             }
         };
         List<VisionGeometryClassRegion> regions = List.of(
@@ -149,14 +151,14 @@ class VisionHybridAnalyzerTests {
                 (image, expected) -> new UmlClassRegionDetection(regions, new byte[]{1}, new byte[]{1}),
                 new VisionGeometryClassMappingValidator(), new VisionHybridImageFactory(),
                 (image, mapped) -> new UmlDiagramGeometry(mapped, candidates, new byte[]{1}, new byte[]{1}, new byte[]{1}),
-                new VisionRelationshipEvidenceSheetRenderer(), new VisionHybridProposalAssembler(), true, 2, false
+                new VisionRelationshipEvidenceSheetRenderer(), new VisionHybridProposalAssembler(), true, 2, false, false
         );
 
         VisionUmlProposal result = analyzer.analyze(image(), null);
 
         assertEquals(List.of(
-                "E1 classify", "E1 A transcribe", "E1 A ownership", "E1 B transcribe", "E1 B ownership",
-                "E2 classify", "E2 A transcribe", "E2 B transcribe", "E2 B ownership"
+                "E1 classify", "E1 A transcribe", "E1 A attribution", "E1 B transcribe", "E1 B attribution",
+                "E2 classify", "E2 A transcribe", "E2 B transcribe", "E2 B attribution"
         ), calls);
         assertEquals(2, result.safeRelationships().size());
         assertEquals(0.5, result.confidence());
@@ -173,7 +175,7 @@ class VisionHybridAnalyzerTests {
     }
 
     @Test
-    void combinesStatelessTranscriptionAndOwnershipDeterministically() throws Exception {
+    void combinesStatelessTranscriptionAndAttributionDeterministically() throws Exception {
         List<String> calls = new ArrayList<>();
         VisionHybridModelGateway gateway = new VisionHybridModelGateway() {
             @Override
@@ -214,18 +216,18 @@ class VisionHybridAnalyzerTests {
             }
 
             @Override
-            public VisionHybridMultiplicityOwnership verifyMultiplicityOwnership(
+            public VisionHybridMultiplicityAttribution attributeMultiplicity(
                     VisionNormalizedImage panel, VisionGeometryEdgeCandidate candidate, VisionHybridEndpoint endpoint,
-                    VisionClassProposal endpointClass, String candidateRawLabel
+                    VisionClassProposal endpointClass, String candidateRawLabel, List<String> visibleCompetingEdgeIds
             ) {
-                calls.add(candidate.edgeId() + " " + endpoint.name() + " ownership");
-                String ownership = switch (candidate.edgeId() + endpoint.name()) {
-                    case "E1A", "E1B" -> "BELONGS";
-                    case "E2B" -> "NOT_BELONGS";
+                calls.add(candidate.edgeId() + " " + endpoint.name() + " attribution");
+                String owner = switch (candidate.edgeId() + endpoint.name()) {
+                    case "E1A", "E1B" -> candidate.edgeId();
+                    case "E2B" -> "NONE";
                     case "E3A" -> "AMBIGUOUS";
-                    default -> throw new AssertionError("Ownership must not run for this endpoint");
+                    default -> throw new AssertionError("Attribution must not run for this endpoint");
                 };
-                return new VisionHybridMultiplicityOwnership(candidate.edgeId(), endpoint, ownership, 0.7);
+                return new VisionHybridMultiplicityAttribution(candidate.edgeId(), endpoint, owner, 0.7);
             }
         };
         List<VisionGeometryClassRegion> regions = List.of(
@@ -243,15 +245,15 @@ class VisionHybridAnalyzerTests {
                 (image, expected) -> new UmlClassRegionDetection(regions, new byte[]{1}, new byte[]{1}),
                 new VisionGeometryClassMappingValidator(), new VisionHybridImageFactory(),
                 (image, mapped) -> new UmlDiagramGeometry(mapped, candidates, new byte[]{1}, new byte[]{1}, new byte[]{1}),
-                new VisionRelationshipEvidenceSheetRenderer(), new VisionHybridProposalAssembler(), true, 2, false
+                new VisionRelationshipEvidenceSheetRenderer(), new VisionHybridProposalAssembler(), true, 2, false, false
         );
 
         VisionUmlProposal result = analyzer.analyze(image(), null);
 
         assertEquals(List.of(
-                "E1 classify", "E1 A transcribe", "E1 A ownership", "E1 B transcribe", "E1 B ownership",
-                "E2 classify", "E2 A transcribe", "E2 B transcribe", "E2 B ownership",
-                "E3 classify", "E3 A transcribe", "E3 A ownership", "E3 B transcribe"
+                "E1 classify", "E1 A transcribe", "E1 A attribution", "E1 B transcribe", "E1 B attribution",
+                "E2 classify", "E2 A transcribe", "E2 B transcribe", "E2 B attribution",
+                "E3 classify", "E3 A transcribe", "E3 A attribution", "E3 B transcribe"
         ), calls);
         assertEquals(3, result.safeRelationships().size());
         assertEquals(0, result.safeRelationships().get(0).sourceMultiplicity().lower());
@@ -266,7 +268,7 @@ class VisionHybridAnalyzerTests {
     }
 
     @Test
-    void acceptsBelongsWithoutUsingLabelCenterOrLocalizedOwnershipGuard() throws Exception {
+    void acceptsCurrentEdgeAttributionWithoutLocalizedOwnershipGuard() throws Exception {
         List<VisionNormalizedImage> attributionPanels = new ArrayList<>();
         List<VisionGeometryClassRegion> regions = List.of(
                 new VisionGeometryClassRegion("B1", null, 10, 10, 70, 70, 1.0),
@@ -329,7 +331,7 @@ class VisionHybridAnalyzerTests {
                 (image, expected) -> new UmlClassRegionDetection(regions, new byte[]{1}, new byte[]{1}),
                 new VisionGeometryClassMappingValidator(), new VisionHybridImageFactory(),
                 (image, mapped) -> new UmlDiagramGeometry(mapped, candidates, new byte[]{1}, new byte[]{1}, new byte[]{1}),
-                new VisionRelationshipEvidenceSheetRenderer(), new VisionHybridProposalAssembler(), true, 2, false
+                new VisionRelationshipEvidenceSheetRenderer(), new VisionHybridProposalAssembler(), true, 2, false, false
         );
 
         VisionUmlProposal result = analyzer.analyze(image(), null);

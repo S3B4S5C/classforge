@@ -8,7 +8,7 @@ La visión completa del producto está en `docs/product/product.md`. El estado r
 
 ## Estado actual
 
-**Ciclo 1 cerrado. Ciclo 2 de Elaboración ABIERTO — CU-31 CERRADO; CU-09 SIGUIENTE.**
+**Ciclo 1 cerrado. Ciclo 2 de Elaboración ABIERTO — CU-31 CERRADO; CU-09 EN PROGRESO.**
 
 En ClassForge llamamos **Ciclo** a una **iteración PUDS**.
 
@@ -29,6 +29,7 @@ El incremento ejecutable actual incluye:
 - whisper.cpp como Speech-to-Text local;
 - preview, grounding, validación, BATCH atómico y protección por revisión;
 - health de runtimes locales y diagnóstico del pipeline.
+- CU-09 Imagen -> UML: pipeline local VLM + OpenCV funcional y habilitado por defecto para diagramas densos.
 
 También están implementados como infraestructura transversal:
 
@@ -39,7 +40,7 @@ También están implementados como infraestructura transversal:
 
 Aún no están implementados:
 
-- CU-09 imagen a UML;
+- CU-09 cierre final: política de fallback, E2E real, UX smoke y broader-board acceptance;
 - CU-10/11 XMI Enterprise Architect;
 - CU-12 modelo relacional;
 - CU-13..18 generación backend/frontend/mobile;
@@ -48,7 +49,7 @@ Aún no están implementados:
 - CU-27 demo reproducible formal;
 - CU-31 cerrado: membership, invitaciones, STOMP, presencia y Assistant validados con OWNER/EDITOR/NONE.
 
-CU-31 quedó cerrado en C2-cu31-003 con colaboración multi-cuenta real, defensa de acceso unificada y hardening concurrente de invitaciones. CU-09 — Imagen → UML — es el siguiente caso del Ciclo 2.
+CU-31 quedó cerrado en C2-cu31-003. CU-09 — Imagen → UML — está EN PROGRESO: la activación productiva está completa, pero faltan E2E real, UX smoke, broader-board acceptance y cierre final.
 
 ## Arquitectura vigente
 
@@ -151,6 +152,6 @@ Un posible archivo `*.classforge` continúa siendo un formato portable futuro, n
 
 ## Próximo hito
 
-El **Ciclo 2 está formalmente ABIERTO**; CU-31 está cerrado y CU-09 es el siguiente caso.
+El **Ciclo 2 está formalmente ABIERTO**; CU-31 está cerrado y CU-09 permanece EN PROGRESO.
 
 Antes de implementar el siguiente CU se debe seleccionar el objetivo del nuevo ciclo desde `docs/puds/use-cases.md` y registrar su objetivo, riesgos y criterios de salida.

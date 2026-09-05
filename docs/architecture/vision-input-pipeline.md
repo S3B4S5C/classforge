@@ -1,6 +1,20 @@
 # Pipeline visual — CU-09
 
-**Estado:** C2-cu09-003 completa la implementación funcional; selección/calibración final del VLM y aceptación cuantitativa quedan pendientes.
+**Estado:** CU-09 EN PROGRESO. Cal-014 activa hybrid-CV por defecto para diagramas densos; aceptación de producto y broader-board permanecen pendientes.
+
+## Ruta actual
+
+```text
+Image -> semantic VLM first pass -> class/attribute proposal
+  < 4 classes -> semantic result
+  >= 4 classes -> OpenCV class regions -> closed Bx -> classRef mapping
+                -> OpenCV physical topology -> per-edge classification
+                -> conditioned multiplicity transcription -> attribution
+                -> Java multiplicity parser -> assembled proposal
+```
+
+Hybrid-CV está habilitado por defecto. Geometry es la autoridad de topología
+física. Producción no retiene diagnostics pesados; benchmark sí puede hacerlo.
 
 ## Regla de arquitectura
 
@@ -154,11 +168,11 @@ Los tipos escritos después de `:` se preservan mediante un mapeo explícito (`U
 El dataset también se audita como parte de la calibración: `shadow-association.png` representa visualmente `Cliente — Factura`, por lo que su oracle debe reflejar ese diagrama y no otro fixture.
 
 <!-- CU09-CAL-010-HYBRID-CV-GEOMETRY -->
-## Cal-010 — geometría híbrida para diagramas densos
+## Cal-010 — geometría híbrida para diagramas densos (histórico)
 
 Las corridas de la pizarra real mostraron una separación estable de capacidades: Qwen3-VL-4B reconoce clases y atributos, pero seguir líneas largas/cruzadas y leer multiplicidades pequeñas es menos fiable. Cal-010 deja de pedir al VLM que sea simultáneamente OCR, detector geométrico y reconstruidor del grafo.
 
-El modo experimental `hybrid-cv` usa tres fuentes de evidencia:
+El modo entonces experimental `hybrid-cv` usaba tres fuentes de evidencia:
 
 ```text
 imagen original
@@ -216,7 +230,7 @@ Qwen3-VL-4B ya usa aproximadamente 5.4 GiB de la GTX 1660 SUPER. Cal-010 no aña
 
 ### Activación
 
-Producción conserva `dense-hybrid.enabled=false` hasta obtener evidencia. El benchmark focal puede forzar `VisionMode=hybrid-cv` sin cambiar la configuración normal. Si el híbrido falla en producción cuando posteriormente se habilite, `fallback-to-semantic=true` permite volver al semantic pass con warning; el benchmark usa fallback deshabilitado para no ocultar errores.
+Esta etapa conservaba `dense-hybrid.enabled=false` hasta obtener evidencia. Cal-014 activa hybrid-CV por defecto; `fallback-to-semantic=true` conserva el retorno al semantic pass con warning.
 
 <!-- CU09-CAL-011-CV-FIRST-CLASS-REGIONS -->
 ## Cal-011 — CV-first class regions

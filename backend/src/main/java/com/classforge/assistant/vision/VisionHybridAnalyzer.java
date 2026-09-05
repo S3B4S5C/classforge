@@ -22,6 +22,7 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
     private final int minClasses;
     private final boolean fallbackToSemantic;
     private final boolean geometryOnly;
+    private final boolean collectDiagnostics;
     private volatile VisionHybridDiagnostics lastDiagnostics;
 
     public VisionHybridAnalyzer(
@@ -39,7 +40,7 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
     ) {
         this(
                 semanticGateway, hybridGateway, classRegionDetector, mappingValidator, imageFactory,
-                geometryAnalyzer, sheetRenderer, assembler, enabled, minClasses, fallbackToSemantic, false
+                geometryAnalyzer, sheetRenderer, assembler, enabled, minClasses, fallbackToSemantic, false, false
         );
     }
 
@@ -57,6 +58,19 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
             boolean fallbackToSemantic,
             boolean geometryOnly
     ) {
+        this(
+                semanticGateway, hybridGateway, classRegionDetector, mappingValidator, imageFactory,
+                geometryAnalyzer, sheetRenderer, assembler, enabled, minClasses, fallbackToSemantic, geometryOnly, true
+        );
+    }
+
+    public VisionHybridAnalyzer(
+            VisionModelGateway semanticGateway, VisionHybridModelGateway hybridGateway,
+            UmlClassRegionDetector classRegionDetector, VisionGeometryClassMappingValidator mappingValidator,
+            VisionHybridImageFactory imageFactory, UmlDiagramGeometryAnalyzer geometryAnalyzer,
+            VisionRelationshipEvidenceSheetRenderer sheetRenderer, VisionHybridProposalAssembler assembler,
+            boolean enabled, int minClasses, boolean fallbackToSemantic, boolean geometryOnly, boolean collectDiagnostics
+    ) {
         this.semanticGateway = semanticGateway;
         this.hybridGateway = hybridGateway;
         this.classRegionDetector = classRegionDetector;
@@ -70,6 +84,7 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
         this.minClasses = Math.max(2, minClasses);
         this.fallbackToSemantic = fallbackToSemantic;
         this.geometryOnly = geometryOnly;
+        this.collectDiagnostics = collectDiagnostics;
     }
 
     @Override
@@ -84,7 +99,7 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
                     image,
                     semantic.safeClasses().size()
             );
-            lastDiagnostics = diagnostics(detection, null, null, null, null, List.of(), List.of(), List.of());
+            updateDiagnostics(detection, null, null, null, null, List.of(), List.of(), List.of());
             VisionNormalizedImage labeledRegions = imageFactory.png(
                     "class-regions.png",
                     detection.overlayPng(),
@@ -96,14 +111,14 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
                     detection.safeRegions(),
                     semantic.safeClasses()
             );
-            lastDiagnostics = diagnostics(detection, mapping, null, null, null, List.of(), List.of(), List.of());
+            updateDiagnostics(detection, mapping, null, null, null, List.of(), List.of(), List.of());
             List<VisionGeometryClassRegion> mappedRegions = mappingValidator.validateAndBind(
                     mapping,
                     detection.safeRegions(),
                     semantic.safeClasses()
             );
             UmlDiagramGeometry geometry = geometryAnalyzer.analyze(image, mappedRegions);
-            lastDiagnostics = diagnostics(detection, mapping, geometry, null, null, List.of(), List.of(), List.of());
+            updateDiagnostics(detection, mapping, geometry, null, null, List.of(), List.of(), List.of());
 
             if (geometryOnly) {
                 List<String> warnings = new ArrayList<>(semantic.safeWarnings());
@@ -117,10 +132,10 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
             if (geometry.safeEdgeCandidates().isEmpty()) {
                 throw new AssistantPlanningException("OpenCV no genero pares candidatos para el diagrama denso.");
             }
-            VisionNormalizedImage sheet = sheetRenderer.render(image, geometry);
-            lastDiagnostics = diagnostics(detection, mapping, geometry, sheet, null, List.of(), List.of(), List.of());
-            EdgeAnnotations annotations = annotateEdges(image, geometry, semantic.safeClasses());
-            lastDiagnostics = diagnostics(
+            VisionNormalizedImage sheet = collectDiagnostics ? sheetRenderer.render(image, geometry) : null;
+            updateDiagnostics(detection, mapping, geometry, sheet, null, List.of(), List.of(), List.of());
+            EdgeAnnotations annotations = annotateEdges(image, geometry, semantic.safeClasses(), collectDiagnostics);
+            updateDiagnostics(
                     detection, mapping, geometry, sheet, annotations.annotation(), annotations.relationshipPanels(),
                     annotations.multiplicityPanels(), annotations.observations()
             );
@@ -155,7 +170,7 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
     private EdgeAnnotations annotateEdges(
             VisionNormalizedImage image,
             UmlDiagramGeometry geometry,
-            List<VisionClassProposal> classes
+            List<VisionClassProposal> classes, boolean retainPanels
     ) {
         List<VisionHybridEdgeAnnotation> edges = new ArrayList<>();
         LinkedHashSet<String> warnings = new LinkedHashSet<>();
@@ -165,7 +180,7 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
         Double confidence = null;
         for (VisionGeometryEdgeCandidate candidate : geometry.safeEdgeCandidates()) {
             VisionNormalizedImage relationshipPanel = sheetRenderer.renderEdge(image, candidate);
-            relationshipPanels.add(relationshipPanel);
+            if (retainPanels) relationshipPanels.add(relationshipPanel);
             VisionHybridRelationshipClassificationProposal classification = hybridGateway.classifyRelationship(
                     relationshipPanel, candidate, classes
             );
@@ -185,12 +200,12 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
             VisionClassProposal bClass = endpointClass(classes, candidate.bClassRef());
             EndpointMultiplicityResult multiplicityA = observeMultiplicity(
                     image, geometry.safeClassRegions(), geometry.safeEdgeCandidates(), candidate,
-                    VisionHybridEndpoint.A, aClass, multiplicityPanels
+                    VisionHybridEndpoint.A, aClass, multiplicityPanels, retainPanels
             );
             observations.add(multiplicityA.diagnostic());
             EndpointMultiplicityResult multiplicityB = observeMultiplicity(
                     image, geometry.safeClassRegions(), geometry.safeEdgeCandidates(), candidate,
-                    VisionHybridEndpoint.B, bClass, multiplicityPanels
+                    VisionHybridEndpoint.B, bClass, multiplicityPanels, retainPanels
             );
             observations.add(multiplicityB.diagnostic());
             VisionHybridEdgeClassification edge = classification.safeEdges().getFirst();
@@ -217,15 +232,17 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
             VisionGeometryEdgeCandidate candidate,
             VisionHybridEndpoint endpoint,
             VisionClassProposal endpointClass,
-            List<VisionNormalizedImage> panels
+            List<VisionNormalizedImage> panels, boolean retainPanels
     ) {
         VisionNormalizedImage transcriptionPanel = sheetRenderer.renderMultiplicityTranscriptionConditioned(
                 image, candidate, endpoint, endpointClass, candidates
         );
-        panels.add(transcriptionPanel);
-        panels.addAll(sheetRenderer.renderMultiplicityTranscriptionMaskDiagnostics(
-                image, candidate, endpoint, endpointClass, candidates
-        ));
+        if (retainPanels) {
+            panels.add(transcriptionPanel);
+            panels.addAll(sheetRenderer.renderMultiplicityTranscriptionMaskDiagnostics(
+                    image, candidate, endpoint, endpointClass, candidates
+            ));
+        }
         VisionHybridMultiplicityTranscription transcription = hybridGateway.transcribeMultiplicity(
                 transcriptionPanel, candidate, endpoint, endpointClass
         );
@@ -253,7 +270,7 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
         VisionNormalizedImage attributionPanel = sheetRenderer.renderMultiplicityAttribution(
                 image, candidate, endpoint, endpointClass, endpointClassRegion, candidates, transcription.rawLabel()
         );
-        panels.add(attributionPanel);
+        if (retainPanels) panels.add(attributionPanel);
         VisionHybridMultiplicityAttribution attribution = hybridGateway.attributeMultiplicity(
                 attributionPanel, candidate, endpoint, endpointClass, transcription.rawLabel(), visibleCompetingEdgeIds
         );
@@ -325,6 +342,17 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
         return new VisionHybridDiagnostics(
                 detection, mapping, geometry, sheet, annotation, relationshipPanels, multiplicityPanels, observations
         );
+    }
+
+    private void updateDiagnostics(
+            UmlClassRegionDetection detection, VisionGeometryClassMappingProposal mapping, UmlDiagramGeometry geometry,
+            VisionNormalizedImage sheet, VisionHybridRelationshipAnnotationProposal annotation,
+            List<VisionNormalizedImage> relationshipPanels, List<VisionNormalizedImage> multiplicityPanels,
+            List<VisionHybridMultiplicityObservationDiagnostic> observations
+    ) {
+        if (collectDiagnostics) {
+            lastDiagnostics = diagnostics(detection, mapping, geometry, sheet, annotation, relationshipPanels, multiplicityPanels, observations);
+        }
     }
 
     private record EdgeAnnotations(

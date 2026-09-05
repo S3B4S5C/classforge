@@ -23,30 +23,12 @@ public interface VisionHybridModelGateway {
             VisionClassProposal endpointClass
     );
 
-    default VisionHybridMultiplicityAttribution attributeMultiplicity(
+    VisionHybridMultiplicityAttribution attributeMultiplicity(
             VisionNormalizedImage attributionPanel,
             VisionGeometryEdgeCandidate candidate,
             VisionHybridEndpoint endpoint,
             VisionClassProposal endpointClass,
             String candidateRawLabel,
             List<String> visibleCompetingEdgeIds
-    ) {
-        VisionHybridMultiplicityOwnership ownership = verifyMultiplicityOwnership(
-                attributionPanel, candidate, endpoint, endpointClass, candidateRawLabel
-        );
-        String owner = "BELONGS".equals(ownership.ownership()) ? candidate.edgeId()
-                : "AMBIGUOUS".equals(ownership.ownership()) ? "AMBIGUOUS" : "NONE";
-        return new VisionHybridMultiplicityAttribution(ownership.edgeId(), ownership.endpoint(), owner, ownership.confidence());
-    }
-
-    @Deprecated
-    default VisionHybridMultiplicityOwnership verifyMultiplicityOwnership(
-            VisionNormalizedImage ownershipPanel,
-            VisionGeometryEdgeCandidate candidate,
-            VisionHybridEndpoint endpoint,
-            VisionClassProposal endpointClass,
-            String candidateRawLabel
-    ) {
-        throw new UnsupportedOperationException("Multiplicity attribution is required");
-    }
+    );
 }

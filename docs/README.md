@@ -30,7 +30,7 @@ Para evitar contradicciones:
 ```text
 Fase PUDS: Elaboración
 Ciclo 1: CERRADO
-Ciclo 2: ABIERTO — CU-31 CERRADO; CU-09 SIGUIENTE
+Ciclo 2: ABIERTO — CU-31 CERRADO; CU-09 EN PROGRESO
 Fecha: 29-08-2026
 ```
 

@@ -36,48 +36,6 @@ class VisionRelationshipEvidenceSheetRendererTests {
     }
 
     @Test
-    void rendersCleanRotatedAndGuidedMultiplicityEndpointPanel() throws Exception {
-        VisionNormalizedImage source = source();
-        VisionNormalizedImage panel = new VisionRelationshipEvidenceSheetRenderer().renderMultiplicityEndpoint(
-                source,
-                new VisionGeometryEdgeCandidate(
-                        "E2", "B1", "B2", "c1", "c2", 1.0, 0, 0, 180, 120, 40, 60, 140, 60,
-                        68, 60, 112, 60
-                ),
-                VisionHybridEndpoint.B,
-                new VisionClassProposal("c2", "Prestamo", java.util.List.of(), null)
-        );
-
-        BufferedImage decoded = ImageIO.read(new ByteArrayInputStream(panel.bytes()));
-        assertEquals(512, panel.width());
-        assertEquals(280, panel.height());
-        assertEquals(512, decoded.getWidth());
-        assertEquals(280, decoded.getHeight());
-        assertTrue(panel.originalFilename().equals("multiplicity-E2-B.png"));
-        assertFalse(hasRedMarker(decoded, 0, 256));
-        assertTrue(hasRedMarker(decoded, 256, 512));
-        assertTrue(hasBlueNear(decoded, 129, 133));
-        // innerB is 28 px left of B's contact, so the guided arrow points left.
-        assertTrue(hasRedNear(decoded, 359, 165));
-    }
-
-    @Test
-    void guidedViewKeepsContactMarkerWhenDirectionMetadataIsMissing() throws Exception {
-        VisionNormalizedImage panel = new VisionRelationshipEvidenceSheetRenderer().renderMultiplicityEndpoint(
-                source(),
-                new VisionGeometryEdgeCandidate(
-                        "E3", "B1", "B2", "c1", "c2", 1.0, 0, 0, 180, 120, 40, 60, 140, 60
-                ),
-                VisionHybridEndpoint.B,
-                new VisionClassProposal("c2", "Prestamo", java.util.List.of(), null)
-        );
-
-        BufferedImage decoded = ImageIO.read(new ByteArrayInputStream(panel.bytes()));
-        assertFalse(hasRedMarker(decoded, 0, 256));
-        assertTrue(hasRedMarker(decoded, 256, 512));
-    }
-
-    @Test
     void connectorCorridorFollowsDirectionAndRemainsWithinCropBounds() {
         VisionRelationshipEvidenceSheetRenderer.ConnectorCorridor upward =
                 VisionRelationshipEvidenceSheetRenderer.connectorCorridor(new Point(80, 80), new Point(80, 52), 160, 160);
@@ -94,21 +52,6 @@ class VisionRelationshipEvidenceSheetRendererTests {
         assertEquals(40.0, upward.contactRadius());
         assertInside(upward, 160, 160);
         assertInside(rightward, 160, 160);
-    }
-
-    @Test
-    void rendersCleanTranscriptionPanelWithoutOverlays() throws Exception {
-        VisionNormalizedImage panel = new VisionRelationshipEvidenceSheetRenderer().renderMultiplicityTranscription(
-                source(), edgeWithDirection(), VisionHybridEndpoint.B,
-                new VisionClassProposal("c2", "Prestamo", java.util.List.of(), null)
-        );
-
-        BufferedImage decoded = ImageIO.read(new ByteArrayInputStream(panel.bytes()));
-        assertEquals(256, panel.width());
-        assertEquals(280, panel.height());
-        assertEquals("multiplicity-E2-B-transcription.png", panel.originalFilename());
-        assertFalse(hasRedMarker(decoded, 0, 256));
-        assertTrue(hasBlueNear(decoded, 128, 124));
     }
 
     @Test
@@ -253,7 +196,7 @@ class VisionRelationshipEvidenceSheetRendererTests {
     }
 
     @Test
-    void excludesDistantSameClassCompetitorFromRenderingAndGuardGuides() throws Exception {
+    void excludesDistantSameClassCompetitorFromRendering() throws Exception {
         VisionRelationshipEvidenceSheetRenderer renderer = new VisionRelationshipEvidenceSheetRenderer();
         VisionNormalizedImage source = blankSource(400, 240);
         VisionGeometryEdgeCandidate current = edge(
@@ -266,37 +209,7 @@ class VisionRelationshipEvidenceSheetRendererTests {
 
         VisionRelationshipEvidenceSheetRenderer.OwnershipRenderingMetadata metadata =
                 renderer.ownershipRenderingMetadata(source, current, VisionHybridEndpoint.A, "c1", regionC1(), edges);
-        VisionRelationshipEvidenceSheetRenderer.OwnershipConnectorGuides guides =
-                renderer.ownershipConnectorGuides(source, current, VisionHybridEndpoint.A, "c1", regionC1(), edges);
-
         assertTrue(metadata.competitors().isEmpty());
-        assertTrue(guides.competingGuides().isEmpty());
-    }
-
-    @Test
-    void renderingMetadataAndGuardGuidesShareExactPanelTransform() throws Exception {
-        VisionRelationshipEvidenceSheetRenderer renderer = new VisionRelationshipEvidenceSheetRenderer();
-        VisionNormalizedImage source = blankSource(400, 240);
-        VisionGeometryEdgeCandidate current = edge(
-                "E1", "c1", "c2", 100, 100, 220, 100, 128, 100, 192, 100
-        );
-        VisionGeometryEdgeCandidate competitor = edge(
-                "E2", "c3", "c1", 280, 125, 100, 125, 252, 125, 128, 125
-        );
-        List<VisionGeometryEdgeCandidate> edges = List.of(current, competitor);
-
-        VisionRelationshipEvidenceSheetRenderer.OwnershipRenderingMetadata metadata =
-                renderer.ownershipRenderingMetadata(source, current, VisionHybridEndpoint.A, "c1", regionC1(), edges);
-        VisionRelationshipEvidenceSheetRenderer.OwnershipConnectorGuides guides =
-                renderer.ownershipConnectorGuides(source, current, VisionHybridEndpoint.A, "c1", regionC1(), edges);
-        VisionRelationshipEvidenceSheetRenderer.OwnershipEndpointOverlay visibleCompetitor =
-                metadata.competitors().getFirst();
-
-        assertEquals(metadata.current().contactPanel(), guides.currentGuide().contactPanel());
-        assertEquals(metadata.current().directionPanel(), guides.currentGuide().directionPanel());
-        assertEquals("E2", guides.competingGuides().getFirst().edgeId());
-        assertEquals(visibleCompetitor.contactPanel(), guides.competingGuides().getFirst().contactPanel());
-        assertEquals(visibleCompetitor.directionPanel(), guides.competingGuides().getFirst().directionPanel());
     }
 
     private VisionGeometryEdgeCandidate edgeWithDirection() {

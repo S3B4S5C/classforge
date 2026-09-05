@@ -32,7 +32,7 @@ public class HybridVisionModelGateway implements VisionModelGateway {
             UmlDiagramGeometryAnalyzer geometryAnalyzer,
             VisionRelationshipEvidenceSheetRenderer sheetRenderer,
             VisionHybridProposalAssembler assembler,
-            @Value("${classforge.assistant.vision.dense-hybrid.enabled:false}") boolean enabled,
+            @Value("${classforge.assistant.vision.dense-hybrid.enabled:true}") boolean enabled,
             @Value("${classforge.assistant.vision.dense-hybrid.min-classes:4}") int minClasses,
             @Value("${classforge.assistant.vision.dense-hybrid.fallback-to-semantic:true}") boolean fallbackToSemantic
     ) {

@@ -48,20 +48,23 @@ class VisionHybridPromptBuilderTests {
     }
 
     @Test
-    void ownershipPromptVerifiesButDoesNotRetranscribeCandidate() {
+    void attributionPromptVerifiesButDoesNotRetranscribeCandidate() {
         VisionHybridPromptBuilder prompt = new VisionHybridPromptBuilder();
-        String system = prompt.multiplicityOwnershipSystemPrompt();
-        String user = prompt.multiplicityOwnershipUserPrompt(
+        String system = prompt.multiplicityAttributionSystemPrompt();
+        String user = prompt.multiplicityAttributionUserPrompt(
                 new VisionGeometryEdgeCandidate("E1", "B1", "B2", "c1", "c2", 0.7, 0, 0, 100, 100, 10, 10, 90, 90),
-                VisionHybridEndpoint.A, new VisionClassProposal("c1", "Libro", List.of(), null), "0..*"
+                VisionHybridEndpoint.A, new VisionClassProposal("c1", "Libro", List.of(), null), "0..*", List.of("E4", "E2")
         );
 
         assertTrue(system.contains("NO lo retranscribas"));
         assertTrue(system.contains("LABEL SOURCE"));
         assertTrue(system.contains("CLASS CONTEXT"));
         assertTrue(system.contains("AMBIGUOUS"));
+        assertTrue(system.contains("NONE"));
         assertTrue(system.contains("edge ID propietario"));
         assertTrue(user.contains("candidateRawLabel=\"0..*\""));
+        assertTrue(user.contains("classRef=c1"));
+        assertTrue(user.contains("allowedOwnerIds=E1,E2,E4"));
     }
     @Test
     void mappingPromptForbidsCoordinatesAndUsesClosedGeometryIds() {

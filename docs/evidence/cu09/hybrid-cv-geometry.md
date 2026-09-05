@@ -1,6 +1,18 @@
 # CU-09 Cal-010 — híbrido CV geometry + local VLM annotation
 
-**Estado:** experimental; no cierra CU-09.
+**Estado:** Cal-014 production activation CLOSED; CU-09 permanece abierto.
+
+## Estado actual
+
+- Cal-010: superseded.
+- Cal-011: class regions CLOSED.
+- Cal-012: topology CLOSED.
+- Cal-013: annotation focal CLOSED.
+- Cal-014: production activation CLOSED.
+
+`library-whiteboard-realistic` obtuvo 3/3 Exact. Producción usa
+`hybrid=true`, `minClasses=4` y `fallback=true`. CU-09 sigue abierto hasta el
+E2E de producto y broader-board acceptance.
 
 ## Motivación
 

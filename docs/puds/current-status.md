@@ -99,7 +99,7 @@ Además:
 ## Limitaciones vigentes
 
 1. No existe eliminación de membership activa ni revocación inmediata de una sesión STOMP ya conectada; sigue fuera del alcance de CU-31.
-2. CU-09 — Imagen → UML — EN PROGRESO; Qwen3-VL-4B-Instruct Q4_K_M queda seleccionado como runtime visual. Regression y holdout alcanzaron 100 % semantic exact y safety 100 %. La pizarra real confirmó que clases/atributos se reconocen bien, pero la topología densa requiere CAL-010 híbrido: OpenCV CPU para geometría + Qwen local para semántica de conectores, antes del acceptance final.
+2. CU-09 — Imagen → UML — EN PROGRESO. Cal-011 class regions, Cal-012 topology, Cal-013 focal hardening y Cal-014 production activation están cerrados. `library-whiteboard-realistic` obtuvo 3/3 Exact; hybrid-CV está habilitado por defecto para >=4 clases semánticas, los diagramas pequeños siguen semantic-only y los fallos híbridos conservan fallback semántico. Pendiente: decisión final de failure policy, E2E, UX, broader boards, acceptance y builds finales.
 3. XMI/Enterprise Architect no está implementado.
 4. Modelo relacional y generadores no están implementados.
 5. La aplicación generada y su asistente de voz aún no existen.
@@ -112,7 +112,11 @@ Además:
 CU-09 — Imagen -> UML (EN PROGRESO)
   C2-cu09-001 -> COMPLETADO: contrato de entrada visual + compiler/preview canónico
   C2-cu09-002 -> COMPLETADO TÉCNICAMENTE: runtime + schema + benchmark; Qwen3-VL-4B Q4_K_M seleccionado
-  C2-cu09-003 -> IMPLEMENTADO: UX final + hardening + E2E/acceptance tooling; CAL-010 híbrido CV/VLM + acceptance pendientes
+  C2-cu09-003 -> IMPLEMENTADO: UX final + hardening + E2E/acceptance tooling
+  Cal-011 -> CLOSED: class regions
+  Cal-012 -> CLOSED: physical topology
+  Cal-013 -> CLOSED: focal hardening
+  Cal-014 -> CLOSED: hybrid-CV production activation
 ```
 
 CU-31 está cerrado. El Ciclo 2 permanece ABIERTO hasta cerrar CU-09.
@@ -250,7 +254,7 @@ Java         -> merge fail-closed
               -> Grounding -> Compiler -> Preview -> Command Bus
 ```
 
-El modo `hybrid-cv` queda **deshabilitado por defecto** mientras se valida con `library-whiteboard-realistic`; el pipeline single-pass que ya obtuvo 100 % en regression/holdout no se reemplaza todavía. OpenCV no crea clases ni nombres y Qwen local no puede cambiar los pares de endpoints propuestos por la geometría. Componentes de línea que tocan más de dos clases se consideran ambiguos y se omiten; los cruces geométricos no se convierten automáticamente en junctions.
+Históricamente, el modo `hybrid-cv` permanecía deshabilitado mientras se validaba con `library-whiteboard-realistic`. Cal-014 lo activa por defecto para diagramas densos. OpenCV no crea clases ni nombres y Qwen local no puede cambiar los pares de endpoints propuestos por la geometría. Componentes de línea que tocan más de dos clases se consideran ambiguos y se omiten; los cruces geométricos no se convierten automáticamente en junctions.
 
 La primera ejecución recomendada es únicamente el caso focal. Los diagnósticos `threshold.png`, `segments.png`, `overlay.png`, `relationship-sheet.png`, `geometry.json`, `localization.json` y `annotation.json` permiten atribuir cada fallo a localización, geometría o anotación local antes de promover el modo híbrido. CU-09 permanece EN PROGRESO.
 

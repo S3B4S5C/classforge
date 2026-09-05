@@ -242,14 +242,14 @@ pwsh -NoProfile -File .\scripts\assistant-vision-whiteboard.ps1 `
 
 `tiles` requiere `VisionMode=single-pass`. Los reportes incluyen estrategia y modo en el nombre, por ejemplo `whiteboard-qwen3-vl-4b-q4-k-m-board-crop-single-pass.json`.
 
-## Vision hybrid CV experimental — CU09-Cal-010
+## Vision hybrid CV — producción
 
 Cal-010 agrega OpenCV 4.9 mediante `org.openpnp:opencv:4.9.0-0`. La primera compilación necesita descargar aproximadamente 110 MiB desde Maven Central; no se instala Python, CUDA adicional ni un segundo modelo. El native se carga de forma perezosa únicamente al ejecutar el modo híbrido.
 
-Configuración (por defecto deshabilitada):
+Configuración por defecto:
 
 ```text
-CLASSFORGE_ASSISTANT_VISION_HYBRID=false
+CLASSFORGE_ASSISTANT_VISION_HYBRID=true
 CLASSFORGE_ASSISTANT_VISION_HYBRID_MIN_CLASSES=4
 CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK=true
 CLASSFORGE_ASSISTANT_VISION_HYBRID_LOCALIZATION_TOKENS=1200
@@ -286,4 +286,4 @@ backend/build/reports/assistant-vision/geometry/library-whiteboard-realistic/
   relationship-sheet.png
 ```
 
-No ejecutar acceptance completa hasta inspeccionar primero la topología geométrica de esta corrida. `single-pass` sigue siendo el runtime estable para diagramas simples.
+El kill switch `CLASSFORGE_ASSISTANT_VISION_HYBRID=false` fuerza semantic-only. Los diagramas con menos de cuatro clases siguen semantic-only; `fallback-to-semantic=true` se conserva. El semantic pass usa `CLASSFORGE_ASSISTANT_VISION_MAX_TOKENS=3200`; mapping, relationship y multiplicity usan 1200, 512 y 128 respectivamente.

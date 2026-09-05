@@ -34,13 +34,11 @@ public class VisionRelationshipEvidenceSheetRenderer {
     private static final int PAIR_HEIGHT = 205;
     private static final int ENDPOINT_HEIGHT = 105;
     private static final int COLUMNS = 3;
-    private static final int MULTIPLICITY_PANEL_WIDTH = 512;
     private static final int SINGLE_MULTIPLICITY_PANEL_WIDTH = 256;
     private static final int MULTIPLICITY_PANEL_HEIGHT = 280;
     private static final int MULTIPLICITY_HEADER_HEIGHT = 38;
     private static final int MULTIPLICITY_OWNERSHIP_WIDTH = 384;
     private static final int MULTIPLICITY_OWNERSHIP_HEIGHT = 360;
-    private static final int VIEW_LABEL_HEIGHT = 16;
     private static final double CORRIDOR_MAX_LENGTH = 90.0;
     private static final double CORRIDOR_HALF_WIDTH = 36.0;
     private static final double CONTACT_ZONE_RADIUS = 40.0;
@@ -130,95 +128,6 @@ public class VisionRelationshipEvidenceSheetRenderer {
             throw exception;
         } catch (Exception exception) {
             throw new AssistantPlanningException("No se pudo renderizar el panel local de relacion.", exception);
-        }
-    }
-
-    public VisionNormalizedImage renderMultiplicityEndpoint(
-            VisionNormalizedImage source,
-            VisionGeometryEdgeCandidate edge,
-            VisionHybridEndpoint endpoint,
-            VisionClassProposal endpointClass
-    ) {
-        try {
-            BufferedImage original = ImageIO.read(new ByteArrayInputStream(source.bytes()));
-            if (original == null) {
-                throw new AssistantPlanningException("No se pudo decodificar la imagen para crear panel de multiplicidad.");
-            }
-            int contactX = endpoint == VisionHybridEndpoint.A ? edge.contactAX() : edge.contactBX();
-            int contactY = endpoint == VisionHybridEndpoint.A ? edge.contactAY() : edge.contactBY();
-            Integer innerX = endpoint == VisionHybridEndpoint.A ? edge.innerAX() : edge.innerBX();
-            Integer innerY = endpoint == VisionHybridEndpoint.A ? edge.innerAY() : edge.innerBY();
-            EndpointCrop crop = endpointCropData(original, contactX, contactY);
-            BufferedImage panel = new BufferedImage(
-                    MULTIPLICITY_PANEL_WIDTH, MULTIPLICITY_PANEL_HEIGHT, BufferedImage.TYPE_INT_RGB
-            );
-            Graphics2D graphics = panel.createGraphics();
-            try {
-                graphics.setColor(Color.WHITE);
-                graphics.fillRect(0, 0, panel.getWidth(), panel.getHeight());
-                graphics.setColor(Color.BLACK);
-                graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
-                graphics.drawRect(0, 0, panel.getWidth() - 1, panel.getHeight() - 1);
-                graphics.drawString(
-                        edge.edgeId() + " · ENDPOINT " + endpoint.name() + " · " + endpointClass.ref()
-                                + " " + quote(endpointClass.name()),
-                        6, 22
-                );
-                int viewWidth = (MULTIPLICITY_PANEL_WIDTH - 12) / 2;
-                int viewY = MULTIPLICITY_HEADER_HEIGHT + VIEW_LABEL_HEIGHT;
-                int viewHeight = MULTIPLICITY_PANEL_HEIGHT - viewY - 4;
-                graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
-                graphics.drawString("CLEAN · ROTATED 90 CCW", 6, MULTIPLICITY_HEADER_HEIGHT + 12);
-                graphics.drawString("GUIDED · CONNECTOR", 10 + viewWidth, MULTIPLICITY_HEADER_HEIGHT + 12);
-                Point contact = new Point(contactX - crop.x(), contactY - crop.y());
-                Point inner = innerX == null || innerY == null ? null : new Point(innerX - crop.x(), innerY - crop.y());
-                BufferedImage rotated = rotateCounterClockwise(crop.image());
-                drawCleanMultiplicityView(graphics, rotated, 4, viewY, viewWidth, viewHeight);
-                drawGuidedMultiplicityView(graphics, crop.image(), contact, inner, 8 + viewWidth, viewY, viewWidth, viewHeight);
-            } finally {
-                graphics.dispose();
-            }
-            ByteArrayOutputStream output = new ByteArrayOutputStream();
-            ImageIO.write(panel, "png", output);
-            byte[] bytes = output.toByteArray();
-            return new VisionNormalizedImage(
-                    "multiplicity-" + edge.edgeId() + "-" + endpoint.name() + ".png",
-                    "image/png", "image/png", bytes, panel.getWidth(), panel.getHeight(), sha256(bytes), true
-            );
-        } catch (AssistantPlanningException exception) {
-            throw exception;
-        } catch (Exception exception) {
-            throw new AssistantPlanningException("No se pudo renderizar el panel local de multiplicidad.", exception);
-        }
-    }
-
-    public VisionNormalizedImage renderMultiplicityTranscription(
-            VisionNormalizedImage source,
-            VisionGeometryEdgeCandidate edge,
-            VisionHybridEndpoint endpoint,
-            VisionClassProposal endpointClass
-    ) {
-        try {
-            BufferedImage original = decoded(source, "panel de transcripcion de multiplicidad");
-            int contactX = endpoint == VisionHybridEndpoint.A ? edge.contactAX() : edge.contactBX();
-            int contactY = endpoint == VisionHybridEndpoint.A ? edge.contactAY() : edge.contactBY();
-            EndpointCrop crop = endpointCropData(original, contactX, contactY);
-            BufferedImage panel = multiplicityPanel(edge, endpoint, endpointClass);
-            Graphics2D graphics = panel.createGraphics();
-            try {
-                configure(graphics);
-                drawCleanMultiplicityView(
-                        graphics, rotateCounterClockwise(crop.image()), 4, MULTIPLICITY_HEADER_HEIGHT,
-                        panel.getWidth() - 8, panel.getHeight() - MULTIPLICITY_HEADER_HEIGHT - 4
-                );
-            } finally {
-                graphics.dispose();
-            }
-            return normalizedMultiplicityPanel(panel, edge, endpoint, "transcription");
-        } catch (AssistantPlanningException exception) {
-            throw exception;
-        } catch (Exception exception) {
-            throw new AssistantPlanningException("No se pudo renderizar el panel de transcripcion de multiplicidad.", exception);
         }
     }
 
@@ -359,19 +268,6 @@ public class VisionRelationshipEvidenceSheetRenderer {
         } catch (Exception exception) {
             throw new AssistantPlanningException("No se pudo renderizar el panel de attribution de multiplicidad.", exception);
         }
-    }
-
-    OwnershipConnectorGuides ownershipConnectorGuides(
-            VisionNormalizedImage source,
-            VisionGeometryEdgeCandidate current,
-            VisionHybridEndpoint endpoint,
-            String endpointClassRef,
-            VisionGeometryClassRegion endpointClassRegion,
-            List<VisionGeometryEdgeCandidate> candidates
-    ) {
-        return ownershipRenderingMetadata(
-                source, current, endpoint, endpointClassRef, endpointClassRegion, candidates
-        ).connectorGuides();
     }
 
     OwnershipRenderingMetadata ownershipRenderingMetadata(
@@ -755,52 +651,6 @@ public class VisionRelationshipEvidenceSheetRenderer {
         drawFit(graphics, image, x, y, width, height);
     }
 
-    private void drawGuidedMultiplicityView(
-            Graphics2D graphics,
-            BufferedImage image,
-            Point contact,
-            Point inner,
-            int x,
-            int y,
-            int width,
-            int height
-    ) {
-        double scale = Math.min(width / (double) image.getWidth(), height / (double) image.getHeight());
-        int targetWidth = Math.max(1, (int) Math.round(image.getWidth() * scale));
-        int targetHeight = Math.max(1, (int) Math.round(image.getHeight() * scale));
-        int dx = x + (width - targetWidth) / 2;
-        int dy = y + (height - targetHeight) / 2;
-        graphics.setColor(new Color(245, 245, 245));
-        graphics.fillRect(x, y, width, height);
-        graphics.drawImage(image, dx, dy, targetWidth, targetHeight, null);
-        int markerX = dx + (int) Math.round(contact.x * scale);
-        int markerY = dy + (int) Math.round(contact.y * scale);
-        ConnectorCorridor corridor = inner == null ? null
-                : connectorCorridor(contact, inner, image.getWidth(), image.getHeight());
-        if (corridor != null) {
-            Shape highlighted = highlightedCorridor(corridor, dx, dy, scale);
-            Composite previousComposite = graphics.getComposite();
-            Shape previousClip = graphics.getClip();
-            graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.65f));
-            graphics.setColor(Color.WHITE);
-            graphics.fillRect(dx, dy, targetWidth, targetHeight);
-            graphics.setComposite(previousComposite);
-            graphics.clip(highlighted);
-            graphics.drawImage(image, dx, dy, targetWidth, targetHeight, null);
-            graphics.setClip(previousClip);
-        }
-        graphics.setColor(Color.RED);
-        graphics.setStroke(new BasicStroke(1.25f));
-        graphics.drawOval(markerX - 6, markerY - 6, 12, 12);
-        graphics.drawLine(markerX - 4, markerY, markerX + 4, markerY);
-        graphics.drawLine(markerX, markerY - 4, markerX, markerY + 4);
-        if (inner != null) {
-            int innerX = dx + (int) Math.round(inner.x * scale);
-            int innerY = dy + (int) Math.round(inner.y * scale);
-            drawArrow(graphics, markerX, markerY, innerX, innerY);
-        }
-    }
-
     private void drawOwnershipGuidedMultiplicityView(Graphics2D graphics, OwnershipRenderingMetadata metadata) {
         EndpointCrop crop = metadata.crop();
         OwnershipPanelTransform transform = metadata.transform();
@@ -956,10 +806,6 @@ public class VisionRelationshipEvidenceSheetRenderer {
             VisionOwnershipPanelPoint contactPanel,
             VisionOwnershipPanelPoint directionPanel
     ) {
-        VisionLocalizedOwnershipGuard.ConnectorGuide connectorGuide() {
-            return directionPanel == null ? null
-                    : new VisionLocalizedOwnershipGuard.ConnectorGuide(edgeId, contactPanel, directionPanel);
-        }
     }
 
     record OwnershipRenderingMetadata(
@@ -967,21 +813,6 @@ public class VisionRelationshipEvidenceSheetRenderer {
             OwnershipPanelTransform transform,
             OwnershipEndpointOverlay current,
             List<OwnershipEndpointOverlay> competitors
-    ) {
-        OwnershipConnectorGuides connectorGuides() {
-            return new OwnershipConnectorGuides(
-                    current.connectorGuide(),
-                    competitors.stream().map(OwnershipEndpointOverlay::connectorGuide)
-                            .filter(java.util.Objects::nonNull).toList(),
-                    MULTIPLICITY_OWNERSHIP_WIDTH
-            );
-        }
-    }
-
-    record OwnershipConnectorGuides(
-            VisionLocalizedOwnershipGuard.ConnectorGuide currentGuide,
-            List<VisionLocalizedOwnershipGuard.ConnectorGuide> competingGuides,
-            int ownershipCropWidth
     ) {
     }
 

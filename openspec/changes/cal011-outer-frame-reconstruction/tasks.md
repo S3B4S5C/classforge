@@ -1,5 +1,11 @@
 # Cal-011 - Primitive hypothesis implementation tasks
 
+## CAL-011 CLOSED
+
+Evidence: realistic class regions `B1..B6` recovered; focal outer-frame IoU
+gate and class-detector CPU tests passed. No outer-frame reconstruction work
+remains.
+
 - [x] Preserve preprocessing and strict/relaxed contour thresholds.
 - [x] Model strict contours as rectangular primitives; deduplicate strict only when near-identical.
 - [x] Remove early `expectedClassCount` strict-seed selection.
@@ -29,4 +35,4 @@
     Hough reconstruction.
 - [x] Run `VisionGeometryClassMappingValidatorTests` and
     `OpenCvUmlDiagramGeometryAnalyzerTests`: all passed.
-- [ ] Do not commit.
+- [x] Do not commit. Closure constraint satisfied.

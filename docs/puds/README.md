@@ -19,7 +19,7 @@ Una fase puede contener uno o varios ciclos.
 ```text
 Fase: Elaboración
 Ciclo 1: CERRADO
-Ciclo 2: ABIERTO — CU-31 CERRADO; CU-09 SIGUIENTE
+Ciclo 2: ABIERTO — CU-31 CERRADO; CU-09 EN PROGRESO
 Corte: 29 de agosto de 2026
 ```
 

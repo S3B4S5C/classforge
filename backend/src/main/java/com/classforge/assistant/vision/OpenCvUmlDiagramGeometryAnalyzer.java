@@ -31,22 +31,6 @@ public class OpenCvUmlDiagramGeometryAnalyzer implements UmlDiagramGeometryAnaly
 
     private static volatile boolean loaded;
 
-    /** Compatibility helper for deterministic contract tests from CAL-010. */
-    public UmlDiagramGeometry analyze(
-            VisionNormalizedImage input,
-            VisionClassLocalizationProposal localization
-    ) {
-        List<VisionGeometryClassRegion> mapped = new ArrayList<>();
-        int index = 1;
-        for (VisionClassLocalization item : localization.safeMappings()) {
-            mapped.add(new VisionGeometryClassRegion(
-                    "B" + index++, item.classRef(), item.x(), item.y(),
-                    item.width(), item.height(), item.confidence()
-            ));
-        }
-        return analyze(input, mapped);
-    }
-
     @Override
     public UmlDiagramGeometry analyze(
             VisionNormalizedImage input,

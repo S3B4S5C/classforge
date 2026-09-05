@@ -49,16 +49,13 @@ class OpenCvUmlDiagramGeometryAnalyzerTests {
                 "synthetic.png", "image/png", "image/png", output.toByteArray(),
                 620, 360, "test", false
         );
-        VisionClassLocalizationProposal localization = new VisionClassLocalizationProposal(
-                List.of(
-                        new VisionClassLocalization("c1", 40, 70, 130, 110, 1.0),
-                        new VisionClassLocalization("c2", 350, 70, 130, 110, 1.0),
-                        new VisionClassLocalization("c3", 240, 235, 130, 95, 1.0)
-                ),
-                List.of(), 1.0
+        List<VisionGeometryClassRegion> regions = List.of(
+                new VisionGeometryClassRegion("B1", "c1", 40, 70, 130, 110, 1.0),
+                new VisionGeometryClassRegion("B2", "c2", 350, 70, 130, 110, 1.0),
+                new VisionGeometryClassRegion("B3", "c3", 240, 235, 130, 95, 1.0)
         );
 
-        UmlDiagramGeometry geometry = new OpenCvUmlDiagramGeometryAnalyzer().analyze(normalized, localization);
+        UmlDiagramGeometry geometry = new OpenCvUmlDiagramGeometryAnalyzer().analyze(normalized, regions);
         assertEquals(3, geometry.safeClassRegions().size());
         assertEquals(1, geometry.safeEdgeCandidates().size());
         assertEquals("c1", geometry.safeEdgeCandidates().getFirst().aClassRef());
@@ -137,8 +134,8 @@ class OpenCvUmlDiagramGeometryAnalyzerTests {
         }
 
         UmlDiagramGeometry geometry = analyze(image, "raster-marker.png", List.of(
-                new VisionClassLocalization("c1", 300, 50, 100, 100, 1.0),
-                new VisionClassLocalization("c2", 300, 570, 100, 100, 1.0)
+                new VisionGeometryClassRegion("B1", "c1", 300, 50, 100, 100, 1.0),
+                new VisionGeometryClassRegion("B2", "c2", 300, 570, 100, 100, 1.0)
         ));
 
         assertEquals(1, geometry.safeEdgeCandidates().size());
@@ -169,9 +166,9 @@ class OpenCvUmlDiagramGeometryAnalyzerTests {
         }
 
         UmlDiagramGeometry geometry = analyze(image, "ambiguous-raster-marker.png", List.of(
-                new VisionClassLocalization("c1", 250, 50, 100, 100, 1.0),
-                new VisionClassLocalization("c2", 370, 50, 100, 100, 1.0),
-                new VisionClassLocalization("c3", 310, 570, 100, 100, 1.0)
+                new VisionGeometryClassRegion("B1", "c1", 250, 50, 100, 100, 1.0),
+                new VisionGeometryClassRegion("B2", "c2", 370, 50, 100, 100, 1.0),
+                new VisionGeometryClassRegion("B3", "c3", 310, 570, 100, 100, 1.0)
         ));
 
         assertFalse(geometry.safeEdgeCandidates().stream().anyMatch(edge ->
@@ -246,14 +243,14 @@ class OpenCvUmlDiagramGeometryAnalyzerTests {
     private UmlDiagramGeometry analyze(
             BufferedImage image,
             String filename,
-            List<VisionClassLocalization> classes
+            List<VisionGeometryClassRegion> regions
     ) throws Exception {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ImageIO.write(image, "png", output);
         return new OpenCvUmlDiagramGeometryAnalyzer().analyze(
                 new VisionNormalizedImage(filename, "image/png", "image/png", output.toByteArray(),
                         image.getWidth(), image.getHeight(), "test", false),
-                new VisionClassLocalizationProposal(classes, List.of(), 1.0)
+                regions
         );
     }
 
