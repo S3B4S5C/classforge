@@ -459,12 +459,14 @@
         />
       </section>
 
-      <div class="diagram-sidecar">
-        <div class="diagram-sidecar">
-        <aside
-        class="context-inspector"
-        aria-label="Inspector UML"
+      <aside
+        class="workspace-side-rail"
+        aria-label="Panel lateral del workspace"
       >
+        <section
+          class="context-inspector"
+          aria-label="Inspector UML"
+        >
         <mat-card appearance="outlined">
           <mat-card-header>
             <mat-card-title>
@@ -746,17 +748,11 @@
             }
           </mat-card-content>
         </mat-card>
+        </section>
+
+        <app-project-assistant-panel />
+        <app-project-image-uml-panel />
       </aside>
-
-        <div class="assistant-workbench-panel">
-          <app-project-assistant-panel />
-        </div>
-      </div>
-
-        <div class="assistant-workbench-panel">
-          
-        </div>
-      </div>
     </div>
 
     @if (store.validationRequestError()) {

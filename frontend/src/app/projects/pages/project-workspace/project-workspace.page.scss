@@ -722,24 +722,30 @@
   margin-bottom: 0;
 }
 
-.diagram-sidecar {
+.workspace-side-rail {
   position: sticky;
   top: 5.5rem;
+  width: 100%;
+  max-height: calc(100dvh - 5.5rem);
   min-width: 0;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
   align-self: start;
+  overflow-y: auto;
 }
 
 .context-inspector,
-.assistant-workbench-panel {
+.workspace-side-rail > app-project-assistant-panel,
+.workspace-side-rail > app-project-image-uml-panel {
   min-width: 0;
 }
 
-.assistant-workbench-panel app-project-assistant-panel {
+.workspace-side-rail > app-project-assistant-panel,
+.workspace-side-rail > app-project-image-uml-panel {
   display: block;
   width: 100%;
-  min-width: 0;
+  margin-top: 0;
 }
 
 .context-inspector mat-card-content {
@@ -996,12 +1002,15 @@
     grid-template-columns: 1fr;
   }
 
-  .diagram-sidecar {
+  .workspace-side-rail {
     position: static;
+    max-height: none;
+    overflow: visible;
   }
 
   .context-inspector mat-card,
-  .assistant-workbench-panel {
+  .workspace-side-rail > app-project-assistant-panel,
+  .workspace-side-rail > app-project-image-uml-panel {
     width: 100%;
   }
 

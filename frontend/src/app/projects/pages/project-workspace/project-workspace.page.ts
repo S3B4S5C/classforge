@@ -64,6 +64,9 @@ import {
   ProjectAssistantPanelComponent,
 } from '../../assistant/project-assistant-panel.component';
 import {
+  ProjectImageUmlPanelComponent,
+} from '../../assistant/project-image-uml-panel.component';
+import {
   ProjectPresenceService,
 } from '../../presence/project-presence.service';
 
@@ -79,6 +82,7 @@ import {
     ReactiveFormsModule,
     RouterLink,
     ProjectAssistantPanelComponent,
+    ProjectImageUmlPanelComponent,
     UmlCanvasComponent,
   ],
   providers: [ProjectWorkspaceStore],

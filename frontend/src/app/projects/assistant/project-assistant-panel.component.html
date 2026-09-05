@@ -1,603 +1,68 @@
 <section class="assistant-panel">
   <header class="assistant-header">
     <div class="assistant-title">
-      <span
-        class="material-symbols-rounded"
-        aria-hidden="true"
-      >
-        smart_toy
-      </span>
-
-      <div>
-        <strong>Asistente UML</strong>
-      </div>
+      <span class="material-symbols-rounded" aria-hidden="true">smart_toy</span>
+      <strong>Asistente UML</strong>
     </div>
-
-    <span class="assistant-local">
-      LOCAL
-    </span>
   </header>
 
-  <div
-    class="assistant-runtimes"
-    aria-label="Estado de runtimes locales"
-  >
-    @if (
-      runtimeHealth();
-      as health
-    ) {
-      <span
-        class="runtime-chip"
-        [class.is-ready]="
-          health.llama.available
-        "
-        [class.is-down]="
-          !health.llama.available
-        "
-        [title]="
-          health.llama.message
-        "
-      >
-        <span
-          class="material-symbols-rounded"
-          aria-hidden="true"
-        >
-          memory
-        </span>
-        {{ runtimeLabel(health.llama) }}
-      </span>
-
-      <span
-        class="runtime-chip"
-        [class.is-ready]="
-          health.whisper.available
-        "
-        [class.is-down]="
-          !health.whisper.available
-        "
-        [title]="
-          health.whisper.message
-        "
-      >
-        <span
-          class="material-symbols-rounded"
-          aria-hidden="true"
-        >
-          graphic_eq
-        </span>
-        {{ runtimeLabel(health.whisper) }}
-      </span>
-
-      <span
-        class="runtime-chip"
-        [class.is-ready]="
-          health.vision.available
-        "
-        [class.is-down]="
-          !health.vision.available
-        "
-        [title]="
-          health.vision.message
-        "
-      >
-        <span
-          class="material-symbols-rounded"
-          aria-hidden="true"
-        >
-          visibility
-        </span>
-        {{ runtimeLabel(health.vision) }}
-      </span>
-    } @else {
-      <span class="runtime-chip">
-        @if (healthLoading()) {
-          <mat-spinner diameter="14"></mat-spinner>
-          Comprobando runtimes...
-        } @else {
-          Estado no comprobado
-        }
-      </span>
-    }
-
-    <button
-      mat-button
-      type="button"
-      class="runtime-refresh"
-      [disabled]="healthLoading()"
-      title="Actualizar estado de runtimes"
-      (click)="refreshRuntimeHealth()"
-    >
-      <span
-        class="material-symbols-rounded"
-        aria-hidden="true"
-      >
-        refresh
-      </span>
-    </button>
-  </div>
-
-  @if (runtimeError()) {
-    <small
-      class="runtime-error"
-      role="status"
-    >
-      {{ runtimeError() }}
-    </small>
-  }
-
-  <div
-    class="assistant-chat"
-    aria-live="polite"
-  >
+  <div class="assistant-chat" aria-live="polite">
     @if (messages().length === 0) {
       <div class="assistant-empty">
-        <span
-          class="material-symbols-rounded"
-          aria-hidden="true"
-        >
-          chat
-        </span>
-
-        <p>
-          Prueba:
-          <strong>
-            “Crea una clase Animal con id Long y nombre String”.
-          </strong>
-        </p>
+        <span class="material-symbols-rounded" aria-hidden="true">chat</span>
+        <p>Prueba: <strong>“Crea una clase Animal con id Long y nombre String”.</strong></p>
       </div>
     }
-
-    @for (
-      message of messages();
-      track $index
-    ) {
-      <div
-        class="assistant-message"
-        [class.is-user]="
-          message.role === 'user'
-        "
-      >
-        {{ message.text }}
-      </div>
+    @for (message of messages(); track $index) {
+      <div class="assistant-message" [class.is-user]="message.role === 'user'">{{ message.text }}</div>
     }
-
-    @if (imagePlanning()) {
-      <div class="assistant-thinking">
-        <mat-spinner diameter="18"></mat-spinner>
-        Analizando imagen...
-      </div>
-    } @else if (
-      voiceState() === 'transcribing'
-    ) {
-      <div class="assistant-thinking">
-        <mat-spinner diameter="18"></mat-spinner>
-        Transcribiendo e interpretando...
-      </div>
+    @if (voiceState() === 'transcribing') {
+      <div class="assistant-thinking"><mat-spinner diameter="18"></mat-spinner>Procesando...</div>
     } @else if (planning()) {
-      <div class="assistant-thinking">
-        <mat-spinner diameter="18"></mat-spinner>
-        Interpretando...
-      </div>
+      <div class="assistant-thinking"><mat-spinner diameter="18"></mat-spinner>Interpretando...</div>
     }
   </div>
 
   @if (plan(); as currentPlan) {
     <div class="assistant-preview">
       <div class="preview-title">
-        <span
-          class="material-symbols-rounded"
-          aria-hidden="true"
-        >
-          rule
-        </span>
-
-        <div>
-          <strong>Plan listo</strong>
-          <small>
-            {{
-              actionCount(currentPlan)
-            }}
-            acciones · revision
-            {{ currentPlan.baseRevision }}
-          </small>
-        </div>
+        <span class="material-symbols-rounded" aria-hidden="true">rule</span>
+        <div><strong>Plan listo</strong><small>{{ actionCount(currentPlan) }} acciones</small></div>
       </div>
-
-      <p>
-        {{ currentPlan.summary }}
-      </p>
-
+      <p>{{ currentPlan.summary }}</p>
       <div class="assistant-intents">
-        @for (
-          action of currentPlan.plan.actions;
-          track $index
-        ) {
+        @for (action of currentPlan.plan.actions; track $index) {
           <div class="assistant-intent">
-            <strong>
-              {{ actionLabel(action) }}
-            </strong>
-
-            @if (
-              action.attributes.length > 0
-            ) {
-              <ul>
-                @for (
-                  attribute of action.attributes;
-                  track $index
-                ) {
-                  <li>
-                    {{ attributeLabel(attribute) }}
-                  </li>
-                }
-              </ul>
+            <strong>{{ actionLabel(action) }}</strong>
+            @if (action.attributes.length > 0) {
+              <ul>@for (attribute of action.attributes; track $index) { <li>{{ attributeLabel(attribute) }}</li> }</ul>
             }
           </div>
         }
       </div>
-
       <div class="preview-actions">
-        <button
-          mat-button
-          class="cf-button-secondary"
-          type="button"
-          (click)="discard()"
-        >
-          <span
-            class="material-symbols-rounded"
-            aria-hidden="true"
-          >
-            close
-          </span>
-          Descartar
-        </button>
-
-        <button
-          mat-flat-button
-          class="cf-button-primary"
-          type="button"
-          [disabled]="
-            !canApplyPlan(currentPlan)
-          "
-          (click)="apply()"
-        >
-          <span
-            class="material-symbols-rounded"
-            aria-hidden="true"
-          >
-            check
-          </span>
-          Aplicar
-        </button>
+        <button mat-button class="cf-button-secondary" type="button" (click)="discard()">Descartar</button>
+        <button mat-flat-button class="cf-button-primary" type="button" [disabled]="!canApplyPlan(currentPlan)" (click)="apply()">Aplicar</button>
       </div>
     </div>
   }
 
   @if (error()) {
-    <div
-      class="assistant-error"
-      role="alert"
-    >
-      <span
-        class="material-symbols-rounded"
-        aria-hidden="true"
-      >
-        error
-      </span>
-      {{ error() }}
-    </div>
-  }
-
-  @if (selectedImage(); as image) {
-    <div
-      class="assistant-image-workbench"
-      (dragover)="onImageDragOver($event)"
-      (drop)="onImageDrop($event)"
-    >
-      @if (imagePreviewUrl(); as previewUrl) {
-        <div class="assistant-image-stage">
-          <img
-            [src]="previewUrl"
-            alt="Vista previa del diagrama preparado"
-          />
-
-          @if (imageResult(); as visionResult) {
-            @for (evidence of visionResult.evidence; track $index) {
-              @if (evidenceHasBox(evidence)) {
-                <button
-                  type="button"
-                  class="vision-evidence-box"
-                  [class.is-low-confidence]="(evidence.confidence ?? 1) < 0.65"
-                  [class.is-active]="activeEvidence() === evidence"
-                  [style.left.%]="evidenceLeft(evidence, visionResult)"
-                  [style.top.%]="evidenceTop(evidence, visionResult)"
-                  [style.width.%]="evidenceWidth(evidence, visionResult)"
-                  [style.height.%]="evidenceHeight(evidence, visionResult)"
-                  [title]="evidence.symbol + ' · ' + confidenceLabel(evidence.confidence)"
-                  (click)="activeEvidence.set(evidence)"
-                ></button>
-              }
-            }
-          }
-        </div>
-      }
-
-      <div class="assistant-image-meta">
-        <strong>{{ image.name }}</strong>
-        <small>
-          {{ imageSizeLabel() }} · PNG preparado · max. 10 MB
-        </small>
-        <small>
-          Rotacion {{ imageRotation() }}° · recorte {{ imageCropInsetPercent() }}% por borde
-        </small>
-        <small>
-          Vision es local; la imagen no se persiste en ProjectDocument.
-        </small>
-      </div>
-
-      <div class="assistant-image-tools">
-        <button mat-button type="button" [disabled]="imagePlanning()" (click)="rotateImage(-90)">
-          <span class="material-symbols-rounded" aria-hidden="true">rotate_left</span>
-          Izquierda
-        </button>
-        <button mat-button type="button" [disabled]="imagePlanning()" (click)="rotateImage(90)">
-          <span class="material-symbols-rounded" aria-hidden="true">rotate_right</span>
-          Derecha
-        </button>
-        <button mat-button type="button" [disabled]="imagePlanning() || imageCropInsetPercent() >= 30" (click)="cropImage()">
-          <span class="material-symbols-rounded" aria-hidden="true">crop</span>
-          Recortar 5%
-        </button>
-        <button mat-button type="button" [disabled]="imagePlanning()" (click)="resetImageEdits()">
-          Restablecer
-        </button>
-        <button mat-button type="button" [disabled]="imagePlanning()" (click)="clearSelectedImage()">
-          Quitar
-        </button>
-      </div>
-
-      @if (imageResult(); as visionResult) {
-        <div
-          class="assistant-vision-result"
-          [class.is-ready]="visionResult.disposition === 'READY'"
-          [class.is-neutral]="visionResult.disposition !== 'READY'"
-        >
-          <strong>
-            @if (visionResult.disposition === 'READY') {
-              Cambios visuales listos para revisar
-            } @else if (visionResult.disposition === 'NO_CHANGES') {
-              Sin cambios UML nuevos
-            } @else {
-              Sin UML accionable
-            }
-          </strong>
-          <small>Confianza global informativa: {{ confidenceLabel(visionResult.confidence) }}</small>
-
-          @if (visionResult.warnings.length > 0) {
-            <ul>
-              @for (warning of visionResult.warnings; track $index) {
-                <li>{{ warning }}</li>
-              }
-            </ul>
-          }
-
-          @if (visionResult.evidence.length > 0) {
-            <div class="vision-evidence-list" aria-label="Evidencia visual detectada">
-              @for (evidence of visionResult.evidence; track $index) {
-                <button
-                  type="button"
-                  [class.is-low-confidence]="(evidence.confidence ?? 1) < 0.65"
-                  [class.is-active]="activeEvidence() === evidence"
-                  (click)="activeEvidence.set(evidence)"
-                >
-                  {{ evidence.symbol }} · {{ confidenceLabel(evidence.confidence) }}
-                </button>
-              }
-            </div>
-          }
-        </div>
-      }
-
-      @if (imageRetryAvailable() && !imagePlanning()) {
-        <button mat-button type="button" class="assistant-image-retry" (click)="retryImageAnalysis()">
-          <span class="material-symbols-rounded" aria-hidden="true">refresh</span>
-          Analizar nuevamente
-        </button>
-      }
-    </div>
-  } @else {
-    <div
-      class="assistant-image-dropzone"
-      (dragover)="onImageDragOver($event)"
-      (drop)="onImageDrop($event)"
-    >
-      Arrastra una imagen aqui o pegala desde el portapapeles.
-    </div>
+    <div class="assistant-error" role="alert"><span class="material-symbols-rounded" aria-hidden="true">error</span>{{ error() }}</div>
   }
 
   <div class="assistant-composer">
-    <input
-      #imageInput
-      class="assistant-image-input"
-      type="file"
-      accept="image/png,image/jpeg,image/webp"
-      (change)="onImageSelected($event)"
-    />
-
-    <input
-      #cameraInput
-      class="assistant-image-input"
-      type="file"
-      accept="image/*"
-      capture="environment"
-      (change)="onCameraSelected($event)"
-    />
-
-    <textarea
-      [formControl]="prompt"
-      rows="3"
-      maxlength="1000"
-      placeholder="Describe el cambio UML..."
-      aria-label="Orden para el asistente UML"
-      (keydown.control.enter)="send()"
-      (keydown.meta.enter)="send()"
-    ></textarea>
-
+    <textarea [formControl]="prompt" rows="3" maxlength="1000" placeholder="Describe el cambio UML..." aria-label="Orden para el asistente UML" (keydown.control.enter)="send()" (keydown.meta.enter)="send()"></textarea>
     <div class="composer-actions">
-      <button
-        mat-button
-        type="button"
-        class="assistant-image-button"
-        [disabled]="
-          planning()
-          || voiceBusy()
-          || imagePlanning()
-          || !!store.assistantPlanningBlockReason()
-        "
-        title="Seleccionar fotografia o imagen UML"
-        (click)="imageInput.click()"
-      >
-        <span
-          class="material-symbols-rounded"
-          aria-hidden="true"
-        >
-          image
-        </span>
-        Imagen
+      <button mat-button type="button" class="assistant-mic" [class.is-recording]="voiceState() === 'recording'" [disabled]="voiceState() === 'transcribing' || (planning() && voiceState() !== 'recording')" (click)="toggleVoice()">
+        <span class="material-symbols-rounded" aria-hidden="true">{{ voiceState() === 'recording' ? 'stop_circle' : 'mic' }}</span>{{ voiceLabel() }}
       </button>
-
-      <button
-        mat-button
-        type="button"
-        class="assistant-image-button"
-        [disabled]="planning() || voiceBusy() || imagePlanning() || !!store.assistantPlanningBlockReason()"
-        title="Capturar imagen con la camara del dispositivo"
-        (click)="cameraInput.click()"
-      >
-        <span class="material-symbols-rounded" aria-hidden="true">photo_camera</span>
-        Camara
-      </button>
-
-      @if (selectedImage()) {
-        <button
-          mat-button
-          type="button"
-          class="assistant-image-analyze"
-          [disabled]="
-            planning()
-            || voiceBusy()
-            || imagePlanning()
-            || !runtimeReadyForImage()
-            || !!store.assistantPlanningBlockReason()
-          "
-          [title]="
-            runtimeReadyForImage()
-              ? 'Analizar imagen y preparar preview UML'
-              : 'Vision no esta listo en 8094'
-          "
-          (click)="analyzeImage()"
-        >
-          @if (imagePlanning()) {
-            <mat-spinner diameter="16"></mat-spinner>
-          } @else {
-            <span
-              class="material-symbols-rounded"
-              aria-hidden="true"
-            >
-              document_scanner
-            </span>
-          }
-          Analizar
-        </button>
-
-        @if (imagePlanning()) {
-          <button
-            mat-button
-            type="button"
-            class="assistant-image-cancel"
-            (click)="cancelImageAnalysis()"
-          >
-            Cancelar
-          </button>
-        }
-      }
-
-      <button
-        mat-button
-        type="button"
-        class="assistant-mic"
-        [class.is-recording]="
-          voiceState() === 'recording'
-        "
-        [disabled]="
-          voiceState() === 'transcribing'
-          || imagePlanning()
-          || (
-            planning()
-            && voiceState() !== 'recording'
-          )
-          || (
-            voiceState() !== 'recording'
-            && !runtimeReadyForVoice()
-          )
-        "
-        [title]="
-          voiceState() === 'recording'
-            ? 'Detener grabacion'
-            : 'Hablar con whisper.cpp'
-        "
-        (click)="toggleVoice()"
-      >
-        <span
-          class="material-symbols-rounded"
-          aria-hidden="true"
-        >
-          {{
-            voiceState() === 'recording'
-              ? 'stop_circle'
-              : 'mic'
-          }}
-        </span>
-        {{ voiceLabel() }}
-      </button>
-
-      <button
-        mat-flat-button
-        class="cf-button-primary"
-        type="button"
-        [disabled]="
-          planning()
-          || voiceBusy()
-          || imagePlanning()
-          || !runtimeReadyForText()
-          || !!store.assistantPlanningBlockReason()
-          || prompt.invalid
-          || !prompt.value.trim()
-        "
-        (click)="send()"
-      >
-        <span
-          class="material-symbols-rounded"
-          aria-hidden="true"
-        >
-          send
-        </span>
-        Enviar
+      <button mat-flat-button class="cf-button-primary" type="button" [disabled]="planning() || voiceBusy() || !!store.assistantPlanningBlockReason() || prompt.invalid || !prompt.value.trim()" (click)="send()">
+        <span class="material-symbols-rounded" aria-hidden="true">send</span>Enviar
       </button>
     </div>
-
-    @if (
-      voiceState() === 'recording'
-    ) {
-      <small
-        class="assistant-voice-status"
-        role="status"
-      >
-        <span
-          class="voice-dot"
-          aria-hidden="true"
-        ></span>
-        Grabando · pulsa Detener o espera 20 s
-      </small>
+    @if (voiceState() === 'recording') {
+      <small class="assistant-voice-status" role="status"><span class="voice-dot" aria-hidden="true"></span>Grabando · pulsa Detener o espera 20 s</small>
     }
   </div>
 </section>

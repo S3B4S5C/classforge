@@ -1,0 +1,22 @@
+:host { display: block; margin-top: 1rem; }
+.image-panel { overflow: hidden; border: 1px solid #dfe3f8; border-radius: 0.9rem; background: #fff; box-shadow: 0 8px 28px rgb(15 23 42 / 5%); }
+.image-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.8rem 0.9rem; border-bottom: 1px solid #eaecf0; background: #f8f9ff; }
+.image-header .material-symbols-rounded, .image-ready .material-symbols-rounded { color: #4f46e5; }
+.image-input { display: none; }
+.image-dropzone { width: calc(100% - 1.5rem); min-height: 116px; display: grid; place-items: center; gap: 0.2rem; margin: 0.75rem; padding: 0.75rem; border: 1px dashed #a5b4fc; border-radius: 0.75rem; background: #f8f9ff; color: #667085; font: inherit; cursor: pointer; }
+.image-dropzone .material-symbols-rounded { color: #4f46e5; font-size: 1.5rem; }
+.image-dropzone span:last-child { font-size: 0.74rem; }
+.image-content { display: grid; gap: 0.65rem; padding: 0.75rem; }
+.image-selected { display: grid; grid-template-columns: 120px minmax(0, 1fr); align-items: center; gap: 0.65rem; }
+.image-selected img { width: 120px; height: 96px; object-fit: contain; border: 1px solid #dfe3f8; border-radius: 0.6rem; background: #fafbff; }
+.image-selected strong { overflow: hidden; color: #344054; font-size: 0.76rem; text-overflow: ellipsis; white-space: nowrap; }
+.image-toolbar, .image-actions { display: flex; gap: 0.3rem; }
+.image-toolbar { justify-content: center; }
+.image-toolbar button { width: 2rem; height: 2rem; padding: 0; }
+.image-status, .image-ready { display: grid; justify-items: center; gap: 0.35rem; padding: 0.2rem; color: #344054; text-align: center; font-size: 0.76rem; }
+.image-status span, .image-estimate { margin: 0; color: #667085; font-size: 0.7rem; line-height: 1.4; text-align: center; }
+.image-ready { color: #067647; }
+.image-actions { justify-content: flex-end; }
+.image-error { padding: 0.55rem 0.65rem; border-radius: 0.55rem; background: #fef2f2; color: #b42318; font-size: 0.74rem; line-height: 1.4; }
+.image-analyze { width: 100%; }
+@media (max-width: 420px) { .image-selected { grid-template-columns: 96px minmax(0, 1fr); } .image-selected img { width: 96px; height: 80px; } .image-toolbar { flex-wrap: wrap; } }

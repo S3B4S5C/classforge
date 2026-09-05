@@ -1,0 +1,50 @@
+<section class="image-panel">
+  <header class="image-header">
+    <span class="material-symbols-rounded" aria-hidden="true">image</span>
+    <strong>Imagen a UML</strong>
+  </header>
+
+  <input #imageInput class="image-input" type="file" accept="image/png,image/jpeg,image/webp" aria-label="Seleccionar una imagen para crear UML" (change)="onImageSelected($event)" />
+
+  @if (!selectedImage()) {
+    <button class="image-dropzone" type="button" (click)="imageInput.click()" (dragover)="onImageDragOver($event)" (drop)="onImageDrop($event)">
+      <span class="material-symbols-rounded" aria-hidden="true">upload</span>
+      <strong>Arrastra una imagen aquí</strong>
+      <span>o selecciónala</span>
+    </button>
+  } @else {
+    <div class="image-content" (dragover)="onImageDragOver($event)" (drop)="onImageDrop($event)">
+      @if (!imageResult()) {
+        <div class="image-selected">
+          @if (imagePreviewUrl(); as previewUrl) {
+            <img [src]="previewUrl" alt="Vista previa de la imagen seleccionada" />
+          }
+          <strong [title]="selectedImage()?.name">{{ selectedImage()?.name }}</strong>
+        </div>
+      }
+
+      @if (!imagePlanning() && !imageResult()) {
+        <div class="image-toolbar">
+          <button mat-icon-button type="button" aria-label="Girar a la izquierda" title="Girar a la izquierda" [disabled]="imagePlanning()" (click)="rotateImage(-90)"><span class="material-symbols-rounded" aria-hidden="true">rotate_left</span></button>
+          <button mat-icon-button type="button" aria-label="Girar a la derecha" title="Girar a la derecha" [disabled]="imagePlanning()" (click)="rotateImage(90)"><span class="material-symbols-rounded" aria-hidden="true">rotate_right</span></button>
+          <button mat-icon-button type="button" aria-label="Recortar imagen" title="Recortar imagen" [disabled]="imagePlanning() || imageCropInsetPercent() >= 30" (click)="cropImage()"><span class="material-symbols-rounded" aria-hidden="true">crop</span></button>
+          <button mat-icon-button type="button" aria-label="Restablecer imagen" title="Restablecer imagen" [disabled]="imagePlanning()" (click)="resetImageEdits()"><span class="material-symbols-rounded" aria-hidden="true">restart_alt</span></button>
+          <button mat-icon-button type="button" aria-label="Quitar imagen" title="Quitar imagen" [disabled]="imagePlanning()" (click)="clearSelectedImage()"><span class="material-symbols-rounded" aria-hidden="true">delete</span></button>
+        </div>
+      }
+
+      @if (imagePlanning()) {
+        <div class="image-status" aria-live="polite"><mat-spinner diameter="20"></mat-spinner><strong>Analizando imagen...</strong><span>Puede tardar entre 2 y 5 min según el tamaño del diagrama.</span></div>
+      } @else if (imageResult(); as result) {
+        <div class="image-ready" aria-live="polite"><span class="material-symbols-rounded" aria-hidden="true">check_circle</span><strong>Análisis completo</strong><span>¿Quieres aplicarlo?</span></div>
+        <div class="image-actions"><button mat-button class="cf-button-secondary" type="button" (click)="discardImagePlan()">Descartar</button><button mat-flat-button class="cf-button-primary" type="button" (click)="applyImagePlan()">Aplicar</button></div>
+      } @else if (error()) {
+        <div class="image-error" role="alert">{{ error() }}</div>
+        <div class="image-actions"><button mat-button class="cf-button-secondary" type="button" (click)="imageInput.click()">Cambiar imagen</button><button mat-flat-button class="cf-button-primary" type="button" (click)="retryImageAnalysis()">Reintentar</button></div>
+      } @else {
+        <button mat-flat-button class="cf-button-primary image-analyze" type="button" [disabled]="!selectedImage() || imagePlanning()" (click)="analyzeImage()">Analizar imagen</button>
+        <p class="image-estimate">Puede tardar entre 2 y 5 min según el tamaño del diagrama.</p>
+      }
+    </div>
+  }
+</section>
