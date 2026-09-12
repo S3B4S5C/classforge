@@ -26,12 +26,21 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'com.auth0:java-jwt:4.6.0'
     implementation 'org.openpnp:opencv:4.9.0-0'
+    implementation 'org.freemarker:freemarker'
 
     runtimeOnly 'com.h2database:h2'
     runtimeOnly 'org.postgresql:postgresql'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
+}
+
+tasks.named('processResources') {
+    from('gradle/wrapper/gradle-wrapper.jar') {
+        into 'generation/spring/static/gradle/wrapper'
+    }
+    from('gradlew') { into 'generation/spring/static' }
+    from('gradlew.bat') { into 'generation/spring/static' }
 }
 
 tasks.withType(JavaCompile).configureEach {

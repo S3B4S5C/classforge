@@ -1,0 +1,31 @@
+package com.classforge.generation.spring.rendering;
+
+import com.classforge.generation.spring.generated.*;
+import com.classforge.generation.spring.model.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import org.springframework.stereotype.Component;
+
+@Component
+public class SpringProjectRenderer {
+    private final SpringFreeMarkerRenderer templates;
+    private final GeneratedProjectValidator validator;
+    public SpringProjectRenderer(SpringFreeMarkerRenderer templates, GeneratedProjectValidator validator) { this.templates = templates; this.validator = validator; }
+    public GeneratedProject render(SpringGenerationModel model) {
+        Objects.requireNonNull(model, "model is required"); List<GeneratedFile> files = new ArrayList<>(); String packagePath = model.basePackage().replace('.', '/');
+        add(files, "project/build.gradle.ftl", "build.gradle", Map.of("model", model)); add(files, "project/settings.gradle.ftl", "settings.gradle", Map.of("model", model));
+        add(files, "project/application.java.ftl", "src/main/java/" + packagePath + "/" + model.applicationClassName() + ".java", Map.of("model", model));
+        add(files, "project/application.yml.ftl", "src/main/resources/application.yml", Map.of("model", model)); add(files, "project/application-postgres.yml.ftl", "src/main/resources/application-postgres.yml", Map.of("model", model));
+        add(files, "project/test-application.yml.ftl", "src/test/resources/application.yml", Map.of("model", model)); add(files, "project/application-test.java.ftl", "src/test/java/" + packagePath + "/" + model.applicationClassName() + "Tests.java", Map.of("model", model));
+        add(files, "project/README.md.ftl", "README.md", Map.of("model", model)); add(files, "project/gitignore.ftl", ".gitignore", Map.of()); add(files, "project/gradle-wrapper.properties.ftl", "gradle/wrapper/gradle-wrapper.properties", Map.of());
+        staticFile(files, "gradlew", "generation/spring/static/gradlew", GeneratedFileType.TEXT); staticFile(files, "gradlew.bat", "generation/spring/static/gradlew.bat", GeneratedFileType.TEXT); staticFile(files, "gradle/wrapper/gradle-wrapper.jar", "generation/spring/static/gradle/wrapper/gradle-wrapper.jar", GeneratedFileType.BINARY);
+        for (SpringEntityModel entity : model.entities()) { add(files, "jpa/entity.java.ftl", "src/main/java/" + packagePath + "/entity/" + entity.className() + ".java", Map.of("model", model, "entity", entity, "imports", imports(entity))); if (entity.id().kind() == SpringIdKind.COMPOSITE && entity.id().declaredByEntity()) add(files, "jpa/id-class.java.ftl", "src/main/java/" + packagePath + "/entity/" + entity.id().idClassName() + ".java", Map.of("model", model, "entity", entity)); }
+        for (SpringRepositoryModel repository : model.repositories()) add(files, "jpa/repository.java.ftl", "src/main/java/" + packagePath + "/repository/" + repository.interfaceName() + ".java", Map.of("model", model, "repository", repository));
+        GeneratedProject project = new GeneratedProject(model.artifactName(), files); validator.validate(project); return project;
+    }
+    private void add(List<GeneratedFile> files, String template, String path, Map<String, Object> context) { files.add(templates.render(template, path, context)); }
+    private void staticFile(List<GeneratedFile> files, String path, String resource, GeneratedFileType type) { try (InputStream input = getClass().getClassLoader().getResourceAsStream(resource)) { if (input == null) throw new GeneratedProjectException(List.of(new GeneratedProjectDiagnostic(GeneratedProjectDiagnosticCode.STATIC_RESOURCE_NOT_FOUND, resource, "Static resource is missing."))); byte[] bytes = input.readAllBytes(); files.add(new GeneratedFile(path, type, type == GeneratedFileType.TEXT ? SpringFreeMarkerRenderer.normalizeGeneratedText(new String(bytes, StandardCharsets.UTF_8)).getBytes(StandardCharsets.UTF_8) : bytes)); } catch (IOException exception) { throw new GeneratedProjectException(List.of(new GeneratedProjectDiagnostic(GeneratedProjectDiagnosticCode.STATIC_RESOURCE_NOT_FOUND, resource, exception.getMessage())), exception); } }
+    private Set<String> imports(SpringEntityModel entity) { Set<String> result = new TreeSet<>(); result.add("jakarta.persistence.Column"); result.add("jakarta.persistence.Entity"); result.add("jakarta.persistence.Table"); if (entity.id().declaredByEntity()) result.add("jakarta.persistence.Id"); if (entity.id().kind() == SpringIdKind.COMPOSITE && entity.id().declaredByEntity()) result.add("jakarta.persistence.IdClass"); if (entity.inheritance().kind() == SpringInheritanceKind.JOINED_ROOT) { result.add("jakarta.persistence.Inheritance"); result.add("jakarta.persistence.InheritanceType"); } if (entity.inheritance().kind() == SpringInheritanceKind.JOINED_SUBCLASS) { result.add("jakarta.persistence.PrimaryKeyJoinColumn"); result.add("jakarta.persistence.PrimaryKeyJoinColumns"); } for (SpringScalarFieldModel field : entity.scalarFields()) if (!field.javaType().qualifiedName().startsWith("java.lang")) result.add(field.javaType().qualifiedName()); for (SpringDirectRelationModel relation : entity.directRelations()) { result.add("jakarta.persistence.FetchType"); result.add("jakarta.persistence.JoinColumn"); if (relation.joinColumns().size() > 1) result.add("jakarta.persistence.JoinColumns"); result.add(relation.kind() == SpringDirectRelationKind.MANY_TO_ONE ? "jakarta.persistence.ManyToOne" : "jakarta.persistence.OneToOne"); if (relation.onDeleteCascade()) { result.add("org.hibernate.annotations.OnDelete"); result.add("org.hibernate.annotations.OnDeleteAction"); } } for (SpringManyToManyRelationModel relation : entity.manyToManyRelations()) { result.add("jakarta.persistence.FetchType"); result.add("jakarta.persistence.JoinColumn"); result.add("jakarta.persistence.JoinTable"); result.add("jakarta.persistence.ManyToMany"); result.add("java.util.LinkedHashSet"); result.add("java.util.Set"); } if (!entity.uniqueConstraints().isEmpty()) result.add("jakarta.persistence.UniqueConstraint"); if (!entity.indexes().isEmpty()) result.add("jakarta.persistence.Index"); return result; }
+}
