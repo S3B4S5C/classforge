@@ -50,7 +50,7 @@ public class GeneratedProjectValidator {
             "Set", "LinkedHashSet", "Serializable", "Object"
     );
     private static final Set<String> ALLOWED_RUNTIME_PLACEHOLDERS = Set.of(
-            "DB_URL", "DB_USERNAME", "DB_PASSWORD"
+            "DB_URL", "DB_USERNAME", "DB_PASSWORD", "JWT_SECRET", "app.security.jwt-secret", "app.security.jwt-expiration-seconds"
     );
 
     public void validate(GeneratedProject project) {

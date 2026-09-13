@@ -2,8 +2,8 @@
 
 > Herramienta CASE colaborativa para modelado UML de clases y generación automática de aplicaciones backend/frontend operables mediante interfaz convencional, lenguaje natural y voz.
 
-<!-- PRODUCT-STATUS-CYCLE1-2026-08-28 -->
-## Estado de implementación al cierre del Ciclo 1
+<!-- PRODUCT-STATUS-CYCLE3-CU13-2026-09-13 -->
+## Estado de implementación al corte actual
 
 Este documento describe el **producto objetivo**. El uso de futuro o la descripción de una capacidad no implica que dicha capacidad ya esté implementada.
 
@@ -19,9 +19,12 @@ Fuente normativa del estado: `../puds/current-status.md`.
 | llama.cpp y whisper.cpp locales | IMPLEMENTADO |
 | Imagen a UML | IMPLEMENTADO |
 | XMI / Enterprise Architect | PLANIFICADO |
-| UML a modelo relacional | IMPLEMENTADO — IR interna CU-12 |
-| Generadores Spring/OpenAPI/Postman | PLANIFICADO |
-| Frontend web/mobile generado | PLANIFICADO |
+| UML a modelo relacional | IMPLEMENTADO — CU-12 cerrado |
+| Generador Spring Boot/JPA | IMPLEMENTADO — CU-13 cerrado |
+| API CRUD expresiva — CRUD simple / Sistema de Información con Auth | IMPLEMENTADO — CU-14 cerrado |
+| OpenAPI/Postman | PLANIFICADO — CU-15 |
+| Domain Manifest | PLANIFICADO — CU-16 |
+| Frontend web/mobile generado | PLANIFICADO — CU-17/CU-18 |
 | Voz sobre la aplicación generada | PLANIFICADO |
 | Membresías e invitaciones | IMPLEMENTADO — CU-31 cerrado con membership, invitaciones, realtime/presencia/Assistant y hardening concurrente |
 
@@ -454,6 +457,8 @@ Las reglas deberán estar sustentadas por la bibliografía utilizada para la tra
 
 ## 9. CU-13 - Generación de backend Spring Boot/JPA
 
+**Estado actual: IMPLEMENTADO / CERRADO.** La evidencia ejecutable está en `../evidence/cu13/`.
+
 CU-13 genera un proyecto reproducible desde el modelo relacional: Java 21, Spring Boot **4.0.8** fijado, Gradle Wrapper 9.2.0, Spring Web MVC bootstrap, Spring Data JPA, Hibernate, Jakarta Validation, entidades, repositorios, IDs simples y compuestos con `@IdClass`, relaciones directas, N:M, herencia JOINED y un context-load test.
 
 H2 es la configuración default del proyecto generado. PostgreSQL es un profile adicional configurado por variables de entorno. No se usan versiones flotantes.
@@ -500,7 +505,7 @@ Los artefactos `service.java.ftl`, `controller.java.ftl`, `dto.java.ftl` y `exce
 
 ---
 
-## 10. CU-14 - Capacidades estándar de API
+## 10. CU-14 - API CRUD expresiva y modos de aplicación
 
 Cada entidad generada deberá incluir, cuando corresponda:
 
@@ -516,9 +521,41 @@ Cada entidad generada deberá incluir, cuando corresponda:
 - conteo;
 - navegación de relaciones.
 
-CU-14 incluye controllers, services, DTOs, API mapping, filtros, búsqueda, paginación y ordenamiento. La API debe ser suficientemente expresiva para permitir que el asistente de lenguaje natural opere sobre ella sin requerir un endpoint especial para cada frase posible.
+CU-14 cerrado incluye controllers, services, DTOs, mapping, CREATE/READ/UPDATE/DELETE/LIST, búsqueda libre, filtros `filter.<campo>`, ordenamiento, paginación, conteo y navegación por IDs de relaciones. La API es suficientemente expresiva para servir de base a los casos posteriores sin generar un endpoint específico por frase.
 
-CU-14 podrá extender la exportación con `Incluir autenticación`, seleccionando credential class, username attribute y password attribute. Esa configuración no modifica `UmlModel` ni `RelationalModel`, y no se implementa en CU-13.
+### 10.1 Dos modos de generación
+
+La UX de CU-14 debe presentar dos modos **explícitos y mutuamente excluyentes**, no un checkbox ambiguo:
+
+#### CRUD simple
+
+Genera la API expresiva sobre el proyecto Spring Boot/JPA de CU-13 sin seguridad de aplicación. No agrega Spring Security, login, JWT ni reglas especiales de credenciales. Es la opción directa para prototipos, APIs internas o sistemas donde la autenticación se resolverá fuera de ClassForge.
+
+#### Sistema de Información con Auth
+
+Genera la misma API CRUD y añade autenticación. Al seleccionar este modo, la UI debe mostrar tres campos obligatorios y dependientes:
+
+1. **Tabla/entidad de autenticación.** Solo pueden elegirse tablas de `RelationalModel` con origen `UML_CLASS`; una tabla N:M de unión no es candidata.
+2. **Usuario/login.** Se elige un atributo de la entidad seleccionada.
+3. **Contraseña.** Se elige otro atributo de la misma entidad.
+
+La UI muestra nombres comprensibles, pero la solicitud de generación debe transportar identidades estables de la clase/atributos de origen. Los selectores de usuario y contraseña se recalculan al cambiar la tabla de autenticación y nunca permiten elegir columnas derivadas de FK, PK heredada o join-table como si fueran atributos UML.
+
+La configuración Auth pertenece únicamente al target generado: no agrega estereotipos al UML, no persiste `RelationalModel`, no modifica `ProjectDocument` y no incrementa la revisión.
+
+El resultado Auth debe incluir como mínimo:
+
+- Spring Security;
+- `PasswordEncoder` para no persistir credenciales en texto plano;
+- endpoint de login;
+- emisión/validación JWT;
+- protección stateless de todo el API salvo `/api/auth/login` y el bootstrap inicial;
+- DTOs de respuesta que omitan la contraseña;
+- tratamiento seguro de writes sobre el atributo seleccionado como contraseña.
+
+La selección debe validarse antes de renderizar. Referencias stale, tabla inexistente, atributos ajenos a la entidad, columnas sintéticas/relacionales o usuario y contraseña apuntando al mismo atributo provocan rechazo fail-closed y ningún ZIP parcial.
+
+Este perfil no debe confundirse con la autenticación de ClassForge: las cuentas OWNER/EDITOR controlan quién puede **generar** el artefacto; la tabla/entidad elegida controla quién podrá **iniciar sesión en la aplicación generada**.
 
 Ejemplos de consultas deseadas:
 
@@ -1155,7 +1192,7 @@ Backend
 IA / STT
 - llama.cpp
 - Qwen2.5-3B-Instruct Q4_K_M para texto/voz -> tools UML
-- VLM local para imagen -> UML mediante llama.cpp; implementación completa, selección/calibración final pendiente de evidencia CU-09
+- VLM local para imagen -> UML mediante llama.cpp; CU-09 cerrado con Qwen3-VL-4B + OpenCV + Java y evidencia de calibración/aceptación consolidada
 - whisper.cpp
 
 Interoperabilidad

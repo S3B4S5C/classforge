@@ -27,3 +27,7 @@ Consultar `cycle-01/`.
 ## Ciclo 2
 
 Consultar `cycle-02/`. El ciclo está CERRADO con CU-31 y CU-09 cerrados.
+
+## Ciclo 3
+
+Consultar `cycle-03/`. El ciclo está CERRADO en Construcción con CU-12, CU-13 y CU-14 aceptados. El preflight de CU-14 está en `cycle-03/C3-cu14-000-crud-auth-scope.md` y su incremento de cierre en `cycle-03/C3-cu14-001-crud-auth-generator.md`.

@@ -11,10 +11,10 @@ package ${model.basePackage}.entity;
     @PrimaryKeyJoinColumn(name = "${column.localColumnName}", referencedColumnName = "${column.referencedColumnName}")<#if column_has_next>,</#if></#list>
 })
 </#if></#if>public class ${entity.className}<#if entity.inheritance.kind?string == "JOINED_SUBCLASS"> extends ${entity.inheritance.superClassName}</#if> {
-    protected ${entity.className}() { }
+    <#if api.enabled()>public<#else>protected</#if> ${entity.className}() { }
 
 <#list entity.scalarFields as field><#if field.identifier && entity.id.declaredByEntity>    @Id
-</#if>    @Column(name = "${field.columnName}", nullable = ${field.nullable?c})
+</#if>    @Column(name = "${field.columnName}", nullable = <#if api.enabled() && (apiEntity.isUsernameAttribute(field.sourceAttributeId) || apiEntity.isPasswordAttribute(field.sourceAttributeId))>false<#else>${field.nullable?c}</#if><#if api.enabled() && apiEntity.isUsernameAttribute(field.sourceAttributeId)>, unique = true</#if>)
     private ${field.javaType.simpleName()} ${field.fieldName};
 
 </#list><#list entity.directRelations as relation><#if relation.onDeleteCascade>    @OnDelete(action = OnDeleteAction.CASCADE)

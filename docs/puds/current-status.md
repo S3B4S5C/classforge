@@ -1,6 +1,6 @@
 # Estado actual PUDS
 
-**Fecha de corte:** 12 de septiembre de 2026.
+**Fecha de corte:** 13 de septiembre de 2026.
 
 ```text
 Fase PUDS: Construcción
@@ -8,16 +8,19 @@ Ciclo 1: CERRADO
 Ciclo 2: CERRADO
 CU-31: CERRADO
 CU-09: CERRADO
-Ciclo 3: OPEN
+Ciclo 3: CERRADO
 CU-12: CERRADO
 CU-13: CERRADO
-Current increment: C3-cu13-006 CLOSED - GeneratedProject hardening + generated-project acceptance
-Next: CU-14 - CRUD/API expresiva + autenticación opcional
+CU-14: CERRADO
+Current increment: C3-cu14-001 CLOSED - CRUD simple / Sistema de Información con Auth
+Next candidate: CU-15 - OpenAPI y Postman
 ```
 
 ## Resumen ejecutivo del corte
 
-El Ciclo 2 se cierra después de resolver sus dos riesgos principales:
+Los Ciclos 1, 2 y 3 están cerrados. El Ciclo 3 completó CU-12 (IR relacional determinista), CU-13 (generación/export Spring Boot/JPA reproducible) y CU-14 (API CRUD expresiva con perfiles CRUD simple y Sistema de Información con Auth). CU-15 queda como siguiente candidato para un nuevo ciclo.
+
+Como antecedente inmediato, el Ciclo 2 se cerró después de resolver sus dos riesgos principales:
 
 1. colaboración entre cuentas reales mediante OWNER/EDITOR/NONE, invitaciones, STOMP y presencia (`CU-31`);
 2. entrada visual segura al mismo modelo UML canónico mediante un pipeline local VLM + OpenCV + Java (`CU-09`).
@@ -41,7 +44,9 @@ CU-09 queda funcionalmente aceptado el 5 de septiembre de 2026. La imagen nunca 
 | CU-29 Iniciar sesión | CERRADO | autenticación stateless |
 | CU-30 Proyectos propios | CERRADO | ownership persistente |
 | CU-31 Membresía e invitaciones | CERRADO | OWNER/EDITOR/NONE, invitaciones y colaboración real |
-| CU-12 Modelo relacional | CERRADO | IR interna, efímera y determinista para CU-13 |
+| CU-12 Modelo relacional | CERRADO | IR interna, efímera y determinista consumida por CU-13 |
+| CU-13 Generar backend Spring Boot/JPA | CERRADO | ZIP reproducible Java 21/Spring Boot 4.0.8, export autorizado y acceptance compilable sobre H2 |
+| CU-14 Generar API CRUD expresiva | CERRADO | DTOs/services/controllers; CRUD/filtros/paginación/relaciones; perfiles Simple/Auth con BCrypt + JWT |
 
 ## CU-09 — estado final
 
@@ -218,7 +223,7 @@ C3-cu13-006 completa la validación de `GeneratedProject` y la prueba ejecutable
 
 La matriz cubre simple ID, composite ID, 1:N, 1:1, N:M, aggregation, composition, composite FK, JOINED, multi-level JOINED y relación a subclass. Todos los proyectos deben aprobar `clean build` y `ApplicationTests.contextLoads()` sobre H2 sin cambios manuales. La fixture de relaciones se genera dos veces y exige igualdad byte a byte y SHA-256.
 
-Evidencia: `docs/evidence/cu13/cu13-acceptance.json`.
+Evidencia: `docs/evidence/cu13/cu13-closure-report.md` y `docs/evidence/cu13/cu13-acceptance.json`.
 
 ## Limitaciones vigentes del producto
 
@@ -226,10 +231,10 @@ Evidencia: `docs/evidence/cu13/cu13-acceptance.json`.
 2. La generalización estadística de Imagen -> UML sobre múltiples pizarras reales puede reforzarse con un conjunto adicional de fotografías.
 3. XMI/Enterprise Architect no está implementado.
 4. `RelationalModel` no tiene UI ni se persiste. CU-13 está CERRADO: exporta un backend Spring Boot/JPA reproducible, con fallback PK explícito y no persistente, validación estructural previa al ZIP y acceptance que compila los proyectos generados y carga Spring sobre H2.
-5. La API CRUD expresiva, autenticación opcional, frontends generados y asistente de voz de la aplicación generada aún pertenecen a casos posteriores.
+5. CU-14 está cerrado con dos modos explícitos. CRUD simple no genera seguridad; Auth exige entidad + atributos STRING de usuario/password, hashea passwords con BCrypt, excluye password de responses, expone bootstrap inicial + login y protege el resto con JWT. Frontends generados y asistente de voz pertenecen a casos posteriores.
 6. Auditoría histórica completa CU-26 permanece pendiente.
 7. `docs/uml/` conserva el catálogo de diagramas académicos pendientes de elaboración/presentación final.
 
 ## Próximo paso PUDS
 
-Cycle 3 está OPEN. CU-13 queda CERRADO con evidencia en `docs/evidence/cu13/cu13-acceptance.json`. Siguiente caso: CU-14 - CRUD/API expresiva + autenticación opcional. `RelationalModel` no tiene UI y no se persiste.
+Ciclo 3 está CERRADO. CU-14 queda CERRADO con evidencia en `docs/evidence/cu14/cu14-closure-report.md`; CU-13 conserva su evidencia en `docs/evidence/cu13/`. Siguiente candidato: CU-15 — OpenAPI y Postman. `RelationalModel` no tiene UI y no se persiste.

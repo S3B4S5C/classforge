@@ -220,3 +220,35 @@ tasks.register('springGenerationAcceptance', Test) {
         exceptionFormat = 'full'
     }
 }
+
+
+// C3-CU14: compile and context-load representative CRUD simple and Auth exports.
+tasks.register('springCrudGenerationAcceptance', Test) {
+    group = 'verification'
+    description = 'Generates CU-14 simple CRUD and authenticated systems, then runs their own Gradle build/context-load tests.'
+
+    dependsOn testClasses
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+    useJUnitPlatform()
+    maxParallelForks = 1
+    filter {
+        includeTestsMatching 'com.classforge.generation.spring.acceptance.SpringCrudGenerationAcceptanceIntegrationTest'
+    }
+
+    systemProperty 'spring.crud.acceptance.enabled', 'true'
+    systemProperty 'spring.crud.acceptance.gradle-user-home', gradle.gradleUserHomeDir.absolutePath
+
+    def generatedJavaHome = providers.gradleProperty('generatedJavaHome')
+    if (generatedJavaHome.isPresent()) {
+        systemProperty 'spring.crud.acceptance.java-home', generatedJavaHome.get()
+    }
+
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+}

@@ -1,6 +1,6 @@
 # C3-cu13-005a — Opt-in first-attribute primary-key fallback
 
-**Estado:** VALIDADO / CERRADO (cierre condicionado a gates locales del parche)
+**Estado:** VALIDADO / CERRADO
 
 ## Objetivo
 
@@ -42,7 +42,7 @@ Estado no recuperable:
 - frontend `npm run build`;
 - `git diff --check`.
 
-C3-cu13-006 permanece como siguiente incremento y es responsable del hardening de `GeneratedProject`, acceptance compilable/H2 y cierre global de CU-13.
+Los gates locales de este incremento quedaron satisfechos. C3-cu13-006 se ejecutó posteriormente, endureció `GeneratedProject`, añadió acceptance compilable/H2 y cerró globalmente CU-13.
 
 
 ## Hardening de build detectado por export manual
@@ -52,4 +52,4 @@ Una ejecucion manual de un proyecto exportado revelo dos condiciones distintas:
 - el target Java 21 funciona cuando Gradle detecta un JDK 21 local; esto es un requisito de toolchain, no un error de generacion;
 - el `build.gradle` generado necesitaba importar explicitamente `spring-boot-dependencies:4.0.8` como Gradle platform para gobernar las versiones de starters, H2 y PostgreSQL.
 
-El renderer queda protegido por un test focal que exige el BOM de Spring Boot 4.0.8. El acceptance compilable completo sigue perteneciendo a C3-cu13-006.
+El renderer queda protegido por un test focal que exige el BOM de Spring Boot 4.0.8. El acceptance compilable completo pertenece a C3-cu13-006 y quedó ejecutado en el cierre de CU-13.

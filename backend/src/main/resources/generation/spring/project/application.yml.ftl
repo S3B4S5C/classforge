@@ -7,3 +7,8 @@ spring:
     hibernate:
       ddl-auto: create-drop
     open-in-view: false
+<#if api.authEnabled()>app:
+  security:
+    jwt-secret: ${r'${JWT_SECRET:classforge-change-me-before-production}'}
+    jwt-expiration-seconds: 3600
+</#if>

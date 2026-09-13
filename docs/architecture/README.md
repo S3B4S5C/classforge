@@ -1,6 +1,6 @@
 # Arquitectura de ClassForge
 
-**Estado:** arquitectura ejecutable con Ciclos 1 y 2 cerrados; CU-31 y CU-09 cerrados.
+**Estado:** arquitectura ejecutable en fase de Construcción; Ciclos 1, 2 y 3 cerrados; CU-12, CU-13 y CU-14 cerrados.
 
 ## Fuente de verdad
 
@@ -41,7 +41,8 @@ ProjectDocument
 | `uml-relationships.md` | relaciones y dirección | implementado |
 | `jointjs-canvas.md` | proyección visual | implementado |
 | `uml-validation.md` | reglas UML | implementado |
-| `relational-model.md` | IR relacional interna | CU-12 implementado |
+| `relational-model.md` | IR relacional interna | CU-12 cerrado |
+| `spring-boot-generation.md` | generación/export Spring Boot/JPA + API CRUD Simple/Auth | CU-13 y CU-14 cerrados |
 | `api-validation-errors.md` | contrato de errores | implementado |
 | `command-bus.md` | comandos y Undo/Redo | implementado |
 | `authentication-and-ownership.md` | auth y aislamiento | implementado |
@@ -68,12 +69,13 @@ ProjectDocument
 10. IA genera propuestas estructuradas, no mutaciones directas.
 11. LLM no genera UUID.
 12. UML -> relacional es determinista, interno y no depende de IA.
+13. Spring Boot/JPA se genera desde `RelationalModel` mediante una IR de generación, proyecto virtual validado y ZIP determinista; la exportación es read-only.
 
 ## Arquitectura todavía no implementada
 
 
 - XMI 2.1 / Enterprise Architect;
-- generador Spring Boot/JPA;
+- OpenAPI/Postman de CU-15;
 - OpenAPI/Postman generado;
 - Domain Manifest de aplicación generada;
 - frontend Angular generado;

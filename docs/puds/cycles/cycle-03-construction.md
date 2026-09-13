@@ -1,23 +1,50 @@
 # Ciclo 3 — Construcción reproducible
 
-**Fase PUDS:** Construcción  
-**Estado:** OPEN
+**Fase PUDS:** Construcción
+**Estado:** CERRADO
+**Cierre:** 13 de septiembre de 2026
 
 ## Objetivo
-Transformar el modelo UML canónico en artefactos de aplicación reproducibles.
+Transformar el modelo UML canónico en artefactos backend reproducibles y utilizables como sistema de información.
 
-## Scope inicial
-- CU-12: IR relacional interna determinista.
-- CU-13: generador Spring Boot/JPA.
-- CU-14: API CRUD.
+## Scope cerrado
+- CU-12: IR relacional interna determinista — CERRADO.
+- CU-13: generador/export Spring Boot/JPA — CERRADO.
+- CU-14: API CRUD expresiva con dos modos: CRUD simple o Sistema de Información con Auth — CERRADO.
 
-CU-15 puede ser el siguiente candidato, pero no se implementa aquí.
+CU-15 (OpenAPI/Postman) queda fuera de este ciclo y debe abrir un nuevo Ciclo PUDS antes de implementarse.
 
+## Resultado
 
-## Estado al cierre de CU-13
+```text
+ProjectDocument @ revision N
+  -> UmlModel
+  -> RelationalModel                 CU-12
+  -> SpringGenerationModel          CU-13
+  -> SpringApiGenerationPlan        CU-14 (efímero)
+  -> GeneratedProject
+  -> validated deterministic ZIP
+```
 
-- CU-12: CERRADO.
-- CU-13: CERRADO.
-- CU-14: PLANIFICADO / siguiente caso del ciclo.
+La configuración de CU-14 no modifica el UML, el modelo relacional ni la revisión. La UX ofrece dos modos mutuamente excluyentes:
 
-El Ciclo 3 permanece OPEN. CU-13 queda aceptado con validación estructural del `GeneratedProject`, ZIP determinista y acceptance que compila proyectos generados y carga su contexto Spring sobre H2. La evidencia máquina-legible se conserva en `docs/evidence/cu13/cu13-acceptance.json`.
+```text
+Generar API / sistema
+  ├─ CRUD simple
+  │    └─ DTOs + services + controllers + query/list/count/relations
+  └─ Sistema de Información con Auth
+       ├─ entidad de autenticación
+       ├─ atributo STRING usuario/login
+       ├─ atributo STRING contraseña
+       └─ BCrypt + bootstrap + login + JWT + API protegida
+```
+
+La selección Auth viaja por UUID del origen UML. El password nunca aparece en DTOs de respuesta ni se persiste en claro. El bootstrap público sólo funciona con la tabla Auth vacía; después no existe registro público. JWT expira a 3600 s y CU-14 no implementa refresh ni roles.
+
+## Evidencia
+- CU-12: `../../evidence/cu12/`.
+- CU-13: `../../evidence/cu13/`.
+- CU-14: `../../evidence/cu14/cu14-closure-report.md`.
+- Gate ejecutable CU-14: `backend/gradlew.bat springCrudGenerationAcceptance`.
+
+El acceptance CU-14 genera un proyecto Simple y uno Auth, ejecuta el Gradle Wrapper de cada export y exige build + `contextLoads()` + H2.

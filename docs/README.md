@@ -29,12 +29,16 @@ Los `.md` son documentos versionables y constituyen la fuente de verdad. El Word
 ## Corte actual
 
 ```text
-Fase PUDS: Elaboración
+Fase PUDS: Construcción
 Ciclo 1: CERRADO
 Ciclo 2: CERRADO
+Ciclo 3: CERRADO
 CU-31: CERRADO
 CU-09: CERRADO
-Fecha: 05-09-2026
+CU-12: CERRADO
+CU-13: CERRADO
+Siguiente candidato: CU-15 — OpenAPI y Postman
+Fecha: 13-09-2026
 ```
 
 ## CU-09 como fuente para el Word final
@@ -49,6 +53,27 @@ Para explicar Imagen -> UML en la documentación presentable, usar en este orden
 6. `evidence/cu09/hybrid-cv-geometry.md` — Cal-010..017 y benchmark focal.
 7. `evidence/cu09/cu09-acceptance.json` — evidencia estructurada del cierre.
 8. `puds/cycles/cycle-02-elaboration.md` — contexto y cierre del Ciclo 2.
+
+## CU-13 como fuente para el Word final
+
+Para explicar UML -> relacional -> Spring Boot/JPA y el cierre de CU-13, usar en este orden:
+
+1. `puds/use-cases.md` — definición normativa de CU-12/CU-13.
+2. `evidence/cu13/cu13-closure-report.md` — resumen de alcance, gates y decisión de cierre.
+3. `architecture/relational-model.md` — contrato de la IR relacional cerrada por CU-12.
+4. `architecture/spring-boot-generation.md` — arquitectura vigente del generador/export.
+5. `evidence/cu13/cu13-acceptance.json` — evidencia máquina-legible de determinismo y proyectos generados.
+6. `puds/cycles/cycle-03-construction.md` — cierre del Ciclo 3 con CU-12, CU-13 y CU-14 aceptados.
+
+
+## Cierre normativo de CU-14
+
+CU-14 conserva dos modos de generación explícitos y mutuamente excluyentes:
+
+1. **CRUD simple:** genera la API CRUD expresiva sin Spring Security, login, JWT ni tratamiento especial de credenciales.
+2. **Sistema de Información con Auth:** genera la misma API más autenticación. Antes de exportar, el usuario debe seleccionar la **tabla/entidad de autenticación**, el **atributo de usuario/login** y el **atributo de contraseña** pertenecientes a esa misma tabla/entidad.
+
+La definición detallada está en `puds/use-cases.md`, `product/product.md` y `puds/iterations/cycle-03/C3-cu14-000-crud-auth-scope.md`.
 
 ## Composición prevista del Word
 

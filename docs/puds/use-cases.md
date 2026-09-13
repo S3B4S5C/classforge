@@ -1,6 +1,6 @@
 # Casos de uso de ClassForge — especificación vigente
 
-**Corte:** 12 de septiembre de 2026.
+**Corte:** 13 de septiembre de 2026.
 
 Este documento es la fuente normativa de los casos de uso.
 
@@ -14,7 +14,7 @@ En ClassForge llamamos **Ciclo** a una **iteración PUDS**.
 Fase: Construcción
 Ciclo 1: CERRADO
 Ciclo 2: CERRADO
-Ciclo 3: OPEN
+Ciclo 3: CERRADO
 ```
 
 ## 2. Actores
@@ -61,7 +61,7 @@ Participa en validación, persistencia, auditoría y generación.
 | CU-11 | Exportar XMI para Enterprise Architect | PLANIFICADO |
 | CU-12 | Transformar UML a modelo relacional | CERRADO |
 | CU-13 | Generar backend Spring Boot/JPA | CERRADO |
-| CU-14 | Generar API CRUD expresiva | PLANIFICADO |
+| CU-14 | Generar API CRUD expresiva — CRUD simple / Sistema de Información con Auth | CERRADO |
 | CU-15 | Generar OpenAPI y Postman | PLANIFICADO |
 | CU-16 | Generar Domain Manifest | PLANIFICADO |
 | CU-17 | Generar frontend web Angular | PLANIFICADO |
@@ -319,13 +319,59 @@ Importar subconjunto XMI 2.1 compatible con Enterprise Architect.
 Exportar el mismo subconjunto y probar round-trip con Enterprise Architect.
 
 ### CU-12 — UML a modelo relacional
-**Estado: CERRADO.** Transformación determinista e interna de `UmlModel` a `RelationalModel`. La IR no es visible al usuario y será consumida por CU-13.
+**Estado: CERRADO.** Transformación determinista e interna de `UmlModel` a `RelationalModel`. La IR no es visible al usuario, no se persiste y es consumida por CU-13.
 
 ### CU-13 — Generar backend Spring Boot/JPA
-**Estado: CERRADO.** C3-cu13-001 cerró la IR y planner; C3-cu13-002 el proyecto virtual y rendering; C3-cu13-003 la generación interna y ZIP determinista; C3-cu13-004 el export HTTP autorizado; C3-cu13-005 la UX de descarga; C3-cu13-005a el fallback PK explícito y efímero; y C3-cu13-006 cerró `GeneratedProjectValidator` y el acceptance ejecutable. La evidencia final genera ZIPs desde `UmlModel`, los extrae en temporales, ejecuta el Gradle Wrapper generado, exige `contextLoads()` sobre H2 y prueba igualdad SHA-256 para entradas iguales.
+**Estado: CERRADO.** C3-cu13-001 cerró la IR y planner; C3-cu13-002 el proyecto virtual y rendering; C3-cu13-003 la generación interna y ZIP determinista; C3-cu13-004 el export HTTP autorizado; C3-cu13-005 la UX de descarga; C3-cu13-005a el fallback PK explícito y efímero; y C3-cu13-006 cerró `GeneratedProjectValidator` y el acceptance ejecutable. La evidencia final genera ZIPs desde `UmlModel`, los extrae en temporales, ejecuta el Gradle Wrapper generado, exige `contextLoads()` sobre H2 y prueba igualdad SHA-256 para entradas iguales. El cierre consolidado está en `docs/evidence/cu13/cu13-closure-report.md`.
 
 ### CU-14 — Generar API CRUD expresiva
-CRUD, búsqueda, filtros, ordenamiento, paginación, conteo y navegación de relaciones.
+
+**Estado:** CERRADO — C3-cu14-001.
+
+**Actor principal:** Modelador / Usuario autenticado de ClassForge.
+
+**Objetivo:** extender el backend generado por CU-13 con controllers, services, DTOs/mapping y una API CRUD expresiva, permitiendo elegir explícitamente entre dos modos de aplicación generada.
+
+#### Modo A — CRUD simple
+
+Genera la API CRUD sin autenticación de aplicación. Incluye, cuando corresponda:
+
+- CREATE, READ by id, UPDATE, DELETE y LIST;
+- búsqueda y filtros por propiedades;
+- ordenamiento;
+- paginación;
+- conteo;
+- navegación de relaciones.
+
+Este modo **no** agrega Spring Security, endpoint de login, JWT, `PasswordEncoder` ni tratamiento especial de un atributo llamado `password`. La aplicación generada queda como backend CRUD simple.
+
+#### Modo B — Sistema de Información con Auth
+
+Genera las mismas capacidades CRUD y además un perfil de autenticación de aplicación. Antes de exportar, ClassForge debe pedir al usuario seleccionar:
+
+1. **tabla/entidad de autenticación**: una tabla de `RelationalModel` cuyo origen sea una clase UML, no una tabla de unión;
+2. **atributo de usuario/login**: un atributo escalar perteneciente a la tabla/entidad seleccionada;
+3. **atributo de contraseña**: un atributo escalar perteneciente a esa misma tabla/entidad y distinto del atributo de usuario/login.
+
+La UI puede presentar nombres de tabla/entidad y atributos, pero el contrato de generación debe identificar la clase y los atributos mediante identidades estables del modelo canónico/origen relacional, no mediante texto libre. La configuración es efímera para esa exportación: **no modifica `UmlModel`, `RelationalModel`, `ProjectDocument` ni la revisión del proyecto**.
+
+El perfil Auth debe añadir como mínimo Spring Security, almacenamiento seguro de contraseña mediante `PasswordEncoder`, endpoint de login y JWT. La contraseña seleccionada no debe exponerse en DTOs de respuesta y todo write que la trate como credencial debe evitar persistir texto plano.
+
+La selección Auth debe validarse de forma fail-closed. Si la tabla/entidad o cualquiera de los atributos ya no existe, no pertenece a la entidad elegida, representa una FK/columna sintética o la selección usuario/contraseña es inválida, no se genera un ZIP parcial.
+
+**Decisión de producto:** no existe un checkbox ambiguo de “auth opcional”. La experiencia de generación presenta dos modos mutuamente excluyentes: **CRUD simple** o **Sistema de Información con Auth**.
+
+#### Política ejecutable cerrada
+
+- Los atributos de usuario y contraseña deben ser `STRING`, pertenecer directamente a la clase seleccionada y ser distintos.
+- En el target Auth ambos campos se generan `nullable = false`; username además es `unique = true`.
+- CREATE hashea el password con BCrypt; UPDATE sólo reemplaza el hash cuando llega una contraseña no vacía; responses nunca contienen password.
+- `POST /api/auth/bootstrap` es público únicamente mientras la tabla de autenticación esté vacía y permite crear la primera cuenta usando el DTO completo de esa entidad. No hay registro público posterior en CU-14.
+- `POST /api/auth/login` valida usuario/password y entrega JWT Bearer con expiración de 3600 segundos. No hay refresh token en CU-14.
+- En modo Auth todos los demás endpoints quedan protegidos por Spring Security stateless. CU-14 no introduce roles; cualquier JWT válido tiene acceso al API generado.
+- LIST acepta `q`, `filter.<campo>`, `sort`, `direction`, `page` y `size` (máximo 200); cada recurso expone además `/count`.
+- Relaciones se representan mediante IDs en los DTOs para evitar ciclos de serialización y conservar navegación hacia el endpoint de la entidad relacionada.
+
 
 ### CU-15 — OpenAPI y Postman
 Entregar contrato OpenAPI y colección Postman reproducible.
@@ -480,3 +526,17 @@ La evidencia detallada del cierre de Imagen -> UML está en `docs/evidence/cu09/
 La validación multi-pizarra adicional y una corrida archivada post-Cal-017 del agregador completo de acceptance quedan registradas como riesgo residual aceptado, no como evidencia ejecutada.
 
 El historial de decisiones previas a CU-09 se conserva en `history/` y en las iteraciones técnicas correspondientes.
+
+## 12. Ciclo 3
+
+El Ciclo 3 está formalmente **CERRADO** en fase de Construcción.
+
+```text
+CU-12: CERRADO
+CU-13: CERRADO
+CU-14: CERRADO — CRUD simple / Sistema de Información con Auth
+```
+
+CU-12 estableció la IR relacional interna y determinista. CU-13 consume esa IR y entrega un backend Spring Boot/JPA reproducible mediante proyecto virtual validado, ZIP determinista, export OWNER/EDITOR y acceptance que compila los proyectos generados y carga Spring sobre H2.
+
+La evidencia de cierre de CU-13 está en `docs/evidence/cu13/cu13-closure-report.md` y `docs/evidence/cu13/cu13-acceptance.json`. El Ciclo 3 queda cerrado con CU-12, CU-13 y CU-14 aceptados.

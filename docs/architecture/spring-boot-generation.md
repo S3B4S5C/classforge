@@ -76,3 +76,37 @@ La matriz final agrupa tres proyectos representativos:
 Cada proyecto debe compilar sin edición manual, producir resultados JUnit y aprobar `ApplicationTests.contextLoads()` usando `src/test/resources/application.yml` con H2. La fixture `relations` se genera dos veces y exige ZIP bytes idénticos y el mismo SHA-256. El reporte se conserva en `docs/evidence/cu13/cu13-acceptance.json`.
 
 El acceptance también fijó una corrección de rendering: `@PrimaryKeyJoinColumn(s)` pertenece a la declaración de la subclass JOINED, no al cuerpo de la clase.
+
+## Frontera aprobada hacia CU-14
+
+CU-14 reutilizará el proyecto Spring/JPA generado y añadirá la capa HTTP de dominio. La UX no debe reducir el requisito de autenticación a un checkbox genérico: habrá dos modos explícitos.
+
+```text
+SIMPLE_CRUD
+  -> CRUD expresivo
+  -> sin Spring Security/login/JWT
+
+AUTHENTICATED_INFORMATION_SYSTEM
+  -> mismo CRUD expresivo
+  -> auth class/table seleccionada
+  -> username attribute seleccionado
+  -> password attribute seleccionado
+  -> Spring Security + PasswordEncoder + login/JWT
+```
+
+La tabla de autenticación debe corresponder a `RelationalTableOriginType.UML_CLASS`. Los campos de usuario y contraseña deben provenir de columnas `ATTRIBUTE` de esa misma tabla y representar atributos UML distintos. Para conservar identidad frente a renames, el contrato de CU-14 debe referirse a la clase y atributos mediante sus UUID de origen (`RelationalTable.origin().umlElementId()` / `RelationalColumn.sourceElementId()`), aunque la UI muestre nombres de tabla/entidad y atributo.
+
+Esta configuración es efímera y target-specific. No pertenece a `UmlModel`, no se escribe en `RelationalModel` y no cambia la revisión. La autenticación de la aplicación generada es independiente de `CurrentUser`/OWNER/EDITOR de ClassForge.
+
+La validación deberá ocurrir antes del render y fallar cerrada si las referencias son stale o no pertenecen a la entidad elegida. La contraseña nunca debe aparecer en DTOs de respuesta ni persistirse como texto plano cuando actúa como credencial.
+
+
+## CU-14 implementado
+
+La capa CU-14 se monta sobre el mismo `SpringGenerationModel` sin persistir una nueva IR. `SpringApiGenerationPlanner` recibe la configuración efímera de exportación y produce un `SpringApiGenerationPlan` validado. El renderer añade DTOs, services, controllers y utilidades comunes sin alterar `ProjectDocument`, `UmlModel` ni `RelationalModel`.
+
+`SIMPLE_CRUD` genera CRUD completo, `q`, filtros `filter.<campo>`, `sort`, `direction`, `page`, `size`, `/count` y referencias de relaciones mediante IDs. `AUTH_INFORMATION_SYSTEM` añade selección estable por UUID de clase/atributos, BCrypt, username único/no nulo, password no nulo y nunca presente en DTOs de respuesta, JWT stateless de 3600 s y protección global del API.
+
+El bootstrap inicial se resuelve con `POST /api/auth/bootstrap`: sólo se permite mientras la tabla de autenticación esté vacía y recibe el DTO de creación de la entidad seleccionada, por lo que también puede completar sus demás campos obligatorios e identificador. Después del bootstrap no existe registro público en CU-14. `POST /api/auth/login` permanece público; el resto requiere Bearer JWT. CU-14 no implementa refresh tokens, roles ni autorización por entidad/campo.
+
+La aceptación focal se ejecuta con `springCrudGenerationAcceptance`, que exporta un CRUD simple y un sistema Auth representativos, ejecuta el Gradle Wrapper de ambos proyectos y exige `contextLoads()` sobre H2.

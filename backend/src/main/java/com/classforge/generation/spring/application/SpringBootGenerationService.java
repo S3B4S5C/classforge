@@ -72,10 +72,11 @@ public class SpringBootGenerationService {
                 : canonicalModel;
 
         try {
-            byte[] bytes = archive.write(renderer.render(planner.plan(
+            var springModel = planner.plan(
                     relationalMapper.map(generationModel),
                     config
-            )));
+            );
+            byte[] bytes = archive.write(renderer.render(springModel, options));
             return new SpringBootGenerationArtifact(
                     config.artifactName() + "-backend.zip",
                     "application/zip",

@@ -3,6 +3,8 @@ package com.classforge.generation.spring.web;
 import com.classforge.auth.security.CurrentUser;
 import com.classforge.generation.relational.RelationalMappingDiagnostic;
 import com.classforge.generation.relational.RelationalMappingException;
+import com.classforge.generation.spring.api.SpringApiGenerationDiagnostic;
+import com.classforge.generation.spring.api.SpringApiGenerationException;
 import com.classforge.generation.spring.application.SpringBootGenerationOptions;
 import com.classforge.generation.spring.application.SpringBootGenerationReadinessException;
 import com.classforge.generation.spring.application.SpringBootGenerationService;
@@ -73,7 +75,13 @@ public class SpringBootGenerationController {
                 projectId,
                 request.baseRevision(),
                 new SpringGenerationConfig(request.artifactName(), request.basePackage()),
-                new SpringBootGenerationOptions(request.firstAttributeIdentifierFallbackEnabled())
+                new SpringBootGenerationOptions(
+                        request.firstAttributeIdentifierFallbackEnabled(),
+                        request.effectiveMode(),
+                        request.authClassId(),
+                        request.usernameAttributeId(),
+                        request.passwordAttributeId()
+                )
         );
         byte[] content = artifact.content();
         return ResponseEntity.ok()
@@ -139,6 +147,17 @@ public class SpringBootGenerationController {
         );
     }
 
+    @ExceptionHandler(SpringApiGenerationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public SpringBootGenerationErrorResponse apiGenerationRejected(SpringApiGenerationException exception) {
+        return new SpringBootGenerationErrorResponse(
+                "INVALID_API_GENERATION_CONFIGURATION",
+                "La configuracion CRUD/Auth no es valida.",
+                exception.diagnostics().stream().map(this::toDiagnosticResponse).toList(),
+                List.of()
+        );
+    }
+
     @ExceptionHandler(SpringGenerationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public SpringBootGenerationErrorResponse springGenerationRejected(SpringGenerationException exception) {
@@ -190,6 +209,15 @@ public class SpringBootGenerationController {
         return new SpringBootGenerationDiagnosticResponse(
                 diagnostic.code().name(),
                 diagnostic.sourceElementId(),
+                diagnostic.path(),
+                diagnostic.message()
+        );
+    }
+
+    private SpringBootGenerationDiagnosticResponse toDiagnosticResponse(SpringApiGenerationDiagnostic diagnostic) {
+        return new SpringBootGenerationDiagnosticResponse(
+                diagnostic.code().name(),
+                diagnostic.elementId(),
                 diagnostic.path(),
                 diagnostic.message()
         );

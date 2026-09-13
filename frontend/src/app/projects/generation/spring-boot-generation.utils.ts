@@ -317,6 +317,16 @@ export function springBootGenerationErrorCopy(
         observations: [],
       };
 
+    case 'INVALID_API_GENERATION_CONFIGURATION':
+      return {
+        title: 'Revisa el modo CRUD/Auth',
+        message:
+          'La entidad o los atributos elegidos para la generación ya no son válidos. Revisa la selección e intenta nuevamente.',
+        staleRevision: false,
+        primaryKeyFallbackAvailable: false,
+        observations: relationalObservations(generationError.payload),
+      };
+
     case 'PRIMARY_KEY_FALLBACK_CONFIRMATION_REQUIRED':
       return {
         title: 'Faltan claves primarias en el modelo UML',

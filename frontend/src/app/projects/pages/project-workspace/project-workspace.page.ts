@@ -387,6 +387,7 @@ export class ProjectWorkspacePage {
           projectName: project.name,
           baseRevision:
             this.store.revision(),
+          classes: this.store.classes(),
         },
         width: '620px',
         maxWidth: '94vw',

@@ -225,6 +225,25 @@ test('keeps baseRevision automatic and adds explicit non-persistent primary-key 
   );
   assert.doesNotMatch(
     dialog,
-    /RelationalModel|FreeMarker|PasswordEncoder|JWT|Authentication/,
+    /RelationalModel|FreeMarker|PasswordEncoder/,
   );
+});
+
+test('exposes the two CU-14 generation modes and explicit Auth selectors', () => {
+  const dialog = readFileSync(
+    new URL(
+      '../dialogs/spring-boot-export-dialog/spring-boot-export-dialog.component.ts',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+
+  assert.match(dialog, /value="SIMPLE_CRUD"/);
+  assert.match(dialog, /value="AUTH_INFORMATION_SYSTEM"/);
+  assert.match(dialog, /CRUD simple/);
+  assert.match(dialog, /Sistema de Informacion con Auth/);
+  assert.match(dialog, /formControlName="authClassId"/);
+  assert.match(dialog, /formControlName="usernameAttributeId"/);
+  assert.match(dialog, /formControlName="passwordAttributeId"/);
+  assert.match(dialog, /login y JWT/);
 });

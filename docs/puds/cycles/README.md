@@ -15,3 +15,11 @@ Cada archivo de esta carpeta resume una iteración desde el punto de vista del p
 - deuda o trabajo posterior.
 
 La evidencia técnica granular vive en `../iterations/`.
+
+## Índice vigente
+
+| Ciclo | Fase | Estado | Resultado / foco |
+|---|---|---|---|
+| `cycle-01-elaboration.md` | Elaboración | CERRADO | arquitectura ejecutable base |
+| `cycle-02-elaboration.md` | Elaboración | CERRADO | CU-31 colaboración real + CU-09 Imagen -> UML |
+| `cycle-03-construction.md` | Construcción | CERRADO | CU-12 modelo relacional + CU-13 Spring Boot/JPA + CU-14 CRUD/Auth |

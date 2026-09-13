@@ -4,7 +4,7 @@
 **PUDS phase:** Construction  
 **Cycle:** 3  
 **Depends on:** CU-12 CLOSED (`UmlModel -> RelationalModel`)  
-**Next use case:** CU-14 — expressive CRUD API and optional authentication
+**Next use case:** CU-14 — expressive CRUD API with two explicit modes: simple CRUD or authenticated information system
 
 ## 1. Purpose
 
@@ -109,15 +109,18 @@ The broader project structure in product documentation represents the final gene
 
 ## 3. Security/authentication decision
 
-The export experience will later support an optional "Include authentication" profile. That profile is explicitly deferred to CU-14 because it requires HTTP/application semantics in addition to persistence.
+The export experience is deferred to CU-14 and will expose two explicit, mutually exclusive modes because authentication requires HTTP/application semantics in addition to persistence:
 
-CU-14 will ask for:
+- **Simple CRUD**: expressive CRUD/API without application authentication.
+- **Authenticated information system**: the same CRUD/API plus an authentication profile.
 
-- credential class;
-- username attribute;
-- password attribute.
+The authenticated mode will ask for:
 
-It will then add Spring Security, password encoding, login/JWT and CRUD-safe password handling.
+- credential class / authentication table;
+- username/login attribute from that class;
+- password attribute from that same class.
+
+It will then add Spring Security, password encoding, login/JWT and CRUD-safe password handling. The security selection is target-specific export configuration and does not mutate `UmlModel` or `RelationalModel`.
 
 CU-13 MUST NOT expose a fake or unused authentication checkbox and MUST NOT generate Spring Security dependencies or security code. The CU-13 architecture only needs to avoid coupling the renderer so tightly that CU-14 cannot add target-specific generation options later.
 
@@ -795,9 +798,9 @@ The same test also proves that no timestamps or random identifiers leak into the
 - service layer;
 - DTOs and mappers;
 - filtering/sorting/pagination/count;
-- optional authentication profile;
-- credential class selection;
-- username/password attribute selection;
+- two explicit generation modes: simple CRUD or authenticated information system;
+- authentication table/class selection in authenticated mode;
+- username/password attribute selection from that same class;
 - username uniqueness derived by security profile;
 - password encoding;
 - Spring Security;

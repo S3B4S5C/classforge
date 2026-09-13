@@ -63,7 +63,7 @@ class SpringBootGenerationControllerTests {
                 fixture.projectId,
                 7L,
                 new SpringGenerationConfig("biblioteca", "com.example.biblioteca"),
-                SpringBootGenerationOptions.strict()
+                SpringBootGenerationOptions.simpleCrud(false)
         );
     }
 
@@ -87,7 +87,7 @@ class SpringBootGenerationControllerTests {
                 fixture.projectId,
                 7L,
                 new SpringGenerationConfig("biblioteca", "com.example.biblioteca"),
-                new SpringBootGenerationOptions(true)
+                SpringBootGenerationOptions.simpleCrud(true)
         );
     }
 

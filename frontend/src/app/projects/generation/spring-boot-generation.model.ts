@@ -1,8 +1,16 @@
+export type SpringBootGenerationMode =
+  | 'SIMPLE_CRUD'
+  | 'AUTH_INFORMATION_SYSTEM';
+
 export interface SpringBootGenerationRequest {
   baseRevision: number;
   artifactName: string;
   basePackage: string;
   useFirstAttributeAsIdentifier: boolean;
+  mode: SpringBootGenerationMode;
+  authClassId: string | null;
+  usernameAttributeId: string | null;
+  passwordAttributeId: string | null;
 }
 
 export interface SpringBootGenerationDiagnostic {

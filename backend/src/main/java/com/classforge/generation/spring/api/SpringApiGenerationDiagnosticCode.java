@@ -1,0 +1,11 @@
+package com.classforge.generation.spring.api;
+
+public enum SpringApiGenerationDiagnosticCode {
+    AUTH_SELECTION_REQUIRED,
+    AUTH_ENTITY_NOT_FOUND,
+    AUTH_USERNAME_ATTRIBUTE_NOT_FOUND,
+    AUTH_PASSWORD_ATTRIBUTE_NOT_FOUND,
+    AUTH_ATTRIBUTES_MUST_DIFFER,
+    AUTH_ATTRIBUTES_MUST_BE_STRING,
+    API_MODEL_INVALID
+}

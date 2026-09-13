@@ -22,8 +22,8 @@ backend/data/
 # Generated ClassForge outputs
 .patch-backups/
 classforge.zip
-classforge-full.tar.gz
-classforge.rar
+/classforge.rar
+/classforge-full.tar.gz
 generated/
 workspace/generated/
 

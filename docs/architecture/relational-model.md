@@ -5,7 +5,7 @@
 CU-12 transforma de forma determinista y read-only:
 
 ```text
-UmlModel -> RelationalModelMapper -> RelationalModel -> futuro CU-13 Spring Boot/JPA
+UmlModel -> RelationalModelMapper -> RelationalModel -> CU-13 Spring Boot/JPA
 ```
 
 `RelationalModel` es una IR derivada, efímera e interna en `com.classforge.generation.relational`. No pertenece a `ProjectDocument`, no se persiste, no tiene endpoint, API ni UI. `UmlModel` sigue siendo la fuente de verdad.
@@ -49,4 +49,4 @@ GENERALIZATION usa source=subclass y target=superclass. Cada subclass copia sól
 
 ## Determinismo
 
-La salida ordena tables, columns, PK, FK, constraints, indexes y relations por sus claves físicas y UUID definidos. El mapper copia las colecciones de entrada y nunca modifica clases, atributos, relaciones ni multiplicidades. CU-13 consume la IR actual; CU-12 no genera SQL, JPA ni código.
+La salida ordena tables, columns, PK, FK, constraints, indexes y relations por sus claves físicas y UUID definidos. El mapper copia las colecciones de entrada y nunca modifica clases, atributos, relaciones ni multiplicidades. CU-13 consume esta IR para generar Spring Boot/JPA; CU-12 no genera SQL, JPA ni código.

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0",
+  "status": "PASS",
+  "case": "CU-14",
+  "increment": "C3-cu14-001",
+  "modes": [
+    {"mode": "SIMPLE_CRUD", "generatedBuild": "PASS", "contextLoads": "PASS", "h2": "PASS"},
+    {"mode": "AUTH_INFORMATION_SYSTEM", "generatedBuild": "PASS", "contextLoads": "PASS", "h2": "PASS", "passwordResponseExposure": "NONE", "passwordHashing": "BCrypt"}
+  ],
+  "frontendBuild": "PASS",
+  "backendTests": "PASS"
+}

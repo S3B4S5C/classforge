@@ -142,4 +142,4 @@
 - [x] Update `docs/puds/current-status.md` only after acceptance evidence exists.
 - [x] Update Cycle 3 status/evidence without closing Cycle 3 while CU-14 remains pending.
 - [x] Record deterministic ZIP SHA-256 acceptance evidence.
-- [x] Leave CU-14 as the next use case and explicitly carry the deferred optional authentication profile into its design input.
+- [x] Leave CU-14 as the next use case and carry its two explicit modes into the design input: simple CRUD or authenticated information system with authentication table/class + username/password attribute selection.

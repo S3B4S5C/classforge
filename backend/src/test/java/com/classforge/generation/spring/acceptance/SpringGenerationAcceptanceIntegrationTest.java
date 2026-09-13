@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
@@ -60,11 +61,22 @@ class SpringGenerationAcceptanceIntegrationTest {
         List<FixtureResult> results = new ArrayList<>();
         List<Throwable> failures = new ArrayList<>();
 
+        clearReport();
         byte[] deterministicA = generate(fixtures.getFirst());
         byte[] deterministicB = generate(fixtures.getFirst());
         String deterministicSha = sha256(deterministicA);
-        assertArrayEquals(deterministicA, deterministicB, "Equal canonical inputs must produce byte-identical ZIPs");
-        assertEquals(deterministicSha, sha256(deterministicB));
+        String deterministicShaB = sha256(deterministicB);
+        boolean deterministicEqual = Arrays.equals(deterministicA, deterministicB)
+                && deterministicSha.equals(deterministicShaB);
+        if (!deterministicEqual) {
+            System.err.println("CU-13 acceptance determinism failed: bytesEqual="
+                    + Arrays.equals(deterministicA, deterministicB)
+                    + ", shaA=" + deterministicSha
+                    + ", shaB=" + deterministicShaB);
+            failures.add(new AssertionError(
+                    "Equal canonical inputs must produce byte-identical ZIPs and the same SHA-256"
+            ));
+        }
 
         for (Fixture fixture : fixtures) {
             try {
@@ -81,9 +93,9 @@ class SpringGenerationAcceptanceIntegrationTest {
             }
         }
 
-        writeReport(results, deterministicSha, failures.isEmpty());
+        writeReport(results, deterministicSha, deterministicEqual, failures.isEmpty());
         if (!failures.isEmpty()) {
-            AssertionError aggregate = new AssertionError(failures.size() + " Spring generation acceptance fixture(s) failed");
+            AssertionError aggregate = new AssertionError(failures.size() + " Spring generation acceptance check(s) failed");
             failures.forEach(aggregate::addSuppressed);
             throw aggregate;
         }
@@ -207,7 +219,8 @@ class SpringGenerationAcceptanceIntegrationTest {
                     for (int index = 0; index < cases.getLength(); index++) {
                         Element testCase = (Element) cases.item(index);
                         String testName = testCase.getAttribute("name");
-                        if ("contextLoads".equals(testName) || "contextLoads()".equals(testName)) {
+                        if (("contextLoads".equals(testName) || "contextLoads()".equals(testName))
+                                && testCase.getElementsByTagName("skipped").getLength() == 0) {
                             contextLoadsPassed = true;
                             break;
                         }
@@ -223,7 +236,20 @@ class SpringGenerationAcceptanceIntegrationTest {
         }
     }
 
-    private void writeReport(List<FixtureResult> results, String sha256, boolean success) throws IOException {
+    private void clearReport() throws IOException {
+        String configured = System.getProperty(REPORT_PROPERTY);
+        if (configured == null || configured.isBlank()) {
+            return;
+        }
+        Files.deleteIfExists(Path.of(configured).toAbsolutePath().normalize());
+    }
+
+    private void writeReport(
+            List<FixtureResult> results,
+            String sha256,
+            boolean deterministicEqual,
+            boolean success
+    ) throws IOException {
         String configured = System.getProperty(REPORT_PROPERTY);
         if (configured == null || configured.isBlank()) {
             return;
@@ -241,7 +267,7 @@ class SpringGenerationAcceptanceIntegrationTest {
                 .append("  },\n")
                 .append("  \"determinism\": {\n")
                 .append("    \"fixture\": \"relations\",\n")
-                .append("    \"equalZipBytes\": true,\n")
+                .append("    \"equalZipBytes\": ").append(deterministicEqual).append(",\n")
                 .append("    \"sha256\": \"").append(sha256).append("\"\n")
                 .append("  },\n")
                 .append("  \"fixtures\": [\n");

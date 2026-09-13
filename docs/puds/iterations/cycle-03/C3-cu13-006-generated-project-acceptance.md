@@ -73,10 +73,20 @@ El parche de cierre solo reconcilia PUDS/OpenSpec después de:
 9. static scope audits;
 10. `git diff --check`.
 
+## Hardening posterior del harness
+
+Después del PASS final se endureció únicamente el propio acceptance, sin cambiar el generador productivo:
+
+- `contextLoads` / `contextLoads()` sólo cuenta como PASS si el testcase no está marcado `skipped`;
+- el reporte configurado se elimina al comenzar la ejecución para impedir que un fallo temprano deje un JSON `PASS` de una corrida anterior;
+- una divergencia de bytes/SHA se incorpora al agregado de fallos y se refleja como `equalZipBytes=false` si el reporte llega a escribirse.
+
+Este hardening elimina falsos positivos y evidencia obsoleta; no amplía el alcance funcional de CU-13.
+
 ## Out of scope preservado
 
 CU-13 no genera controller/service/DTO, Spring Security/JWT, OpenAPI/Postman ni compila durante la petición de export. Esos límites permanecen para CU-14/CU-15.
 
 ## Resultado
 
-CU-13 queda CERRADO. Cycle 3 permanece OPEN y el siguiente caso es CU-14 — CRUD/API expresiva + autenticación opcional.
+CU-13 queda CERRADO. Cycle 3 permanece OPEN y el siguiente caso es CU-14 — API CRUD expresiva con modos CRUD simple / Sistema de Información con Auth.
