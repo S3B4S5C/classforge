@@ -41,6 +41,7 @@ ProjectDocument
 | `uml-relationships.md` | relaciones y dirección | implementado |
 | `jointjs-canvas.md` | proyección visual | implementado |
 | `uml-validation.md` | reglas UML | implementado |
+| `relational-model.md` | IR relacional interna | CU-12 implementado |
 | `api-validation-errors.md` | contrato de errores | implementado |
 | `command-bus.md` | comandos y Undo/Redo | implementado |
 | `authentication-and-ownership.md` | auth y aislamiento | implementado |
@@ -66,13 +67,12 @@ ProjectDocument
 9. Presencia es efímera.
 10. IA genera propuestas estructuradas, no mutaciones directas.
 11. LLM no genera UUID.
-12. UML -> relacional será determinista y no dependerá de IA.
+12. UML -> relacional es determinista, interno y no depende de IA.
 
 ## Arquitectura todavía no implementada
 
 
 - XMI 2.1 / Enterprise Architect;
-- `RelationalModel`;
 - generador Spring Boot/JPA;
 - OpenAPI/Postman generado;
 - Domain Manifest de aplicación generada;

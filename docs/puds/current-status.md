@@ -1,13 +1,18 @@
 # Estado actual PUDS
 
-**Fecha de corte:** 5 de septiembre de 2026.
+**Fecha de corte:** 12 de septiembre de 2026.
 
 ```text
-Fase PUDS: Elaboración
+Fase PUDS: Construcción
 Ciclo 1: CERRADO
 Ciclo 2: CERRADO
 CU-31: CERRADO
 CU-09: CERRADO
+Ciclo 3: OPEN
+CU-12: CERRADO
+CU-13: CERRADO
+Current increment: C3-cu13-006 CLOSED - GeneratedProject hardening + generated-project acceptance
+Next: CU-14 - CRUD/API expresiva + autenticación opcional
 ```
 
 ## Resumen ejecutivo del corte
@@ -36,6 +41,7 @@ CU-09 queda funcionalmente aceptado el 5 de septiembre de 2026. La imagen nunca 
 | CU-29 Iniciar sesión | CERRADO | autenticación stateless |
 | CU-30 Proyectos propios | CERRADO | ownership persistente |
 | CU-31 Membresía e invitaciones | CERRADO | OWNER/EDITOR/NONE, invitaciones y colaboración real |
+| CU-12 Modelo relacional | CERRADO | IR interna, efímera y determinista para CU-13 |
 
 ## CU-09 — estado final
 
@@ -206,16 +212,24 @@ Ciclo 2: CERRADO
 
 CU-10/CU-11 y el resto del backlog permanecen para ciclos posteriores.
 
+## CU-13 — cierre final
+
+C3-cu13-006 completa la validación de `GeneratedProject` y la prueba ejecutable del artefacto entregado. Antes de archivar se exige skeleton obligatorio, acuerdo package/path, referencias internas resolubles y ausencia de marcadores FreeMarker sin resolver. El acceptance genera desde `UmlModel`, produce el ZIP determinista, extrae solo en temporales y ejecuta el wrapper generado con Java 21.
+
+La matriz cubre simple ID, composite ID, 1:N, 1:1, N:M, aggregation, composition, composite FK, JOINED, multi-level JOINED y relación a subclass. Todos los proyectos deben aprobar `clean build` y `ApplicationTests.contextLoads()` sobre H2 sin cambios manuales. La fixture de relaciones se genera dos veces y exige igualdad byte a byte y SHA-256.
+
+Evidencia: `docs/evidence/cu13/cu13-acceptance.json`.
+
 ## Limitaciones vigentes del producto
 
 1. No existe eliminación de membership activa ni revocación inmediata de una sesión STOMP ya conectada.
 2. La generalización estadística de Imagen -> UML sobre múltiples pizarras reales puede reforzarse con un conjunto adicional de fotografías.
 3. XMI/Enterprise Architect no está implementado.
-4. Modelo relacional y generadores no están implementados.
-5. La aplicación generada y su asistente de voz aún no existen.
+4. `RelationalModel` no tiene UI ni se persiste. CU-13 está CERRADO: exporta un backend Spring Boot/JPA reproducible, con fallback PK explícito y no persistente, validación estructural previa al ZIP y acceptance que compila los proyectos generados y carga Spring sobre H2.
+5. La API CRUD expresiva, autenticación opcional, frontends generados y asistente de voz de la aplicación generada aún pertenecen a casos posteriores.
 6. Auditoría histórica completa CU-26 permanece pendiente.
 7. `docs/uml/` conserva el catálogo de diagramas académicos pendientes de elaboración/presentación final.
 
 ## Próximo paso PUDS
 
-Con los Ciclos 1 y 2 cerrados, el siguiente trabajo debe abrir un nuevo Ciclo explícito y seleccionar su objetivo desde `docs/puds/use-cases.md`; no se continúa implícitamente dentro del Ciclo 2.
+Cycle 3 está OPEN. CU-13 queda CERRADO con evidencia en `docs/evidence/cu13/cu13-acceptance.json`. Siguiente caso: CU-14 - CRUD/API expresiva + autenticación opcional. `RelationalModel` no tiene UI y no se persiste.

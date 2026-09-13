@@ -20,10 +20,18 @@ backend/data/
 *.log
 
 # Generated ClassForge outputs
-generated/
-workspace/generated/
 .patch-backups/
 classforge.zip
+classforge-full.tar.gz
+classforge.rar
+generated/
+workspace/generated/
+
+# Source packages named "generated" are production/test code, not generated output
+!backend/src/main/java/com/classforge/generation/spring/generated/
+!backend/src/main/java/com/classforge/generation/spring/generated/**
+!backend/src/test/java/com/classforge/generation/spring/generated/
+!backend/src/test/java/com/classforge/generation/spring/generated/**
 
 # Environment / secrets
 .env

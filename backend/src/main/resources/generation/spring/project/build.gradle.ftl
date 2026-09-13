@@ -8,6 +8,8 @@ repositories { mavenCentral() }
 java { toolchain { languageVersion = JavaLanguageVersion.of(${model.javaVersion}) } }
 
 dependencies {
+    implementation platform('org.springframework.boot:spring-boot-dependencies:${model.springBootVersion}')
+
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'

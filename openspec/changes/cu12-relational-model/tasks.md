@@ -1,0 +1,11 @@
+# Tasks
+- [x] Define immutable relational IR.
+- [x] Implement deterministic mapper, diagnostics and validator.
+- [x] Add focused generation tests.
+- [x] Document CU-12 boundary and Cycle 3.
+- [x] Reject unknown relationship references fail closed.
+- [x] Prove 1:1 source/target independence and tie-break.
+- [x] Cover composite FK, detailed N:M and FK collision.
+- [x] Cover multilevel JOINED and defensive inheritance cycle.
+- [x] Cover validator invariants and deterministic permutations.
+- [x] Reconcile documentation and execute full backend gate.

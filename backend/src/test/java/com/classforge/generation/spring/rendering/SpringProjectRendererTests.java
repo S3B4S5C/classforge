@@ -13,7 +13,9 @@ class SpringProjectRendererTests {
     @Test void rendersDeterministicVirtualSkeletonAndSimpleEntity() {
         GeneratedProject first = renderer.render(model()), second = renderer.render(model()); assertEquals(first, second);
         assertTrue(first.files().stream().map(GeneratedFile::path).toList().containsAll(List.of("build.gradle", "settings.gradle", "gradlew", "gradlew.bat", "gradle/wrapper/gradle-wrapper.jar", "gradle/wrapper/gradle-wrapper.properties", "src/main/java/com/example/demo/DemoApplication.java", "src/main/java/com/example/demo/entity/Cliente.java", "src/main/java/com/example/demo/repository/ClienteRepository.java")));
-        String build = text(first, "build.gradle"); assertTrue(build.contains("4.0.8") && build.contains("data-jpa") && !build.contains("security"));
+        String build = text(first, "build.gradle");
+        assertTrue(build.contains("4.0.8") && build.contains("data-jpa") && !build.contains("security"));
+        assertTrue(build.contains("implementation platform('org.springframework.boot:spring-boot-dependencies:4.0.8')"));
         String entity = text(first, "src/main/java/com/example/demo/entity/Cliente.java"); assertTrue(entity.contains("@Entity") && entity.contains("@Id") && entity.contains("UUID id") && !entity.contains("GeneratedValue"));
         assertTrue(text(first, "src/main/resources/application-postgres.yml").contains("${DB_URL:"));
         for (GeneratedFile file : first.files()) if (file.type() == GeneratedFileType.TEXT) { assertFalse(new String(file.content(), StandardCharsets.UTF_8).contains("\r")); assertTrue(new String(file.content(), StandardCharsets.UTF_8).endsWith("\n")); }

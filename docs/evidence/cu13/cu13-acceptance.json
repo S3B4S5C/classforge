@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "1.0",
+  "status": "PASS",
+  "generatorTarget": {
+    "java": "21",
+    "springBoot": "4.0.8",
+    "gradle": "9.2.0"
+  },
+  "determinism": {
+    "fixture": "relations",
+    "equalZipBytes": true,
+    "sha256": "7e2a06b03b411fae85be1abf7aebcc53aa7d4927ac45ea836b72c9eabf23bba2"
+  },
+  "fixtures": [
+    {
+      "name": "relations",
+      "coverage": ["simple-id", "1:N", "1:1", "N:M", "aggregation", "composition"],
+      "generatedBuild": "PASS",
+      "contextLoads": "PASS",
+      "h2": "PASS"
+    },
+    {
+      "name": "composite",
+      "coverage": ["composite-id", "composite-fk"],
+      "generatedBuild": "PASS",
+      "contextLoads": "PASS",
+      "h2": "PASS"
+    },
+    {
+      "name": "inheritance",
+      "coverage": ["joined", "multi-level-joined", "subclass-target"],
+      "generatedBuild": "PASS",
+      "contextLoads": "PASS",
+      "h2": "PASS"
+    }
+  ]
+}

@@ -27,6 +27,7 @@ dependencies {
     implementation 'com.auth0:java-jwt:4.6.0'
     implementation 'org.openpnp:opencv:4.9.0-0'
     implementation 'org.freemarker:freemarker'
+    implementation 'org.apache.commons:commons-compress:1.28.0'
 
     runtimeOnly 'com.h2database:h2'
     runtimeOnly 'org.postgresql:postgresql'
@@ -179,6 +180,39 @@ tasks.register('assistantVisionAcceptance', Test) {
     systemProperty 'assistant.vision.acceptance.enabled', 'true'
     systemProperty 'classforge.assistant.vision.url', option('visionUrl', 'http://127.0.0.1:8094')
     systemProperty 'classforge.assistant.vision.model', option('visionModel', 'vision-model')
+
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+}
+
+// C3-CU13-006: compile and test representative exported Spring Boot projects.
+tasks.register('springGenerationAcceptance', Test) {
+    group = 'verification'
+    description = 'Generates representative CU-13 Spring Boot ZIPs, extracts them to temp directories, and runs their own Gradle build/context-load tests.'
+
+    dependsOn testClasses
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+    useJUnitPlatform()
+    maxParallelForks = 1
+    filter {
+        includeTestsMatching 'com.classforge.generation.spring.acceptance.SpringGenerationAcceptanceIntegrationTest'
+    }
+
+    systemProperty 'spring.generation.acceptance.enabled', 'true'
+    systemProperty 'spring.generation.acceptance.report-file', layout.buildDirectory.file('reports/spring-generation-acceptance.json').get().asFile.absolutePath
+    systemProperty 'spring.generation.acceptance.gradle-user-home', gradle.gradleUserHomeDir.absolutePath
+
+    def generatedJavaHome = providers.gradleProperty('generatedJavaHome')
+    if (generatedJavaHome.isPresent()) {
+        systemProperty 'spring.generation.acceptance.java-home', generatedJavaHome.get()
+    }
 
     testLogging {
         events 'passed', 'failed', 'skipped'

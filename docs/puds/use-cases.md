@@ -1,6 +1,6 @@
 # Casos de uso de ClassForge — especificación vigente
 
-**Corte:** 5 de septiembre de 2026.
+**Corte:** 12 de septiembre de 2026.
 
 Este documento es la fuente normativa de los casos de uso.
 
@@ -11,9 +11,10 @@ La bitácora acumulativa anterior se conserva en `history/use-cases-pre-cycle1-n
 En ClassForge llamamos **Ciclo** a una **iteración PUDS**.
 
 ```text
-Fase: Elaboración
+Fase: Construcción
 Ciclo 1: CERRADO
 Ciclo 2: CERRADO
+Ciclo 3: OPEN
 ```
 
 ## 2. Actores
@@ -58,8 +59,8 @@ Participa en validación, persistencia, auditoría y generación.
 | CU-09 | Crear UML desde imagen/fotografía | CERRADO |
 | CU-10 | Importar XMI de Enterprise Architect | PLANIFICADO |
 | CU-11 | Exportar XMI para Enterprise Architect | PLANIFICADO |
-| CU-12 | Transformar UML a modelo relacional | PLANIFICADO |
-| CU-13 | Generar backend Spring Boot/JPA | PLANIFICADO |
+| CU-12 | Transformar UML a modelo relacional | CERRADO |
+| CU-13 | Generar backend Spring Boot/JPA | CERRADO |
 | CU-14 | Generar API CRUD expresiva | PLANIFICADO |
 | CU-15 | Generar OpenAPI y Postman | PLANIFICADO |
 | CU-16 | Generar Domain Manifest | PLANIFICADO |
@@ -318,10 +319,10 @@ Importar subconjunto XMI 2.1 compatible con Enterprise Architect.
 Exportar el mismo subconjunto y probar round-trip con Enterprise Architect.
 
 ### CU-12 — UML a modelo relacional
-Transformación determinista de clases, atributos, identificadores y relaciones a `RelationalModel`.
+**Estado: CERRADO.** Transformación determinista e interna de `UmlModel` a `RelationalModel`. La IR no es visible al usuario y será consumida por CU-13.
 
 ### CU-13 — Generar backend Spring Boot/JPA
-Generar proyecto compilable desde el modelo.
+**Estado: CERRADO.** C3-cu13-001 cerró la IR y planner; C3-cu13-002 el proyecto virtual y rendering; C3-cu13-003 la generación interna y ZIP determinista; C3-cu13-004 el export HTTP autorizado; C3-cu13-005 la UX de descarga; C3-cu13-005a el fallback PK explícito y efímero; y C3-cu13-006 cerró `GeneratedProjectValidator` y el acceptance ejecutable. La evidencia final genera ZIPs desde `UmlModel`, los extrae en temporales, ejecuta el Gradle Wrapper generado, exige `contextLoads()` sobre H2 y prueba igualdad SHA-256 para entradas iguales.
 
 ### CU-14 — Generar API CRUD expresiva
 CRUD, búsqueda, filtros, ordenamiento, paginación, conteo y navegación de relaciones.

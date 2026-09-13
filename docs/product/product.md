@@ -17,9 +17,9 @@ Fuente normativa del estado: `../puds/current-status.md`.
 | Colaboración STOMP y presencia | IMPLEMENTADO |
 | Assistant texto/voz para modificar UML | IMPLEMENTADO |
 | llama.cpp y whisper.cpp locales | IMPLEMENTADO |
-| Imagen a UML | EN PROGRESO |
+| Imagen a UML | IMPLEMENTADO |
 | XMI / Enterprise Architect | PLANIFICADO |
-| UML a modelo relacional | PLANIFICADO |
+| UML a modelo relacional | IMPLEMENTADO — IR interna CU-12 |
 | Generadores Spring/OpenAPI/Postman | PLANIFICADO |
 | Frontend web/mobile generado | PLANIFICADO |
 | Voz sobre la aplicación generada | PLANIFICADO |
@@ -419,6 +419,8 @@ RelationalMapper
 RelationalModel
 ```
 
+La IR relacional implementada por CU-12 es derivada, interna y efímera: no se persiste ni se expone por UI/API. Usa nombres singulares `snake_case`, PK compuestas explícitas sin IDs sustitutos, multiplicidades canónicas exactas, FK deterministas, `CASCADE` en composición y herencia JOINED. `CUSTOM` y enums permanecen diferidos hasta que el UML canónico modele explícitamente su semántica; no existe fallback implícito.
+
 El modelo relacional deberá representar al menos:
 
 ```text
@@ -450,27 +452,37 @@ Las reglas deberán estar sustentadas por la bibliografía utilizada para la tra
 
 ---
 
-## 9. Generación de backend Spring Boot
+## 9. CU-13 - Generación de backend Spring Boot/JPA
 
-A partir del modelo relacional y del dominio se generará un proyecto Spring Boot completo.
+CU-13 genera un proyecto reproducible desde el modelo relacional: Java 21, Spring Boot **4.0.8** fijado, Gradle Wrapper 9.2.0, Spring Web MVC bootstrap, Spring Data JPA, Hibernate, Jakarta Validation, entidades, repositorios, IDs simples y compuestos con `@IdClass`, relaciones directas, N:M, herencia JOINED y un context-load test.
 
-### Stack objetivo
+H2 es la configuración default del proyecto generado. PostgreSQL es un profile adicional configurado por variables de entorno. No se usan versiones flotantes.
 
-- Java 21 LTS como versión base recomendada
-- Spring Boot 4.x
-- Gradle
-- Spring Web MVC
-- Spring Data JPA
-- Hibernate
-- Jakarta Validation
-- Jackson
-- springdoc-openapi
-- PostgreSQL
-- H2 opcional para demos rápidas
+La generacion exige identificadores explicitos por defecto. Como ayuda de exportacion, si las unicas observaciones bloqueantes son clases raiz sin identifier y todas ellas tienen al menos un atributo, la UI puede ofrecer continuar usando el primer atributo de cada clase afectada como clave primaria solo para ese ZIP. La eleccion es explicita, no persiste cambios, no incrementa revision y no altera el `UmlModel` canonico. Clases sin atributos o cualquier otro error de tipos/relaciones/estructura mantienen el rechazo normal.
 
-Aunque el entorno de desarrollo disponga de Java 25, el código generado tendrá Java 21 como target inicial por estabilidad y compatibilidad.
+### Estructura específica CU-13
 
-### Estructura generada
+```text
+src/main/java/.../
+├── Application.java
+├── entity/
+└── repository/
+
+src/main/resources/
+├── application.yml
+└── application-postgres.yml
+
+src/test/java/.../
+└── ApplicationTests.java
+```
+
+CU-13 no crea directorios vacíos para API futura.
+
+### Plantillas CU-13
+
+Apache FreeMarker es propiedad de ClassForge y renderiza el modelo preparado. Las templates conceptuales cubren proyecto/build, bootstrap, entity, `IdClass`, repository, configuración H2/PostgreSQL, context-load test, README y `.gitignore`. No se genera código complejo por concatenación manual.
+
+### Estructura objetivo acumulada tras CU-13/CU-14
 
 ```text
 src/main/java/.../
@@ -484,29 +496,11 @@ src/main/java/.../
 └── config/
 ```
 
-### Generación mediante plantillas
-
-Se utilizará **Apache FreeMarker**.
-
-Ejemplo:
-
-```text
-templates/
-├── build.gradle.ftl
-├── application.yml.ftl
-├── entity.java.ftl
-├── repository.java.ftl
-├── service.java.ftl
-├── controller.java.ftl
-├── dto.java.ftl
-└── exception-handler.java.ftl
-```
-
-No se debe generar código complejo mediante concatenación manual de strings.
+Los artefactos `service.java.ftl`, `controller.java.ftl`, `dto.java.ftl` y `exception-handler.java.ftl` pertenecen al alcance de CU-14, no al output exclusivo de CU-13.
 
 ---
 
-## 10. Capacidades estándar generadas
+## 10. CU-14 - Capacidades estándar de API
 
 Cada entidad generada deberá incluir, cuando corresponda:
 
@@ -522,7 +516,9 @@ Cada entidad generada deberá incluir, cuando corresponda:
 - conteo;
 - navegación de relaciones.
 
-La API debe ser suficientemente expresiva para permitir que el asistente de lenguaje natural opere sobre ella sin requerir un endpoint especial para cada frase posible.
+CU-14 incluye controllers, services, DTOs, API mapping, filtros, búsqueda, paginación y ordenamiento. La API debe ser suficientemente expresiva para permitir que el asistente de lenguaje natural opere sobre ella sin requerir un endpoint especial para cada frase posible.
+
+CU-14 podrá extender la exportación con `Incluir autenticación`, seleccionando credential class, username attribute y password attribute. Esa configuración no modifica `UmlModel` ni `RelationalModel`, y no se implementa en CU-13.
 
 Ejemplos de consultas deseadas:
 
@@ -560,9 +556,9 @@ Esto puede mapearse a Spring Data Auditing.
 
 ---
 
-## 12. OpenAPI y Postman
+## 12. CU-15 - OpenAPI y Postman
 
-El backend generado deberá publicar una especificación OpenAPI.
+CU-15 introduce OpenAPI y Postman. CU-13 no añade `springdoc-openapi` al proyecto generado.
 
 Flujo:
 
@@ -1146,7 +1142,7 @@ Frontend
 
 Backend
 - Java 21
-- Spring Boot 4.x
+- Spring Boot 4.0.8
 - Gradle
 - Spring Web MVC
 - Spring WebSocket
@@ -1173,13 +1169,13 @@ Interoperabilidad
 ```text
 Backend
 - Java 21
-- Spring Boot 4.x
+- Spring Boot 4.0.8
 - Spring Data JPA
 - Hibernate
 - Jakarta Validation
-- PostgreSQL
-- H2 opcional
-- springdoc-openapi
+- H2 default
+- PostgreSQL profile mediante variables de entorno
+- OpenAPI/Postman a partir de CU-15
 
 Frontend
 - Angular

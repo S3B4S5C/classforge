@@ -38,6 +38,9 @@ import {
   RelationshipDialogResult,
 } from '../../dialogs/relationship-dialog/relationship-dialog.component';
 import {
+  SpringBootExportDialogComponent,
+} from '../../dialogs/spring-boot-export-dialog/spring-boot-export-dialog.component';
+import {
   UmlCanvasComponent,
   UmlCanvasCursorEvent,
   UmlCanvasSelection,
@@ -115,6 +118,40 @@ export class ProjectWorkspacePage {
 
   readonly diagramSelection =
     signal<UmlCanvasSelection>(null);
+
+  readonly springBootExportBlockReason = computed(
+    () => {
+      if (!this.store.project()) {
+        return 'Espera a que el proyecto termine de cargar.';
+      }
+
+      if (this.store.saving()) {
+        return 'Espera a que termine el guardado antes de generar.';
+      }
+
+      if (this.store.pendingOperationCount() > 0) {
+        return 'Espera a que terminen de sincronizarse las operaciones pendientes.';
+      }
+
+      const status =
+        this.store.collaborationStatus();
+
+      if (
+        status === 'connecting'
+        || status === 'syncing'
+        || status === 'resyncing'
+        || status === 'conflict'
+      ) {
+        return 'Espera a que el proyecto termine de sincronizarse antes de generar.';
+      }
+
+      if (this.store.dirty()) {
+        return 'Guarda o sincroniza los cambios locales antes de generar.';
+      }
+
+      return null;
+    },
+  );
 
   readonly layoutNodeCount = computed(
     () =>
@@ -329,6 +366,33 @@ export class ProjectWorkspacePage {
 
   save(): void {
     this.store.saveDocument();
+  }
+
+  openSpringBootExport(): void {
+    const project =
+      this.store.project();
+
+    if (
+      !project
+      || this.springBootExportBlockReason()
+    ) {
+      return;
+    }
+
+    this.dialog.open(
+      SpringBootExportDialogComponent,
+      {
+        data: {
+          projectId: project.id,
+          projectName: project.name,
+          baseRevision:
+            this.store.revision(),
+        },
+        width: '620px',
+        maxWidth: '94vw',
+        disableClose: false,
+      },
+    );
   }
 
   validateModel(): void {

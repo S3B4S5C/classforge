@@ -58,6 +58,7 @@ class SpringJpaRenderingTests {
         GeneratedProject project = render(List.of(root, child)); String rootSource = text(project, "PedidoDocumento.java"), childSource = text(project, "Factura.java");
         assertTrue(rootSource.contains("@Inheritance(strategy = InheritanceType.JOINED)") && rootSource.contains("@IdClass(PedidoDocumentoId.class)"));
         assertTrue(childSource.contains("class Factura extends PedidoDocumento") && childSource.contains("@PrimaryKeyJoinColumns") && !childSource.contains("private String serie") && !childSource.contains("@IdClass(FacturaId.class)"));
+        assertTrue(childSource.indexOf("@PrimaryKeyJoinColumns") < childSource.indexOf("public class Factura"), childSource);
         assertOrdered(childSource, "name = \"serie\"", "name = \"numero\"");
         assertTrue(text(project, "FacturaRepository.java").contains("JpaRepository<Factura, PedidoDocumentoId>"));
         assertFalse(project.files().stream().map(GeneratedFile::path).anyMatch(path -> path.endsWith("FacturaId.java")));

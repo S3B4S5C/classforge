@@ -68,8 +68,8 @@ class AssistantRuntimeProbeTests {
                     baseUrl(server)
             );
 
-            assertTrue(status.available());
-            assertEquals("READY", status.state());
+            assertTrue(status.available(), () -> "Expected READY llama.cpp runtime but got " + status);
+            assertEquals("READY", status.state(), () -> "Unexpected llama.cpp probe status: " + status);
         } finally {
             server.stop(0);
         }

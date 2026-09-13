@@ -269,6 +269,26 @@
         </div>
 
         <button
+          mat-button
+          class="cf-button-secondary spring-export-button"
+          type="button"
+          [disabled]="springBootExportBlockReason() !== null"
+          [title]="
+            springBootExportBlockReason()
+            ?? 'Generar backend Spring Boot/JPA'
+          "
+          (click)="openSpringBootExport()"
+        >
+          <span
+            class="material-symbols-rounded"
+            aria-hidden="true"
+          >
+            deployed_code
+          </span>
+          Generar Spring Boot
+        </button>
+
+        <button
           mat-flat-button
           class="cf-button-primary save-button"
           type="button"
