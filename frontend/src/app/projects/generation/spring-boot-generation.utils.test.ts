@@ -276,3 +276,29 @@ test('advertises CU-16 Domain Manifest as a generated artifact without adding co
   assert.match(dialog, /semantica del dominio/i);
   assert.doesNotMatch(dialog, /formControlName="(?:domainManifest|manifestSchema|manifestAliases)"/);
 });
+
+
+test('configures CU-17 generated Angular UI with a user-selected primary color', () => {
+  const dialog = readFileSync(
+    new URL(
+      '../dialogs/spring-boot-export-dialog/spring-boot-export-dialog.component.ts',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  const model = readFileSync(
+    new URL(
+      './spring-boot-generation.model.ts',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+
+  assert.match(dialog, /formControlName="primaryColor"/);
+  assert.match(dialog, /type="color"/);
+  assert.match(dialog, /#2563EB/);
+  assert.match(dialog, /frontend Angular/i);
+  assert.match(dialog, /dashboard/i);
+  assert.match(dialog, /componentes especificos/i);
+  assert.match(model, /primaryColor:\s*string/);
+});

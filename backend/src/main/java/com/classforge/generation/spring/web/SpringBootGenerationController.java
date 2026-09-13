@@ -80,7 +80,8 @@ public class SpringBootGenerationController {
                         request.effectiveMode(),
                         request.authClassId(),
                         request.usernameAttributeId(),
-                        request.passwordAttributeId()
+                        request.passwordAttributeId(),
+                        request.effectivePrimaryColor()
                 )
         );
         byte[] content = artifact.content();

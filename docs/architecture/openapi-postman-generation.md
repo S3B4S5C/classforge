@@ -79,4 +79,4 @@ Archivos finales:
 
 ## Límite con CU-16/CU-17
 
-CU-15 produce el contrato HTTP y herramientas de consumo manual. CU-16 queda fijado para producir `domain-manifest.json` desde `SpringGenerationModel` + `SpringApiGenerationPlan` + `SpringApiContract`; no parseará OpenAPI/Postman para reconstruir semántica. CU-17 consumirá el manifest y el contrato API según corresponda.
+CU-15 produce el contrato HTTP y herramientas de consumo manual. CU-16 produce `domain-manifest.json` desde `SpringGenerationModel` + `SpringApiGenerationPlan` + `SpringApiContract` sin reconstruir semántica desde OpenAPI/Postman. CU-17 consume ese manifest/contrato para generar el frontend Angular específico por entidad.

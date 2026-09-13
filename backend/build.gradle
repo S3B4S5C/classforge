@@ -314,3 +314,30 @@ tasks.register('domainManifestAcceptance', Test) {
         exceptionFormat = 'full'
     }
 }
+
+
+// C6-CU17: build representative generated Angular frontends against the repo's installed Angular toolchain.
+tasks.register('generatedAngularAcceptance', Test) {
+    group = 'verification'
+    description = 'Generates CU-17 SIMPLE_CRUD and AUTH_INFORMATION_SYSTEM Angular frontends and runs production ng build for both.'
+
+    dependsOn testClasses
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+    useJUnitPlatform()
+    maxParallelForks = 1
+    filter {
+        includeTestsMatching 'com.classforge.generation.spring.acceptance.GeneratedAngularAcceptanceIntegrationTest'
+    }
+
+    systemProperty 'spring.angular.acceptance.enabled', 'true'
+    systemProperty 'spring.angular.acceptance.node-modules', file("${projectDir}/../frontend/node_modules").absolutePath
+
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+}

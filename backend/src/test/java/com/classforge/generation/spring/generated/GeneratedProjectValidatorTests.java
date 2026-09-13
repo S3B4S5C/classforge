@@ -106,6 +106,25 @@ class GeneratedProjectValidatorTests {
     }
 
     @Test
+    void allowsAngularTypeScriptTemplateLiteralsWithoutWeakeningFreeMarkerChecks() {
+        GeneratedProject angularLiteral = withExtra(
+                validProject(),
+                file(
+                        "frontend/src/app/example.api.ts",
+                        "const endpoint = '/api/example';\nconst url = `${endpoint}/count`;\n"
+                )
+        );
+        assertDoesNotThrow(() -> validator.validate(angularLiteral));
+
+        GeneratedProject unresolvedBackendTemplate = replace(
+                validProject(),
+                "README.md",
+                file("README.md", "${model.basePackage}\n")
+        );
+        assertCode(unresolvedBackendTemplate, GeneratedProjectDiagnosticCode.UNRESOLVED_TEMPLATE_MARKER);
+    }
+
+    @Test
     void rejectsUnresolvedFreeMarkerButAllowsGeneratedRuntimeAndWrapperExpressions() {
         assertCode(
                 replace(validProject(), "README.md", file("README.md", "${model.basePackage}\n")),

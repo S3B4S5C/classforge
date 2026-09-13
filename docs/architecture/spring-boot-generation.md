@@ -126,3 +126,11 @@ SpringApiGenerationPlan
 Los dos artefactos se incorporan al mismo `GeneratedProject` antes de validación/ZIP. La exportación sigue siendo read-only y no requiere levantar el backend generado ni invocar herramientas externas.
 
 En Simple no existe seguridad. En Auth, el contrato incluye bootstrap/login, Bearer JWT global, password write-only y ausencia de password en responses. CU-16 genera `domain-manifest.json` schema 1.0 desde los mismos planes canónicos, con UUIDs/relaciones/herencia/capacidades y paridad de operationIds; el cliente TypeScript permanece en CU-17.
+
+## CU-17 — frontend Angular en el mismo ZIP
+
+Cuando la API está habilitada, `SpringProjectRenderer` añade `frontend/` mediante `AngularFrontendRenderer`.
+
+El renderer consume el `DomainManifestPlan` ya validado y la configuración `primaryColor`. Genera componentes específicos por entidad, dashboard, API services y, en Auth, login/bootstrap/interceptor/guard. El frontend no altera `domain-manifest.json`, OpenAPI ni el modelo UML.
+
+Acceptance: `generatedAngularAcceptance`.

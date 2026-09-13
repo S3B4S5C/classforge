@@ -170,6 +170,103 @@ public class GeneratedProjectValidator {
         }
 
         validateDomainManifest(textByPath.get("domain-manifest.json"), openApiOperations, diagnostics);
+        validateAngularFrontend(textByPath, textByPath.get("domain-manifest.json"), diagnostics);
+    }
+
+    private void validateAngularFrontend(
+            Map<String, String> textByPath,
+            String manifestJson,
+            List<GeneratedProjectDiagnostic> diagnostics
+    ) {
+        List<String> required = List.of(
+                "frontend/package.json",
+                "frontend/angular.json",
+                "frontend/tsconfig.json",
+                "frontend/tsconfig.app.json",
+                "frontend/src/index.html",
+                "frontend/src/main.ts",
+                "frontend/src/styles.css",
+                "frontend/src/app/app.component.ts",
+                "frontend/src/app/app.routes.ts",
+                "frontend/src/app/dashboard/dashboard.component.ts"
+        );
+        for (String path : required) {
+            if (!textByPath.containsKey(path)) {
+                add(diagnostics, GeneratedProjectDiagnosticCode.ANGULAR_FRONTEND_ARTIFACT_MISSING, path,
+                        "CU-17 Angular frontend file is missing.");
+            }
+        }
+        if (required.stream().anyMatch(path -> !textByPath.containsKey(path))) return;
+
+        try {
+            JsonNode packageJson = JsonMapper.builder().build().readTree(textByPath.get("frontend/package.json"));
+            if (packageJson == null || packageJson.path("dependencies").path("@angular/core").asText().isBlank()) {
+                throw new IllegalArgumentException("package.json must declare Angular runtime dependencies.");
+            }
+            JsonNode angularJson = JsonMapper.builder().build().readTree(textByPath.get("frontend/angular.json"));
+            if (angularJson == null || angularJson.path("projects").isMissingNode() || angularJson.path("projects").size() == 0) {
+                throw new IllegalArgumentException("angular.json must declare one generated application.");
+            }
+            JsonNode manifest = JsonMapper.builder().build().readTree(manifestJson);
+            for (JsonNode entity : manifest.path("entities")) {
+                String codeName = text(entity, "codeName");
+                if (codeName == null || codeName.isBlank()) {
+                    throw new IllegalArgumentException("Domain Manifest entity codeName is required for Angular generation.");
+                }
+                String kebab = kebab(codeName);
+                String base = "frontend/src/app/entities/" + kebab + "/";
+                for (String suffix : List.of(
+                        kebab + ".models.ts",
+                        kebab + ".api.ts",
+                        kebab + "-list.component.ts",
+                        kebab + "-detail.component.ts",
+                        kebab + "-form.component.ts"
+                )) {
+                    if (!textByPath.containsKey(base + suffix)) {
+                        add(diagnostics, GeneratedProjectDiagnosticCode.ANGULAR_FRONTEND_ARTIFACT_MISSING,
+                                base + suffix, "Every manifest entity requires specific CU-17 Angular artifacts.");
+                    }
+                }
+            }
+
+            boolean authEnabled = manifest.path("authentication").path("enabled").asBoolean(false);
+            if (authEnabled) {
+                for (String path : List.of(
+                        "frontend/src/app/core/auth/auth.service.ts",
+                        "frontend/src/app/core/auth/auth.interceptor.ts",
+                        "frontend/src/app/core/auth/auth.guard.ts",
+                        "frontend/src/app/auth/login.component.ts",
+                        "frontend/src/app/auth/bootstrap.component.ts"
+                )) {
+                    if (!textByPath.containsKey(path)) {
+                        add(diagnostics, GeneratedProjectDiagnosticCode.ANGULAR_FRONTEND_ARTIFACT_MISSING, path,
+                                "AUTH_INFORMATION_SYSTEM requires login/bootstrap/JWT Angular support.");
+                    }
+                }
+            } else {
+                boolean leakedAuth = textByPath.keySet().stream().anyMatch(path ->
+                        path.startsWith("frontend/src/app/core/auth/") || path.startsWith("frontend/src/app/auth/"));
+                if (leakedAuth) {
+                    add(diagnostics, GeneratedProjectDiagnosticCode.ANGULAR_FRONTEND_ARTIFACT_INVALID,
+                            "frontend/src/app", "SIMPLE_CRUD frontend must not contain generated authentication screens/services.");
+                }
+            }
+
+            String styles = textByPath.get("frontend/src/styles.css");
+            if (styles == null || !styles.matches("(?s).*--app-primary:\\s*#[0-9A-F]{6};.*")) {
+                throw new IllegalArgumentException("styles.css must contain the selected #RRGGBB primary color.");
+            }
+        } catch (Exception exception) {
+            add(diagnostics, GeneratedProjectDiagnosticCode.ANGULAR_FRONTEND_ARTIFACT_INVALID, "frontend",
+                    "Generated Angular frontend is structurally invalid: " + exception.getMessage());
+        }
+    }
+
+    private String kebab(String value) {
+        return value.replaceAll("([a-z0-9])([A-Z])", "$1-$2")
+                .replaceAll("[^A-Za-z0-9]+", "-")
+                .replaceAll("^-|-$", "")
+                .toLowerCase(Locale.ROOT);
     }
 
     private void validateDomainManifest(
@@ -560,6 +657,12 @@ public class GeneratedProjectValidator {
                     "Generated text still contains a FreeMarker directive.");
         }
         if (path.equals("gradlew") || path.equals("gradlew.bat")) {
+            return;
+        }
+        // TypeScript uses ${...} for native template literals. Those expressions are
+        // runtime JavaScript syntax, not leaked FreeMarker placeholders. Keep the
+        // directive checks above, but do not reinterpret Angular source literals.
+        if (path.startsWith("frontend/") && path.endsWith(".ts")) {
             return;
         }
         Matcher matcher = FREEMARKER_EXPRESSION.matcher(text);

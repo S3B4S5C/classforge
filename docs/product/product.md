@@ -24,7 +24,8 @@ Fuente normativa del estado: `../puds/current-status.md`.
 | API CRUD expresiva — CRUD simple / Sistema de Información con Auth | IMPLEMENTADO — CU-14 cerrado |
 | OpenAPI/Postman | CERRADO — CU-15 implementado y aceptado |
 | Domain Manifest | IMPLEMENTADO — CU-16 cerrado con schema v1 y acceptance determinista |
-| Frontend web/mobile generado | PLANIFICADO — CU-17/CU-18 |
+| Frontend web generado | IMPLEMENTADO — CU-17 cerrado |
+| Frontend mobile generado | PLANIFICADO — CU-18 |
 | Voz sobre la aplicación generada | PLANIFICADO |
 | Membresías e invitaciones | IMPLEMENTADO — CU-31 cerrado con membership, invitaciones, realtime/presencia/Assistant y hardening concurrente |
 
@@ -624,7 +625,7 @@ CU-15 entrega solamente:
 - `openapi.yaml`;
 - `postman_collection.json`.
 
-CU-16 añade `domain-manifest.json` schema v1 al mismo ZIP. Conserva UUIDs estables, IDs, atributos, relaciones, herencia, capacidades, operationIds y Auth, y se valida contra el contrato CU-15. El cliente/frontend TypeScript pertenece a CU-17 y podrá consumir Manifest + OpenAPI según corresponda.
+CU-16 añade `domain-manifest.json` schema v1 al mismo ZIP. Conserva UUIDs estables, IDs, atributos, relaciones, herencia, capacidades, operationIds y Auth, y se valida contra el contrato CU-15. CU-17 consume ese contrato y genera `frontend/`: Angular standalone, dashboard, componentes específicos por entidad, Simple/Auth y color primario configurable. CU-18 reutilizará este frontend para Capacitor/Android.
 
 ---
 

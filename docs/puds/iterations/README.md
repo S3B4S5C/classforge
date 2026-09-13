@@ -40,3 +40,7 @@ Consultar `cycle-04/`. El ciclo está CERRADO con CU-15 aceptado. El preflight n
 ## Ciclo 5
 
 Consultar `cycle-05/`. El ciclo está CERRADO con CU-16 aceptado. El preflight normativo es `cycle-05/C5-cu16-000-domain-manifest-scope.md` y el cierre técnico `cycle-05/C5-cu16-001-domain-manifest-generation.md`.
+
+## Ciclo 6
+
+Consultar `cycle-06/`. El ciclo está CERRADO con CU-17 aceptado. El scope está en `cycle-06/C6-cu17-000-angular-frontend-scope.md` y el cierre técnico en `cycle-06/C6-cu17-001-angular-frontend-generation.md`. Los recoveries de cierre están en `cycle-06/C6-cu17-002-template-literal-validator-recovery.md`, `cycle-06/C6-cu17-003-dashboard-contract-test-recovery.md` y `cycle-06/C6-cu17-004-typescript6-config-recovery.md`.

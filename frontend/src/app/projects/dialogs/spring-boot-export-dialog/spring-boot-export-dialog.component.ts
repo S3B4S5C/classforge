@@ -206,6 +206,17 @@ export interface SpringBootExportDialogData {
             </mat-error>
           }
         </mat-form-field>
+
+        <section class="color-config" aria-labelledby="primary-color-title">
+          <div>
+            <strong id="primary-color-title">Color primario del frontend</strong>
+            <p>Se aplica a navegacion, acciones principales y acentos de la interfaz Angular generada.</p>
+          </div>
+          <label class="color-picker">
+            <input type="color" formControlName="primaryColor" aria-label="Color primario" />
+            <code>{{ form.controls.primaryColor.value }}</code>
+          </label>
+        </section>
       </form>
 
       @if (errorCopy(); as generationError) {
@@ -253,8 +264,9 @@ export interface SpringBootExportDialogData {
         <p>
           El ZIP incluye Gradle Wrapper, entidades/repositories JPA, DTOs,
           services y controllers, ademas de openapi.yaml, una coleccion Postman y
-          domain-manifest.json con la semantica del dominio. En Auth tambien
-          incluye Security, BCrypt, bootstrap inicial, login y JWT.
+          domain-manifest.json con la semantica del dominio y un frontend Angular
+          con dashboard y componentes especificos por entidad. En Auth tambien
+          incluye Security, BCrypt, bootstrap inicial, login, JWT, guard e interceptor.
         </p>
       </div>
     </mat-dialog-content>
@@ -368,6 +380,38 @@ export interface SpringBootExportDialogData {
       font-size: 0.82rem;
     }
 
+    .color-config {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.8rem;
+    }
+
+    .color-config p {
+      margin: 0.2rem 0 0;
+      color: var(--cf-muted);
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+
+    .color-picker {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
+
+    .color-picker input {
+      width: 2.75rem;
+      height: 2.25rem;
+      padding: 0.1rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.5rem;
+      background: white;
+    }
+
     mat-form-field {
       width: 100%;
     }
@@ -473,6 +517,10 @@ export class SpringBootExportDialogComponent {
       nonNullable: true,
       validators: [Validators.required, this.javaPackageValidator()],
     }),
+    primaryColor: new FormControl('#2563EB', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(/^#[0-9A-Fa-f]{6}$/)],
+    }),
   });
 
   authMode(): boolean {
@@ -523,6 +571,7 @@ export class SpringBootExportDialogComponent {
         authClassId: value.mode === 'AUTH_INFORMATION_SYSTEM' ? value.authClassId : null,
         usernameAttributeId: value.mode === 'AUTH_INFORMATION_SYSTEM' ? value.usernameAttributeId : null,
         passwordAttributeId: value.mode === 'AUTH_INFORMATION_SYSTEM' ? value.passwordAttributeId : null,
+        primaryColor: value.primaryColor.toUpperCase(),
       })
       .pipe(finalize(() => this.generating.set(false)))
       .subscribe({

@@ -11,6 +11,7 @@ export interface SpringBootGenerationRequest {
   authClassId: string | null;
   usernameAttributeId: string | null;
   passwordAttributeId: string | null;
+  primaryColor: string;
 }
 
 export interface SpringBootGenerationDiagnostic {

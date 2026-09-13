@@ -128,3 +128,5 @@ CU-16 está implementado y aceptado. Sus fuentes principales son:
 15. Anexos y tutorial.
 
 Los detalles técnicos se mantienen primero en los Markdown especializados y luego se condensan editorialmente para la presentación.
+
+CU-17 está CERRADO en Ciclo 6: el ZIP generado incluye `frontend/` Angular standalone con dashboard, componentes específicos por entidad, Simple/Auth y color primario configurable. Evidencia: `evidence/cu17/`.

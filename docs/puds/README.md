@@ -88,3 +88,5 @@ CU-14 está CERRADO y con él se cerró el Ciclo 3. CU-15 está CERRADO y con é
 ## UML académico
 
 Los diagramas académicos viven en `../uml/`. El catálogo debe reflejar el software implementado y puede elaborarse editorialmente para la entrega sin convertirse en una fuente de verdad alternativa.
+
+CU-17 está CERRADO en Ciclo 6: el ZIP generado incluye `frontend/` Angular standalone con dashboard, componentes específicos por entidad, Simple/Auth y color primario configurable. Evidencia: `evidence/cu17/`.

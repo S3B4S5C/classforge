@@ -11,17 +11,19 @@ CU-09: CERRADO
 Ciclo 3: CERRADO
 Ciclo 4: CERRADO
 Ciclo 5: CERRADO
+Ciclo 6: CERRADO
 CU-12: CERRADO
 CU-13: CERRADO
 CU-14: CERRADO
-Current increment: C5-cu16-001 CLOSED - Domain Manifest implementado y aceptado
+Current increment: C6-cu17-001 CLOSED - frontend Angular generado y aceptado
 CU-15: CERRADO
 CU-16: CERRADO
+CU-17: CERRADO
 ```
 
 ## Resumen ejecutivo del corte
 
-Los Ciclos 1, 2, 3, 4 y 5 están cerrados. El Ciclo 3 completó CU-12, CU-13 y CU-14; el Ciclo 4 cerró CU-15 con `openapi.yaml` y `postman_collection.json`; el Ciclo 5 cerró CU-16 con `domain-manifest.json` schema 1.0, UUIDs estables, semántica de dominio, paridad de operationIds y acceptance sobre proyectos generados.
+Los Ciclos 1–6 están cerrados. El Ciclo 3 completó CU-12, CU-13 y CU-14; el Ciclo 4 cerró CU-15; el Ciclo 5 cerró CU-16; y el Ciclo 6 cerró CU-17 con frontend Angular standalone generado, dashboard, componentes específicos por entidad, Simple/Auth, relaciones, IDs compuestos y color primario seleccionable.
 
 Como antecedente inmediato, el Ciclo 2 se cerró después de resolver sus dos riesgos principales:
 
@@ -52,6 +54,7 @@ CU-09 queda funcionalmente aceptado el 5 de septiembre de 2026. La imagen nunca 
 | CU-14 Generar API CRUD expresiva | CERRADO | DTOs/services/controllers; CRUD/filtros/paginación/relaciones; perfiles Simple/Auth con BCrypt + JWT |
 | CU-15 Generar OpenAPI y Postman | CERRADO | OpenAPI 3.0.3 + Postman 2.1 deterministas, paridad de operaciones y seguridad Simple/Auth |
 | CU-16 Generar Domain Manifest | CERRADO | `domain-manifest.json` schema 1.0 determinista, referencialmente validado y coherente con OpenAPI/Postman |
+| CU-17 Generar frontend web Angular | CERRADO | `frontend/` standalone con dashboard, componentes específicos, CRUD/relaciones, Simple/Auth y production-build acceptance |
 
 ## CU-09 — estado final
 
@@ -236,10 +239,10 @@ Evidencia: `docs/evidence/cu13/cu13-closure-report.md` y `docs/evidence/cu13/cu1
 2. La generalización estadística de Imagen -> UML sobre múltiples pizarras reales puede reforzarse con un conjunto adicional de fotografías.
 3. XMI/Enterprise Architect no está implementado.
 4. `RelationalModel` no tiene UI ni se persiste. CU-13 está CERRADO: exporta un backend Spring Boot/JPA reproducible, con fallback PK explícito y no persistente, validación estructural previa al ZIP y acceptance que compila los proyectos generados y carga Spring sobre H2.
-5. CU-14 está cerrado con dos modos explícitos. CRUD simple no genera seguridad; Auth exige entidad + atributos STRING de usuario/password, hashea passwords con BCrypt, excluye password de responses, expone bootstrap inicial + login y protege el resto con JWT. Frontends generados y asistente de voz pertenecen a casos posteriores.
+5. CU-14 está cerrado con dos modos explícitos. CRUD simple no genera seguridad; Auth exige entidad + atributos STRING de usuario/password, hashea passwords con BCrypt, excluye password de responses, expone bootstrap inicial + login y protege el resto con JWT. CU-17 ya genera el frontend web; el asistente de voz pertenece a casos posteriores.
 6. Auditoría histórica completa CU-26 permanece pendiente.
 7. `docs/uml/` conserva el catálogo de diagramas académicos pendientes de elaboración/presentación final.
 
 ## Próximo paso PUDS
 
-Ciclos 3, 4 y 5 están CERRADOS. CU-16 queda cerrado con evidencia en `docs/evidence/cu16/`; el siguiente candidato es CU-17 — generación frontend web Angular consumiendo Domain Manifest + contrato API.
+Ciclos 3, 4, 5 y 6 están CERRADOS. CU-17 queda cerrado con evidencia en `docs/evidence/cu17/`; el siguiente candidato es CU-18 — empaquetado mobile Android/Capacitor sobre el Angular generado.

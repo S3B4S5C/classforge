@@ -17,6 +17,7 @@ Ciclo 2: CERRADO
 Ciclo 3: CERRADO
 Ciclo 4: CERRADO
 Ciclo 5: CERRADO
+Ciclo 6: CERRADO
 ```
 
 ## 2. Actores
@@ -66,7 +67,7 @@ Participa en validación, persistencia, auditoría y generación.
 | CU-14 | Generar API CRUD expresiva — CRUD simple / Sistema de Información con Auth | CERRADO |
 | CU-15 | Generar OpenAPI y Postman | CERRADO |
 | CU-16 | Generar Domain Manifest | CERRADO |
-| CU-17 | Generar frontend web Angular | PLANIFICADO |
+| CU-17 | Generar frontend web Angular | CERRADO |
 | CU-18 | Generar frontend mobile Android/Capacitor | PLANIFICADO |
 | CU-19 | Consultar datos mediante voz | PLANIFICADO |
 | CU-20 | Crear datos mediante voz | PLANIFICADO |
@@ -466,8 +467,31 @@ No se reconstruye el dominio parseando `openapi.yaml` ni `postman_collection.jso
 
 **Fuera de alcance:** Angular generado, mobile, ejecución del asistente, roles/refresh, aliases inferidos por IA o nuevas reglas de negocio.
 
-### CU-17 — Frontend web
-Generar Angular reutilizando template dirigido por Domain Manifest.
+### CU-17 — Frontend web Angular
+
+**Actor:** Modelador / usuario con permiso de edición.
+
+**Objetivo:** generar dentro del mismo ZIP una aplicación Angular standalone funcional y coherente con Domain Manifest + API canónica.
+
+Por entidad se generan archivos específicos de models, API service, list, detail y form. No se usa una única pantalla CRUD metadata-driven.
+
+Capacidades:
+
+- dashboard con `count` por entidad y accesos directos;
+- listados con búsqueda, filtros, orden y paginación;
+- crear/ver/editar/eliminar;
+- controles por tipo semántico;
+- relaciones to-one con selector simple;
+- many-to-many con selección múltiple;
+- IDs simples y compuestos;
+- rutas y requests alineados con CU-14/CU-15;
+- color primario `#RRGGBB` elegido en el diálogo de exportación.
+
+En `SIMPLE_CRUD` no se genera Auth. En `AUTH_INFORMATION_SYSTEM` se añaden login, bootstrap de primera cuenta, almacenamiento Bearer JWT, interceptor, guard, logout y redirección a login ante 401. Password se trata como secreto y nunca como dato readable.
+
+**Postcondición:** el ZIP contiene `frontend/` y los frontends representativos Simple/Auth pasan `ng build` de producción.
+
+**Fuera de alcance:** Capacitor/Android (CU-18), IA/voz (CU-19..23), roles/refresh y dashboards de negocio inferidos.
 
 ### CU-18 — Frontend mobile
 Empaquetar Angular generado con Capacitor para Android.

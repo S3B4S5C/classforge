@@ -9,6 +9,20 @@ The generated API provides CRUD, list/search/filter/sort/pagination/count endpoi
 ## API contract artifacts
 
 The project root includes `openapi.yaml` (OpenAPI 3.0.3), `postman_collection.json` (Postman Collection v2.1) and `domain-manifest.json` (ClassForge Domain Manifest schema 1.0). OpenAPI/Postman share the canonical HTTP contract; the Domain Manifest adds stable source UUIDs, identifiers, relations, inheritance, capabilities and Auth metadata for generated clients.
+
+## Angular frontend
+
+The same ZIP includes `frontend/`, a standalone Angular application with a dashboard and entity-specific list/detail/form components. Its API contract matches this backend and its primary interface color is selected at export time.
+
+Run it with:
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+The development proxy forwards `/api` to `http://localhost:8080`.
 </#if><#if api.authEnabled()>## Authentication
 
 Authentication is enabled. `/api/auth/login` accepts `username` and `password`. `/api/auth/bootstrap` is a one-time public bootstrap endpoint that only works while the selected authentication table is empty; it accepts the generated `${api.authEntity().className}Request` body, hashes the selected password field with BCrypt and returns a JWT.

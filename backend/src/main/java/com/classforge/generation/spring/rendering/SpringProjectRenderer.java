@@ -9,6 +9,7 @@ import com.classforge.generation.spring.domain.DomainManifestPlan;
 import com.classforge.generation.spring.domain.DomainManifestPlanner;
 import com.classforge.generation.spring.application.SpringBootGenerationOptions;
 import com.classforge.generation.spring.generated.GeneratedFile;
+import com.classforge.generation.spring.frontend.AngularFrontendRenderer;
 import com.classforge.generation.spring.generated.GeneratedFileType;
 import com.classforge.generation.spring.generated.GeneratedProject;
 import com.classforge.generation.spring.generated.GeneratedProjectDiagnostic;
@@ -42,6 +43,7 @@ public class SpringProjectRenderer {
     private final SpringApiContractPlanner apiContractPlanner = new SpringApiContractPlanner();
     private final DomainManifestPlanner domainManifestPlanner = new DomainManifestPlanner();
     private final DomainManifestRenderer domainManifestRenderer = new DomainManifestRenderer();
+    private final AngularFrontendRenderer angularFrontendRenderer = new AngularFrontendRenderer();
 
     public SpringProjectRenderer(SpringFreeMarkerRenderer templates, GeneratedProjectValidator validator) {
         this.templates = templates;
@@ -116,6 +118,11 @@ public class SpringProjectRenderer {
             SpringApiContract apiContract = apiContractPlanner.plan(api);
             DomainManifestPlan manifest = domainManifestPlanner.plan(model, api, apiContract);
             files.add(domainManifestRenderer.render(manifest));
+            files.addAll(angularFrontendRenderer.render(
+                    manifest,
+                    model.artifactName(),
+                    options.primaryColor()
+            ));
         }
 
         GeneratedProject project = new GeneratedProject(model.artifactName(), files);

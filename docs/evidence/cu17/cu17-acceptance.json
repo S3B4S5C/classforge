@@ -1,0 +1,13 @@
+{
+  "case": "CU-17",
+  "cycle": 6,
+  "status": "PASS",
+  "acceptanceTask": "generatedAngularAcceptance",
+  "modes": ["SIMPLE_CRUD", "AUTH_INFORMATION_SYSTEM"],
+  "generatedRoot": "frontend/",
+  "angularVersion": "22.1.0",
+  "primaryColorFormat": "#RRGGBB",
+  "specificComponentsPerEntity": true,
+  "dashboard": "entity-counts",
+  "regressions": ["CU-13", "CU-14", "CU-15", "CU-16"]
+}
