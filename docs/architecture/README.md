@@ -1,6 +1,6 @@
 # Arquitectura de ClassForge
 
-**Estado:** arquitectura ejecutable en fase de Construcción; Ciclos 1–6 cerrados; CU-17 cerrado.
+**Estado:** arquitectura ejecutable en fase de Construcción; Ciclos 1–7 cerrados; CU-18 cerrado.
 
 ## Fuente de verdad
 
@@ -46,6 +46,7 @@ ProjectDocument
 | `openapi-postman-generation.md` | contrato HTTP + OpenAPI/Postman deterministas | CU-15 implementado y aceptado |
 | `domain-manifest-generation.md` | contrato semántico `domain-manifest.json` | CU-16 implementado y aceptado |
 | `angular-frontend-generation.md` | frontend Angular específico por entidad + dashboard/Auth/theme | CU-17 implementado y aceptado |
+| `flutter-mobile-generation.md` | Flutter mobile específico por entidad + dashboard/Auth/theme + Android | CU-18 implementado y aceptado |
 | `api-validation-errors.md` | contrato de errores | implementado |
 | `command-bus.md` | comandos y Undo/Redo | implementado |
 | `authentication-and-ownership.md` | auth y aislamiento | implementado |
@@ -81,7 +82,7 @@ ProjectDocument
 
 
 - XMI 2.1 / Enterprise Architect;
-- Capacitor/Android generado;
+- iOS/desktop Flutter formalmente aceptados;
 - asistente de la aplicación generada;
 - auditoría persistente.
 

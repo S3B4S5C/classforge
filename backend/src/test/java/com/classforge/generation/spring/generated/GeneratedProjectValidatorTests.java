@@ -125,6 +125,25 @@ class GeneratedProjectValidatorTests {
     }
 
     @Test
+    void allowsFlutterDartAndGradleRuntimeInterpolationWithoutWeakeningFreeMarkerChecks() {
+        GeneratedProject flutterLiteral = withExtra(
+                withExtra(
+                        validProject(),
+                        file("mobile/lib/example_api.dart", "final endpoint = '/api/example';\nfinal url = '$endpoint/count';\n")
+                ),
+                file("mobile/android/settings.gradle.kts", "includeBuild(\"$flutterSdkPath/packages/flutter_tools/gradle\")\n")
+        );
+        assertDoesNotThrow(() -> validator.validate(flutterLiteral));
+
+        GeneratedProject unresolvedBackendTemplate = replace(
+                validProject(),
+                "README.md",
+                file("README.md", "${model.basePackage}\n")
+        );
+        assertCode(unresolvedBackendTemplate, GeneratedProjectDiagnosticCode.UNRESOLVED_TEMPLATE_MARKER);
+    }
+
+    @Test
     void rejectsUnresolvedFreeMarkerButAllowsGeneratedRuntimeAndWrapperExpressions() {
         assertCode(
                 replace(validProject(), "README.md", file("README.md", "${model.basePackage}\n")),

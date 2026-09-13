@@ -14,4 +14,4 @@ CU-17 renders a standalone Angular SPA from the canonical `DomainManifestPlan` a
 - Simple mode contains no Auth files.
 - Primary UI color is an explicit export option (`#RRGGBB`).
 
-CU-18 Capacitor and CU-19..23 assistant/voice remain out of scope.
+CU-18 Flutter mobile and CU-19..23 assistant/voice remain out of scope.

@@ -23,6 +23,20 @@ npm start
 ```
 
 The development proxy forwards `/api` to `http://localhost:8080`.
+
+## Flutter mobile
+
+The same ZIP also includes `mobile/`, a standalone Flutter application generated from the same Domain Manifest/API contract. Android is the formally accepted target and the Android emulator uses `http://10.0.2.2:8080` for the backend.
+
+Run it with:
+
+```bash
+cd mobile
+flutter pub get
+flutter run
+```
+
+Validate it with `flutter analyze`, `flutter test` and `flutter build apk --debug`.
 </#if><#if api.authEnabled()>## Authentication
 
 Authentication is enabled. `/api/auth/login` accepts `username` and `password`. `/api/auth/bootstrap` is a one-time public bootstrap endpoint that only works while the selected authentication table is empty; it accepts the generated `${api.authEntity().className}Request` body, hashes the selected password field with BCrypt and returns a JWT.

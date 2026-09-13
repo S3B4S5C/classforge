@@ -35,6 +35,8 @@ Ciclo 2: CERRADO
 Ciclo 3: CERRADO
 Ciclo 4: CERRADO
 Ciclo 5: CERRADO
+Ciclo 6: CERRADO
+Ciclo 7: CERRADO
 CU-31: CERRADO
 CU-09: CERRADO
 CU-12: CERRADO
@@ -42,7 +44,9 @@ CU-13: CERRADO
 CU-14: CERRADO
 CU-15: CERRADO
 CU-16: CERRADO
-Incremento actual: C5-cu16-001 CLOSED
+CU-17: CERRADO
+CU-18: CERRADO
+Incremento actual: C7-cu18-001 CLOSED
 Fecha: 13-09-2026
 ```
 
@@ -130,3 +134,6 @@ CU-16 está implementado y aceptado. Sus fuentes principales son:
 Los detalles técnicos se mantienen primero en los Markdown especializados y luego se condensan editorialmente para la presentación.
 
 CU-17 está CERRADO en Ciclo 6: el ZIP generado incluye `frontend/` Angular standalone con dashboard, componentes específicos por entidad, Simple/Auth y color primario configurable. Evidencia: `evidence/cu17/`.
+
+
+CU-18 está CERRADO en Ciclo 7: el ZIP generado incluye `mobile/` Flutter independiente con dashboard, pantallas específicas por entidad, Simple/Auth, color primario compartido, `flutter_secure_storage` y Android validado. Evidencia: `evidence/cu18/`.

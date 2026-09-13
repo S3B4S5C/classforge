@@ -26,3 +26,4 @@ La evidencia técnica granular vive en `../iterations/`.
 | `cycle-04-api-contract.md` | Construcción | CERRADO | CU-15 OpenAPI + Postman deterministas |
 | `cycle-05-domain-manifest.md` | Construcción | CERRADO | CU-16 Domain Manifest semántico |
 | `cycle-06-angular-frontend.md` | Construcción | CERRADO | CU-17 frontend Angular generado |
+| `cycle-07-flutter-mobile.md` | Construcción | CERRADO | CU-18 frontend Flutter mobile + Android |

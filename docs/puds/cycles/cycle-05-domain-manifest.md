@@ -64,7 +64,7 @@ CU-16 sólo podrá cerrarse si:
 ## Fuera de alcance
 
 - generación Angular (CU-17);
-- mobile/Capacitor (CU-18);
+- Flutter mobile (CU-18);
 - ejecución de lenguaje natural/voz (CU-19..23);
 - edición manual del manifest;
 - inferencia LLM de aliases/plurales;

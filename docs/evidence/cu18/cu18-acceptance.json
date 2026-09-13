@@ -1,0 +1,14 @@
+{
+  "case": "CU-18",
+  "cycle": 7,
+  "status": "PASS",
+  "acceptanceTask": "generatedFlutterAcceptance",
+  "modes": ["SIMPLE_CRUD", "AUTH_INFORMATION_SYSTEM"],
+  "generatedRoot": "mobile/",
+  "platformAccepted": "Android",
+  "commands": ["flutter analyze", "flutter test", "flutter build apk --debug"],
+  "secureJwtStorage": true,
+  "specificPagesPerEntity": true,
+  "dashboard": "entity-counts",
+  "regressions": ["CU-13", "CU-14", "CU-15", "CU-16", "CU-17"]
+}

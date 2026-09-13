@@ -12,18 +12,20 @@ Ciclo 3: CERRADO
 Ciclo 4: CERRADO
 Ciclo 5: CERRADO
 Ciclo 6: CERRADO
+Ciclo 7: CERRADO
 CU-12: CERRADO
 CU-13: CERRADO
 CU-14: CERRADO
-Current increment: C6-cu17-001 CLOSED - frontend Angular generado y aceptado
+Current increment: C7-cu18-001 CLOSED - frontend mobile Flutter generado y Android aceptado
 CU-15: CERRADO
 CU-16: CERRADO
 CU-17: CERRADO
+CU-18: CERRADO
 ```
 
 ## Resumen ejecutivo del corte
 
-Los Ciclos 1–6 están cerrados. El Ciclo 3 completó CU-12, CU-13 y CU-14; el Ciclo 4 cerró CU-15; el Ciclo 5 cerró CU-16; y el Ciclo 6 cerró CU-17 con frontend Angular standalone generado, dashboard, componentes específicos por entidad, Simple/Auth, relaciones, IDs compuestos y color primario seleccionable.
+Los Ciclos 1–7 están cerrados. El Ciclo 3 completó CU-12, CU-13 y CU-14; el Ciclo 4 cerró CU-15; el Ciclo 5 cerró CU-16; y el Ciclo 6 cerró CU-17 con frontend Angular standalone generado, dashboard, componentes específicos por entidad, Simple/Auth, relaciones, IDs compuestos y color primario seleccionable. El Ciclo 7 cerró CU-18 con Flutter independiente, componentes específicos, Auth seguro y Android aceptado.
 
 Como antecedente inmediato, el Ciclo 2 se cerró después de resolver sus dos riesgos principales:
 
@@ -55,6 +57,7 @@ CU-09 queda funcionalmente aceptado el 5 de septiembre de 2026. La imagen nunca 
 | CU-15 Generar OpenAPI y Postman | CERRADO | OpenAPI 3.0.3 + Postman 2.1 deterministas, paridad de operaciones y seguridad Simple/Auth |
 | CU-16 Generar Domain Manifest | CERRADO | `domain-manifest.json` schema 1.0 determinista, referencialmente validado y coherente con OpenAPI/Postman |
 | CU-17 Generar frontend web Angular | CERRADO | `frontend/` standalone con dashboard, componentes específicos, CRUD/relaciones, Simple/Auth y production-build acceptance |
+| CU-18 Generar frontend mobile Flutter | CERRADO | `mobile/` Flutter con dashboard, páginas específicas, CRUD/relaciones, Simple/Auth, secure JWT y Android debug-build acceptance |
 
 ## CU-09 — estado final
 
@@ -245,4 +248,4 @@ Evidencia: `docs/evidence/cu13/cu13-closure-report.md` y `docs/evidence/cu13/cu1
 
 ## Próximo paso PUDS
 
-Ciclos 3, 4, 5 y 6 están CERRADOS. CU-17 queda cerrado con evidencia en `docs/evidence/cu17/`; el siguiente candidato es CU-18 — empaquetado mobile Android/Capacitor sobre el Angular generado.
+Ciclos 3, 4, 5, 6 y 7 están CERRADOS. CU-18 queda cerrado con evidencia en `docs/evidence/cu18/`; el siguiente candidato es CU-19 — consultar datos mediante voz sobre la aplicación generada.

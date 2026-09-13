@@ -341,3 +341,30 @@ tasks.register('generatedAngularAcceptance', Test) {
         exceptionFormat = 'full'
     }
 }
+
+// C7-CU18: validate representative generated Flutter Android applications.
+tasks.register('generatedFlutterAcceptance', Test) {
+    group = 'verification'
+    description = 'Generates CU-18 SIMPLE_CRUD and AUTH_INFORMATION_SYSTEM Flutter apps and runs analyze/test/debug Android build for both.'
+
+    dependsOn testClasses
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+    useJUnitPlatform()
+    maxParallelForks = 1
+    filter {
+        includeTestsMatching 'com.classforge.generation.spring.acceptance.GeneratedFlutterAcceptanceIntegrationTest'
+    }
+
+    systemProperty 'spring.flutter.acceptance.enabled', 'true'
+    def flutterCommand = project.findProperty('flutterCommand')?.toString() ?: 'flutter'
+    systemProperty 'spring.flutter.acceptance.command', flutterCommand
+
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+}

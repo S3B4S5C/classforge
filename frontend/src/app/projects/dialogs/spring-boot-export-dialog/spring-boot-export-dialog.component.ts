@@ -210,7 +210,7 @@ export interface SpringBootExportDialogData {
         <section class="color-config" aria-labelledby="primary-color-title">
           <div>
             <strong id="primary-color-title">Color primario del frontend</strong>
-            <p>Se aplica a navegacion, acciones principales y acentos de la interfaz Angular generada.</p>
+            <p>Se aplica a navegacion, acciones principales y acentos de las interfaces Angular y Flutter generadas.</p>
           </div>
           <label class="color-picker">
             <input type="color" formControlName="primaryColor" aria-label="Color primario" />
@@ -264,9 +264,10 @@ export interface SpringBootExportDialogData {
         <p>
           El ZIP incluye Gradle Wrapper, entidades/repositories JPA, DTOs,
           services y controllers, ademas de openapi.yaml, una coleccion Postman y
-          domain-manifest.json con la semantica del dominio y un frontend Angular
-          con dashboard y componentes especificos por entidad. En Auth tambien
-          incluye Security, BCrypt, bootstrap inicial, login, JWT, guard e interceptor.
+          domain-manifest.json con la semantica del dominio, un frontend Angular web y
+          una app Flutter mobile para Android, ambos con dashboard y componentes
+          especificos por entidad. En Auth tambien incluye Security, BCrypt, bootstrap
+          inicial, login, JWT y proteccion de navegacion.
         </p>
       </div>
     </mat-dialog-content>

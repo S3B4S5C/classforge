@@ -257,7 +257,7 @@ Before the ZIP can be exported, generated-project validation requires:
 CU-16 does not generate:
 
 - Angular pages/components/forms (CU-17);
-- Capacitor/mobile packaging (CU-18);
+- Flutter mobile generation (CU-18);
 - natural-language execution in the generated application (CU-19..23);
 - aliases inferred by an LLM;
 - business rules absent from the canonical model;

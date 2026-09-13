@@ -171,6 +171,7 @@ public class GeneratedProjectValidator {
 
         validateDomainManifest(textByPath.get("domain-manifest.json"), openApiOperations, diagnostics);
         validateAngularFrontend(textByPath, textByPath.get("domain-manifest.json"), diagnostics);
+        validateFlutterMobile(textByPath, textByPath.get("domain-manifest.json"), diagnostics);
     }
 
     private void validateAngularFrontend(
@@ -260,6 +261,112 @@ public class GeneratedProjectValidator {
             add(diagnostics, GeneratedProjectDiagnosticCode.ANGULAR_FRONTEND_ARTIFACT_INVALID, "frontend",
                     "Generated Angular frontend is structurally invalid: " + exception.getMessage());
         }
+    }
+
+
+    private void validateFlutterMobile(
+            Map<String, String> textByPath,
+            String manifestJson,
+            List<GeneratedProjectDiagnostic> diagnostics
+    ) {
+        List<String> required = List.of(
+                "mobile/pubspec.yaml",
+                "mobile/analysis_options.yaml",
+                "mobile/lib/main.dart",
+                "mobile/lib/app/app.dart",
+                "mobile/lib/core/theme/app_theme.dart",
+                "mobile/lib/core/api/api_client.dart",
+                "mobile/lib/dashboard/dashboard_page.dart",
+                "mobile/android/settings.gradle.kts",
+                "mobile/android/build.gradle.kts",
+                "mobile/android/gradle.properties",
+                "mobile/android/gradlew",
+                "mobile/android/gradlew.bat",
+                "mobile/android/gradle/wrapper/gradle-wrapper.jar",
+                "mobile/android/gradle/wrapper/gradle-wrapper.properties",
+                "mobile/android/app/build.gradle.kts",
+                "mobile/android/app/src/main/AndroidManifest.xml"
+        );
+        for (String path : required) {
+            boolean exists = path.endsWith(".jar") ? true : textByPath.containsKey(path);
+            if (!exists && !path.endsWith(".jar")) {
+                add(diagnostics, GeneratedProjectDiagnosticCode.FLUTTER_MOBILE_ARTIFACT_MISSING, path,
+                        "CU-18 Flutter mobile file is missing.");
+            }
+        }
+        if (required.stream().filter(path -> !path.endsWith(".jar")).anyMatch(path -> !textByPath.containsKey(path))) return;
+
+        try {
+            String pubspec = textByPath.get("mobile/pubspec.yaml");
+            if (pubspec == null || !pubspec.contains("http:")) {
+                throw new IllegalArgumentException("pubspec.yaml must declare Flutter HTTP dependency.");
+            }
+            String theme = textByPath.get("mobile/lib/core/theme/app_theme.dart");
+            if (theme == null || !theme.matches("(?s).*Color\\(0xFF[0-9A-F]{6}\\).*")) {
+                throw new IllegalArgumentException("Flutter theme must contain selected #RRGGBB primary color.");
+            }
+            JsonNode manifest = JsonMapper.builder().build().readTree(manifestJson);
+            for (JsonNode entity : manifest.path("entities")) {
+                String codeName = text(entity, "codeName");
+                if (codeName == null || codeName.isBlank()) {
+                    throw new IllegalArgumentException("Domain Manifest entity codeName is required for Flutter generation.");
+                }
+                String snake = snake(codeName);
+                String base = "mobile/lib/entities/" + snake + "/";
+                for (String suffix : List.of(
+                        snake + "_model.dart",
+                        snake + "_api.dart",
+                        snake + "_list_page.dart",
+                        snake + "_detail_page.dart",
+                        snake + "_form_page.dart"
+                )) {
+                    if (!textByPath.containsKey(base + suffix)) {
+                        add(diagnostics, GeneratedProjectDiagnosticCode.FLUTTER_MOBILE_ARTIFACT_MISSING,
+                                base + suffix, "Every manifest entity requires specific CU-18 Flutter artifacts.");
+                    }
+                }
+            }
+            boolean authEnabled = manifest.path("authentication").path("enabled").asBoolean(false);
+            List<String> authFiles = List.of(
+                    "mobile/lib/core/auth/token_store.dart",
+                    "mobile/lib/core/auth/auth_api.dart",
+                    "mobile/lib/core/auth/auth_gate.dart",
+                    "mobile/lib/auth/login_page.dart",
+                    "mobile/lib/auth/bootstrap_page.dart"
+            );
+            if (authEnabled) {
+                for (String path : authFiles) {
+                    if (!textByPath.containsKey(path)) {
+                        add(diagnostics, GeneratedProjectDiagnosticCode.FLUTTER_MOBILE_ARTIFACT_MISSING, path,
+                                "AUTH_INFORMATION_SYSTEM requires secure token/login/bootstrap Flutter support.");
+                    }
+                }
+                String tokenStore = textByPath.get("mobile/lib/core/auth/token_store.dart");
+                if (tokenStore == null || !tokenStore.contains("FlutterSecureStorage") || !pubspec.contains("flutter_secure_storage:")) {
+                    throw new IllegalArgumentException("Auth Flutter frontend must use flutter_secure_storage.");
+                }
+            } else {
+                boolean leakedAuth = authFiles.stream().anyMatch(textByPath::containsKey);
+                if (leakedAuth) {
+                    add(diagnostics, GeneratedProjectDiagnosticCode.FLUTTER_MOBILE_ARTIFACT_INVALID,
+                            "mobile/lib", "SIMPLE_CRUD mobile frontend must not contain generated authentication screens/services.");
+                }
+            }
+            String manifestText = textByPath.get("mobile/android/app/src/main/AndroidManifest.xml");
+            if (manifestText == null || !manifestText.contains("android.permission.INTERNET")) {
+                throw new IllegalArgumentException("Android manifest must permit HTTP API access.");
+            }
+        } catch (Exception exception) {
+            add(diagnostics, GeneratedProjectDiagnosticCode.FLUTTER_MOBILE_ARTIFACT_INVALID, "mobile",
+                    "Generated Flutter mobile project is structurally invalid: " + exception.getMessage());
+        }
+    }
+
+    private String snake(String value) {
+        return value.replaceAll("([a-z0-9])([A-Z])", "$1_$2")
+                .replaceAll("[^A-Za-z0-9]+", "_")
+                .replaceAll("^_|_$", "")
+                .toLowerCase(Locale.ROOT);
     }
 
     private String kebab(String value) {
@@ -662,7 +769,7 @@ public class GeneratedProjectValidator {
         // TypeScript uses ${...} for native template literals. Those expressions are
         // runtime JavaScript syntax, not leaked FreeMarker placeholders. Keep the
         // directive checks above, but do not reinterpret Angular source literals.
-        if (path.startsWith("frontend/") && path.endsWith(".ts")) {
+        if ((path.startsWith("frontend/") && path.endsWith(".ts")) || path.startsWith("mobile/")) {
             return;
         }
         Matcher matcher = FREEMARKER_EXPRESSION.matcher(text);

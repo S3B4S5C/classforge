@@ -134,3 +134,10 @@ Cuando la API está habilitada, `SpringProjectRenderer` añade `frontend/` media
 El renderer consume el `DomainManifestPlan` ya validado y la configuración `primaryColor`. Genera componentes específicos por entidad, dashboard, API services y, en Auth, login/bootstrap/interceptor/guard. El frontend no altera `domain-manifest.json`, OpenAPI ni el modelo UML.
 
 Acceptance: `generatedAngularAcceptance`.
+
+
+## CU-18 — Flutter mobile en el mismo ZIP
+
+Cuando la API está habilitada, `SpringProjectRenderer` añade `mobile/` mediante `FlutterMobileRenderer` a partir del mismo Domain Manifest/contrato API usados por CU-17. El proyecto es Flutter independiente del Angular web; genera páginas específicas por entidad, dashboard, relaciones, Simple/Auth y reutiliza el mismo color primario de exportación.
+
+Auth usa `flutter_secure_storage`; Android es la plataforma formalmente aceptada mediante `generatedFlutterAcceptance` (`flutter analyze`, `flutter test`, `flutter build apk --debug`).

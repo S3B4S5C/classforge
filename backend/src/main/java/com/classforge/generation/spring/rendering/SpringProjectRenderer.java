@@ -10,6 +10,7 @@ import com.classforge.generation.spring.domain.DomainManifestPlanner;
 import com.classforge.generation.spring.application.SpringBootGenerationOptions;
 import com.classforge.generation.spring.generated.GeneratedFile;
 import com.classforge.generation.spring.frontend.AngularFrontendRenderer;
+import com.classforge.generation.spring.mobile.FlutterMobileRenderer;
 import com.classforge.generation.spring.generated.GeneratedFileType;
 import com.classforge.generation.spring.generated.GeneratedProject;
 import com.classforge.generation.spring.generated.GeneratedProjectDiagnostic;
@@ -44,6 +45,7 @@ public class SpringProjectRenderer {
     private final DomainManifestPlanner domainManifestPlanner = new DomainManifestPlanner();
     private final DomainManifestRenderer domainManifestRenderer = new DomainManifestRenderer();
     private final AngularFrontendRenderer angularFrontendRenderer = new AngularFrontendRenderer();
+    private final FlutterMobileRenderer flutterMobileRenderer = new FlutterMobileRenderer();
 
     public SpringProjectRenderer(SpringFreeMarkerRenderer templates, GeneratedProjectValidator validator) {
         this.templates = templates;
@@ -123,6 +125,15 @@ public class SpringProjectRenderer {
                     model.artifactName(),
                     options.primaryColor()
             ));
+            files.addAll(flutterMobileRenderer.render(
+                    manifest,
+                    model.artifactName(),
+                    model.basePackage(),
+                    options.primaryColor()
+            ));
+            staticFile(files, "mobile/android/gradlew", "generation/spring/static/gradlew", GeneratedFileType.TEXT);
+            staticFile(files, "mobile/android/gradlew.bat", "generation/spring/static/gradlew.bat", GeneratedFileType.TEXT);
+            staticFile(files, "mobile/android/gradle/wrapper/gradle-wrapper.jar", "generation/spring/static/gradle/wrapper/gradle-wrapper.jar", GeneratedFileType.BINARY);
         }
 
         GeneratedProject project = new GeneratedProject(model.artifactName(), files);

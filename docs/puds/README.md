@@ -21,6 +21,8 @@ Ciclo 2: CERRADO
 Ciclo 3: CERRADO
 Ciclo 4: CERRADO
 Ciclo 5: CERRADO
+Ciclo 6: CERRADO
+Ciclo 7: CERRADO
 CU-31: CERRADO
 CU-09: CERRADO
 CU-12: CERRADO
@@ -28,10 +30,12 @@ CU-13: CERRADO
 CU-14: CERRADO
 CU-15: CERRADO
 CU-16: CERRADO
+CU-17: CERRADO
+CU-18: CERRADO
 Corte: 13 de septiembre de 2026
 ```
 
-El Ciclo 1 consolidó la arquitectura ejecutable base. El Ciclo 2 cerró colaboración e imagen; el Ciclo 3 cerró CU-12/13/14; el Ciclo 4 cerró CU-15 (OpenAPI/Postman); el Ciclo 5 cerró CU-16 Domain Manifest.
+El Ciclo 1 consolidó la arquitectura ejecutable base. El Ciclo 2 cerró colaboración e imagen; el Ciclo 3 cerró CU-12/13/14; el Ciclo 4 cerró CU-15 (OpenAPI/Postman); el Ciclo 5 cerró CU-16 Domain Manifest; el Ciclo 6 cerró CU-17 Angular y el Ciclo 7 cerró CU-18 Flutter/Android.
 
 ## Fuentes
 
@@ -45,6 +49,8 @@ El Ciclo 1 consolidó la arquitectura ejecutable base. El Ciclo 2 cerró colabor
 - `../evidence/cu14/`: cierre y acceptance de CRUD simple / Sistema de Información con Auth.
 - `../evidence/cu15/`: cierre y acceptance de OpenAPI/Postman.
 - `../evidence/cu16/`: cierre y acceptance de Domain Manifest.
+- `../evidence/cu17/`: cierre y acceptance de Angular generado.
+- `../evidence/cu18/`: cierre y acceptance de Flutter mobile/Android.
 
 ## Regla de trazabilidad
 
@@ -90,3 +96,6 @@ CU-14 está CERRADO y con él se cerró el Ciclo 3. CU-15 está CERRADO y con é
 Los diagramas académicos viven en `../uml/`. El catálogo debe reflejar el software implementado y puede elaborarse editorialmente para la entrega sin convertirse en una fuente de verdad alternativa.
 
 CU-17 está CERRADO en Ciclo 6: el ZIP generado incluye `frontend/` Angular standalone con dashboard, componentes específicos por entidad, Simple/Auth y color primario configurable. Evidencia: `evidence/cu17/`.
+
+
+CU-18 está CERRADO en Ciclo 7: `mobile/` Flutter se genera desde Domain Manifest/API canónica, comparte color primario con Angular y valida Android mediante Flutter analyze/test/build APK.

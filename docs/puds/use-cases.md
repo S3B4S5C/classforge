@@ -68,7 +68,7 @@ Participa en validación, persistencia, auditoría y generación.
 | CU-15 | Generar OpenAPI y Postman | CERRADO |
 | CU-16 | Generar Domain Manifest | CERRADO |
 | CU-17 | Generar frontend web Angular | CERRADO |
-| CU-18 | Generar frontend mobile Android/Capacitor | PLANIFICADO |
+| CU-18 | Generar frontend mobile Flutter | CERRADO |
 | CU-19 | Consultar datos mediante voz | PLANIFICADO |
 | CU-20 | Crear datos mediante voz | PLANIFICADO |
 | CU-21 | Ejecutar operación relacionada mediante voz | PLANIFICADO |
@@ -491,10 +491,19 @@ En `SIMPLE_CRUD` no se genera Auth. En `AUTH_INFORMATION_SYSTEM` se añaden logi
 
 **Postcondición:** el ZIP contiene `frontend/` y los frontends representativos Simple/Auth pasan `ng build` de producción.
 
-**Fuera de alcance:** Capacitor/Android (CU-18), IA/voz (CU-19..23), roles/refresh y dashboards de negocio inferidos.
+**Fuera de alcance:** Flutter mobile (CU-18), IA/voz (CU-19..23), roles/refresh y dashboards de negocio inferidos.
 
-### CU-18 — Frontend mobile
-Empaquetar Angular generado con Capacitor para Android.
+### CU-18 — Generar frontend mobile Flutter
+
+**Objetivo:** generar dentro del mismo ZIP una aplicación Flutter independiente y coherente con Domain Manifest + API canónica, sin reutilizar Angular/Capacitor.
+
+Por entidad se generan archivos específicos de model, API, list, detail y form. Incluye dashboard con conteos, búsqueda, CRUD, relaciones, IDs simples/compuestos y el mismo color primario seleccionado para CU-17.
+
+En `SIMPLE_CRUD` no se genera Auth. En `AUTH_INFORMATION_SYSTEM` se añaden bootstrap, login, JWT Bearer almacenado mediante `flutter_secure_storage`, protección de navegación, logout implícito por limpieza de token y manejo de 401.
+
+`to-one` usa selector simple; colecciones many-to-many/one-to-many usan selector múltiple. Android es la plataforma formalmente aceptada mediante `flutter build apk --debug`; iOS/desktop/web Flutter quedan fuera del cierre de CU-18.
+
+**Postcondición:** el ZIP contiene `mobile/` y los frontends representativos Simple/Auth pasan `flutter analyze`, `flutter test` y build APK debug.
 
 ### CU-19 — Consultar datos mediante voz
 Ejemplo: "Quiero ver los últimos 5 animales".

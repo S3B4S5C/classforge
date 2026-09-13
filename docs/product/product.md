@@ -25,7 +25,7 @@ Fuente normativa del estado: `../puds/current-status.md`.
 | OpenAPI/Postman | CERRADO — CU-15 implementado y aceptado |
 | Domain Manifest | IMPLEMENTADO — CU-16 cerrado con schema v1 y acceptance determinista |
 | Frontend web generado | IMPLEMENTADO — CU-17 cerrado |
-| Frontend mobile generado | PLANIFICADO — CU-18 |
+| Frontend mobile generado | IMPLEMENTADO — CU-18 Flutter/Android cerrado |
 | Voz sobre la aplicación generada | PLANIFICADO |
 | Membresías e invitaciones | IMPLEMENTADO — CU-31 cerrado con membership, invitaciones, realtime/presencia/Assistant y hardening concurrente |
 
@@ -625,7 +625,7 @@ CU-15 entrega solamente:
 - `openapi.yaml`;
 - `postman_collection.json`.
 
-CU-16 añade `domain-manifest.json` schema v1 al mismo ZIP. Conserva UUIDs estables, IDs, atributos, relaciones, herencia, capacidades, operationIds y Auth, y se valida contra el contrato CU-15. CU-17 consume ese contrato y genera `frontend/`: Angular standalone, dashboard, componentes específicos por entidad, Simple/Auth y color primario configurable. CU-18 reutilizará este frontend para Capacitor/Android.
+CU-16 añade `domain-manifest.json` schema v1 al mismo ZIP. Conserva UUIDs estables, IDs, atributos, relaciones, herencia, capacidades, operationIds y Auth, y se valida contra el contrato CU-15. CU-17 consume ese contrato y genera `frontend/`: Angular standalone, dashboard, componentes específicos por entidad, Simple/Auth y color primario configurable. CU-18 genera un proyecto Flutter independiente desde el mismo Domain Manifest/API canónica; no empaqueta Angular mediante Capacitor.
 
 ---
 
@@ -642,7 +642,7 @@ El docente podrá solicitar un frontend web o móvil, por lo que el generador de
 Mantener **una sola base tecnológica**:
 
 - Angular para Web;
-- Angular + Capacitor para Mobile/Android.
+- Angular para web y Flutter para Mobile/Android.
 
 Flujo:
 
@@ -655,10 +655,10 @@ Angular application
        │
        ├──► Web build
        │
-       └──► Capacitor → Android
+       └──► Flutter → Android
 ```
 
-No se mantendrán generadores independientes para Flutter, React Native, Vue, etc. durante el alcance inicial.
+La ruta mobile vigente usa un generador Flutter independiente. React Native, Vue Native y otros stacks alternativos permanecen fuera del alcance.
 
 ---
 
@@ -978,7 +978,7 @@ ClassForge puede generar automáticamente de forma razonable:
 | Formularios CRUD | Sí |
 | Navegación | Sí |
 | Web | Sí |
-| Android mediante Capacitor | Sí |
+| Android mediante Flutter | Sí |
 | Consultas por voz | Sí |
 | Filtrado/ordenación | Sí |
 | Consultas sobre relaciones | Sí |
@@ -1268,7 +1268,7 @@ Frontend
 
 Mobile
 - mismo Angular
-- Capacitor
+- Flutter
 - Android
 
 Artefactos
@@ -1402,7 +1402,7 @@ El MVP debe demostrar de extremo a extremo:
 11. Generar colección Postman.
 12. Generar Domain Manifest.
 13. Generar frontend Angular CRUD.
-14. Empaquetar el frontend como Android mediante Capacitor.
+14. Generar y validar el frontend mobile Android mediante Flutter.
 15. Ejecutar un comando textual sobre el backend generado.
 16. Ejecutar el mismo comando mediante voz + STT.
 17. Operar el backend generado mediante lenguaje natural.
@@ -1436,7 +1436,7 @@ La generación desde fotografía puede desarrollarse después de que este pipeli
 16. Assistant execution engine
 17. whisper.cpp
 18. Voice → command
-19. Capacitor / Android
+19. Flutter / Android
 20. Enterprise Architect XMI
 21. Imagen → UML
 ```
@@ -1490,7 +1490,7 @@ No se debe introducir otra ruta que modifique directamente los arrays del modelo
 ---
 ## 33. Definición resumida del producto
 
-**ClassForge** es una herramienta CASE colaborativa y offline-first que permite diseñar modelos UML de clases mediante edición manual, voz, imágenes o Enterprise Architect, y transformar esos modelos en aplicaciones funcionales compuestas por un backend Spring Boot/JPA, una API REST/OpenAPI, una colección Postman y un frontend Angular exportable tanto a web como a Android mediante Capacitor.
+**ClassForge** es una herramienta CASE colaborativa y offline-first que permite diseñar modelos UML de clases mediante edición manual, voz, imágenes o Enterprise Architect, y transformar esos modelos en aplicaciones funcionales compuestas por un backend Spring Boot/JPA, una API REST/OpenAPI, una colección Postman y un frontend Angular web y un frontend Flutter mobile con Android formalmente validado.
 
 Las aplicaciones generadas incorporan un asistente de lenguaje natural y voz capaz de realizar operaciones sobre el dominio generado —como crear, consultar, actualizar, eliminar, filtrar, ordenar y navegar relaciones— sin requerir que dichas operaciones hayan sido programadas manualmente para cada dominio.
 

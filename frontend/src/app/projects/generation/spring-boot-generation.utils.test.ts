@@ -299,6 +299,22 @@ test('configures CU-17 generated Angular UI with a user-selected primary color',
   assert.match(dialog, /#2563EB/);
   assert.match(dialog, /frontend Angular/i);
   assert.match(dialog, /dashboard/i);
-  assert.match(dialog, /componentes especificos/i);
+  assert.match(dialog, /componentes\s+especificos/i);
   assert.match(model, /primaryColor:\s*string/);
+});
+
+
+test('advertises CU-18 Flutter Android generation without adding a new mode or color setting', () => {
+  const dialog = readFileSync(
+    new URL(
+      '../dialogs/spring-boot-export-dialog/spring-boot-export-dialog.component.ts',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+
+  assert.match(dialog, /Flutter mobile/i);
+  assert.match(dialog, /Android/i);
+  assert.match(dialog, /interfaces Angular y Flutter/i);
+  assert.doesNotMatch(dialog, /formControlName="(?:flutter|mobileMode|mobilePrimaryColor)"/);
 });

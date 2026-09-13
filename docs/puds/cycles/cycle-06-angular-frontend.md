@@ -57,4 +57,4 @@ Cerrar la generación web end-to-end sobre los contratos construidos en CU-12..1
 
 ## Resultado
 
-CU-17 y Ciclo 6 quedan CERRADOS. El siguiente candidato es CU-18 — empaquetado mobile Android mediante Capacitor sobre el Angular generado.
+CU-17 y Ciclo 6 quedan CERRADOS. El siguiente caso fue redefinido antes de implementarse: CU-18 genera Flutter mobile independiente y no reutiliza Angular mediante Capacitor.

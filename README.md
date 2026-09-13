@@ -8,7 +8,7 @@ La visión completa del producto está en `docs/product/product.md`. El estado r
 
 ## Estado actual
 
-**Fase de Construcción — Ciclos 1–6 CERRADOS; CU-17 CERRADO.**
+**Fase de Construcción — Ciclos 1–7 CERRADOS; CU-18 CERRADO.**
 
 En ClassForge llamamos **Ciclo** a una **iteración PUDS**.
 
@@ -35,7 +35,8 @@ El incremento ejecutable actual incluye:
 - CU-14 API CRUD expresiva: DTOs/services/controllers, búsqueda/filtros/orden/paginación/conteo y dos perfiles explícitos: CRUD simple o Sistema de Información con Auth (BCrypt + JWT);
 - CU-15 OpenAPI/Postman: `openapi.yaml` 3.0.3 + `postman_collection.json` 2.1 deterministas desde un contrato HTTP canónico;
 - CU-16 Domain Manifest: `domain-manifest.json` schema 1.0 determinista con UUIDs estables, IDs, atributos, relaciones, herencia, capacidades, operationIds y metadata Auth;
-- CU-17 frontend web Angular: SPA standalone dentro de `frontend/`, dashboard, componentes específicos por entidad, CRUD/relaciones, Simple/Auth y color primario seleccionable.
+- CU-17 frontend web Angular: SPA standalone dentro de `frontend/`, dashboard, componentes específicos por entidad, CRUD/relaciones, Simple/Auth y color primario seleccionable;
+- CU-18 frontend mobile Flutter: app independiente dentro de `mobile/`, dashboard, pantallas específicas por entidad, Simple/Auth, almacenamiento seguro de JWT y Android validado.
 
 También están implementados como infraestructura transversal:
 
@@ -47,7 +48,6 @@ También están implementados como infraestructura transversal:
 Aún no están implementados:
 
 - CU-10/11 XMI Enterprise Architect;
-- CU-18 frontend mobile generado;
 - CU-19..23 voz sobre la aplicación generada;
 - CU-26 auditoría histórica completa;
 - CU-27 demo reproducible formal;
@@ -61,6 +61,8 @@ El **Ciclo 4** está CERRADO con CU-15. Cada export CU-14 incluye `openapi.yaml`
 El **Ciclo 5** está CERRADO con CU-16. Cada export CU-14/15 incluye `domain-manifest.json` schema `1.0`, generado directamente desde los modelos/planes canónicos y validado contra OpenAPI/Postman antes del ZIP.
 
 El **Ciclo 6** está CERRADO con CU-17. El mismo ZIP incluye `frontend/`, un Angular standalone con dashboard, componentes específicos list/detail/form por entidad, soporte Simple/Auth y theme primario `#RRGGBB` seleccionado al exportar.
+
+El **Ciclo 7** está CERRADO con CU-18. El mismo ZIP incluye `mobile/`, una app Flutter con dashboard, pantallas específicas por entidad, relaciones, IDs compuestos, Simple/Auth, `flutter_secure_storage` para JWT y scaffold Android. El color primario se reutiliza desde la misma opción de exportación de CU-17.
 
 ## Arquitectura vigente
 
@@ -164,10 +166,11 @@ Un posible archivo `*.classforge` continúa siendo un formato portable futuro, n
 
 ## Próximo hito
 
-Los **Ciclos 1–6 están formalmente CERRADOS**. **CU-17 — frontend web Angular generado** está CERRADO con acceptance de production build; el siguiente candidato es **CU-18 — frontend mobile Android/Capacitor**.
+Los **Ciclos 1–7 están formalmente CERRADOS**. **CU-18 — frontend mobile Flutter** está CERRADO con `flutter analyze`, `flutter test` y `flutter build apk --debug` sobre Simple/Auth. El siguiente candidato es **CU-19 — consultar datos mediante voz sobre la aplicación generada**.
 
 La evidencia de cierre está en:
 
 - CU-09: `docs/evidence/cu09/cu09-closure-report.md`;
 - CU-13: `docs/evidence/cu13/cu13-closure-report.md` y `docs/evidence/cu13/cu13-acceptance.json`.
-- CU-17: `docs/evidence/cu17/cu17-closure-report.md` y `docs/evidence/cu17/cu17-acceptance.json`.
+- CU-17: `docs/evidence/cu17/cu17-closure-report.md` y `docs/evidence/cu17/cu17-acceptance.json`;
+- CU-18: `docs/evidence/cu18/cu18-closure-report.md` y `docs/evidence/cu18/cu18-acceptance.json`.
