@@ -252,8 +252,8 @@ export interface SpringBootExportDialogData {
         <span class="material-symbols-rounded" aria-hidden="true">inventory_2</span>
         <p>
           El ZIP incluye Gradle Wrapper, entidades/repositories JPA, DTOs,
-          services y controllers. En Auth tambien incluye Security, BCrypt,
-          bootstrap inicial, login y JWT.
+          services y controllers, ademas de openapi.yaml y una coleccion Postman.
+          En Auth tambien incluye Security, BCrypt, bootstrap inicial, login y JWT.
         </p>
       </div>
     </mat-dialog-content>

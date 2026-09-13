@@ -12,7 +12,7 @@ Transformar el modelo UML canónico en artefactos backend reproducibles y utiliz
 - CU-13: generador/export Spring Boot/JPA — CERRADO.
 - CU-14: API CRUD expresiva con dos modos: CRUD simple o Sistema de Información con Auth — CERRADO.
 
-CU-15 (OpenAPI/Postman) queda fuera de este ciclo y debe abrir un nuevo Ciclo PUDS antes de implementarse.
+CU-15 (OpenAPI/Postman) quedó fuera de este ciclo. El 13 de septiembre de 2026 se abrió el Ciclo 4 para fijarlo e implementarlo.
 
 ## Resultado
 

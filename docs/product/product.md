@@ -22,7 +22,7 @@ Fuente normativa del estado: `../puds/current-status.md`.
 | UML a modelo relacional | IMPLEMENTADO — CU-12 cerrado |
 | Generador Spring Boot/JPA | IMPLEMENTADO — CU-13 cerrado |
 | API CRUD expresiva — CRUD simple / Sistema de Información con Auth | IMPLEMENTADO — CU-14 cerrado |
-| OpenAPI/Postman | PLANIFICADO — CU-15 |
+| OpenAPI/Postman | CERRADO — CU-15 implementado y aceptado |
 | Domain Manifest | PLANIFICADO — CU-16 |
 | Frontend web/mobile generado | PLANIFICADO — CU-17/CU-18 |
 | Voz sobre la aplicación generada | PLANIFICADO |
@@ -595,29 +595,36 @@ Esto puede mapearse a Spring Data Auditing.
 
 ## 12. CU-15 - OpenAPI y Postman
 
-CU-15 introduce OpenAPI y Postman. CU-13 no añade `springdoc-openapi` al proyecto generado.
+CU-15 fija un contrato reproducible para documentar y ejercitar exactamente la API que CU-14 ya genera. No requiere iniciar la aplicación generada ni ejecutar `springdoc`, `openapi-to-postman` u otra herramienta externa durante la exportación.
 
-Flujo:
+Flujo objetivo:
 
 ```text
-Spring Boot generado
-       ↓
-springdoc-openapi
-       ↓
-OpenAPI 3
-       ↓
-openapi-to-postman
-       ↓
-Postman Collection
+SpringApiGenerationPlan (CU-14)
+       |
+       v
+SpringApiContract / OpenAPI model canónico
+       |                         |
+       v                         v
+openapi.yaml              postman_collection.json
+       \_________________________/
+                  |
+                  v
+           mismo ZIP CU-13/14
 ```
 
-La colección de Postman no deberá mantenerse manualmente de forma independiente del backend.
+`openapi.yaml` utiliza OpenAPI 3.0.3 y es el contrato externo normativo de la API generada. La colección Postman se renderiza desde el mismo contrato canónico; no se mantiene manualmente como una segunda especificación.
 
-OpenAPI será la fuente para generar:
+En modo `SIMPLE_CRUD`, ambos artefactos describen CRUD, list/count, búsqueda, filtros, sorting, paginación y relaciones sin seguridad.
 
-- documentación de API;
-- colección Postman;
-- cliente TypeScript del frontend.
+En modo `AUTH_INFORMATION_SYSTEM`, OpenAPI añade `bearerAuth` y marca el API como protegido salvo `POST /api/auth/bootstrap` y `POST /api/auth/login`. La contraseña seleccionada es de escritura y nunca forma parte de schemas de respuesta. Postman añade `baseUrl` y `jwt`, guarda automáticamente `accessToken` después de bootstrap/login y usa `Bearer {{jwt}}` en requests protegidos.
+
+CU-15 entrega solamente:
+
+- `openapi.yaml`;
+- `postman_collection.json`.
+
+El Domain Manifest permanece en CU-16 y el cliente TypeScript se generará en CU-17 consumiendo el OpenAPI producido aquí.
 
 ---
 

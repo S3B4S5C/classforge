@@ -252,3 +252,34 @@ tasks.register('springCrudGenerationAcceptance', Test) {
         exceptionFormat = 'full'
     }
 }
+
+// C4-CU15: validate generated OpenAPI/Postman artifacts against the same canonical CRUD/Auth contract.
+tasks.register('springApiArtifactsAcceptance', Test) {
+    group = 'verification'
+    description = 'Generates CU-15 OpenAPI/Postman artifacts for simple CRUD and Auth modes, validates contract parity/determinism, and builds the exported projects.'
+
+    dependsOn testClasses
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+    useJUnitPlatform()
+    maxParallelForks = 1
+    filter {
+        includeTestsMatching 'com.classforge.generation.spring.acceptance.SpringApiArtifactsAcceptanceIntegrationTest'
+    }
+
+    systemProperty 'spring.api.artifacts.acceptance.enabled', 'true'
+    systemProperty 'spring.api.artifacts.acceptance.gradle-user-home', gradle.gradleUserHomeDir.absolutePath
+
+    def generatedJavaHome = providers.gradleProperty('generatedJavaHome')
+    if (generatedJavaHome.isPresent()) {
+        systemProperty 'spring.api.artifacts.acceptance.java-home', generatedJavaHome.get()
+    }
+
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+}

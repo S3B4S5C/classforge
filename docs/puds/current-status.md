@@ -9,16 +9,17 @@ Ciclo 2: CERRADO
 CU-31: CERRADO
 CU-09: CERRADO
 Ciclo 3: CERRADO
+Ciclo 4: CERRADO
 CU-12: CERRADO
 CU-13: CERRADO
 CU-14: CERRADO
-Current increment: C3-cu14-001 CLOSED - CRUD simple / Sistema de Información con Auth
-Next candidate: CU-15 - OpenAPI y Postman
+Current increment: C4-cu15-001 CLOSED - OpenAPI/Postman implementados y aceptados
+CU-15: CERRADO
 ```
 
 ## Resumen ejecutivo del corte
 
-Los Ciclos 1, 2 y 3 están cerrados. El Ciclo 3 completó CU-12 (IR relacional determinista), CU-13 (generación/export Spring Boot/JPA reproducible) y CU-14 (API CRUD expresiva con perfiles CRUD simple y Sistema de Información con Auth). CU-15 queda como siguiente candidato para un nuevo ciclo.
+Los Ciclos 1, 2, 3 y 4 están cerrados. El Ciclo 3 completó CU-12, CU-13 y CU-14; el Ciclo 4 cerró CU-15 con `openapi.yaml` y `postman_collection.json` deterministas derivados del mismo contrato HTTP canónico de CU-14.
 
 Como antecedente inmediato, el Ciclo 2 se cerró después de resolver sus dos riesgos principales:
 
@@ -47,6 +48,7 @@ CU-09 queda funcionalmente aceptado el 5 de septiembre de 2026. La imagen nunca 
 | CU-12 Modelo relacional | CERRADO | IR interna, efímera y determinista consumida por CU-13 |
 | CU-13 Generar backend Spring Boot/JPA | CERRADO | ZIP reproducible Java 21/Spring Boot 4.0.8, export autorizado y acceptance compilable sobre H2 |
 | CU-14 Generar API CRUD expresiva | CERRADO | DTOs/services/controllers; CRUD/filtros/paginación/relaciones; perfiles Simple/Auth con BCrypt + JWT |
+| CU-15 Generar OpenAPI y Postman | CERRADO | OpenAPI 3.0.3 + Postman 2.1 deterministas, paridad de operaciones y seguridad Simple/Auth |
 
 ## CU-09 — estado final
 
@@ -237,4 +239,4 @@ Evidencia: `docs/evidence/cu13/cu13-closure-report.md` y `docs/evidence/cu13/cu1
 
 ## Próximo paso PUDS
 
-Ciclo 3 está CERRADO. CU-14 queda CERRADO con evidencia en `docs/evidence/cu14/cu14-closure-report.md`; CU-13 conserva su evidencia en `docs/evidence/cu13/`. Siguiente candidato: CU-15 — OpenAPI y Postman. `RelationalModel` no tiene UI y no se persiste.
+Ciclos 3 y 4 están CERRADOS. CU-14 conserva evidencia en `docs/evidence/cu14/`; CU-15 queda cerrado con evidencia en `docs/evidence/cu15/`. `RelationalModel` no tiene UI y no se persiste. El siguiente candidato es CU-16 Domain Manifest.

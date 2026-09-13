@@ -34,6 +34,7 @@ public class SpringProjectRenderer {
     private final SpringFreeMarkerRenderer templates;
     private final GeneratedProjectValidator validator;
     private final SpringApiGenerationPlanner apiPlanner = new SpringApiGenerationPlanner();
+    private final SpringApiArtifactsRenderer apiArtifactsRenderer = new SpringApiArtifactsRenderer();
 
     public SpringProjectRenderer(SpringFreeMarkerRenderer templates, GeneratedProjectValidator validator) {
         this.templates = templates;
@@ -102,6 +103,8 @@ public class SpringProjectRenderer {
             add(files, "auth/security-config.java.ftl", "src/main/java/" + packagePath + "/security/SecurityConfig.java", authContext);
             add(files, "auth/auth-controller.java.ftl", "src/main/java/" + packagePath + "/controller/AuthController.java", authContext);
         }
+
+        files.addAll(apiArtifactsRenderer.render(model, api));
 
         GeneratedProject project = new GeneratedProject(model.artifactName(), files);
         validator.validate(project);

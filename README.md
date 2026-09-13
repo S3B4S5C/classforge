@@ -8,7 +8,7 @@ La visión completa del producto está en `docs/product/product.md`. El estado r
 
 ## Estado actual
 
-**Fase de Construcción — Ciclos 1, 2 y 3 CERRADOS; CU-12, CU-13 y CU-14 CERRADOS.**
+**Fase de Construcción — Ciclos 1, 2, 3 y 4 CERRADOS; CU-15 CERRADO.**
 
 En ClassForge llamamos **Ciclo** a una **iteración PUDS**.
 
@@ -44,7 +44,7 @@ También están implementados como infraestructura transversal:
 Aún no están implementados:
 
 - CU-10/11 XMI Enterprise Architect;
-- CU-15/16 OpenAPI/Postman y Domain Manifest;
+- CU-15 OpenAPI/Postman CERRADO: `openapi.yaml` + `postman_collection.json` deterministas desde un contrato HTTP canónico; CU-16 Domain Manifest permanece PLANIFICADO;
 - CU-17/18 frontend web/mobile generado;
 - CU-19..23 voz sobre la aplicación generada;
 - CU-26 auditoría histórica completa;
@@ -53,6 +53,8 @@ Aún no están implementados:
 CU-31 quedó cerrado en C2-cu31-003. CU-09 — Imagen → UML — quedó cerrado el 5 de septiembre de 2026 después del hardening hybrid-CV, política fail-closed, E2E canónico, canonicalización de identificadores y smoke manual de producto. La validación multi-pizarra adicional se conserva como recomendación de robustez y no se presenta como evidencia ejecutada.
 
 En el Ciclo 3, CU-12 cerró la transformación determinista UML -> modelo relacional, CU-13 la generación/exportación Spring Boot/JPA y CU-14 la API CRUD expresiva con perfiles Simple/Auth. La evidencia de CU-13 está en `docs/evidence/cu13/` y la de CU-14 en `docs/evidence/cu14/`.
+
+El **Ciclo 4** está CERRADO con CU-15. Cada export CU-14 incluye `openapi.yaml` y `postman_collection.json` generados determinísticamente desde el mismo contrato canónico de API; Auth documenta bootstrap/login/Bearer JWT y Simple no declara seguridad.
 
 ## Arquitectura vigente
 
@@ -156,7 +158,7 @@ Un posible archivo `*.classforge` continúa siendo un formato portable futuro, n
 
 ## Próximo hito
 
-Los **Ciclos 1, 2 y 3 están formalmente CERRADOS**. CU-12, CU-13 y CU-14 están cerrados. El siguiente candidato es **CU-15 — OpenAPI y Postman** y debe abrirse en un nuevo Ciclo PUDS antes de su implementación.
+Los **Ciclos 1, 2, 3 y 4 están formalmente CERRADOS**. **CU-15 — OpenAPI y Postman** queda cerrado por `C4-cu15-001`; la evidencia está en `docs/evidence/cu15/`. El siguiente candidato es CU-16 — Domain Manifest.
 
 La evidencia de cierre está en:
 

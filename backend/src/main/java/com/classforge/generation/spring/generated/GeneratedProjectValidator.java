@@ -9,11 +9,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 @Component
 public class GeneratedProjectValidator {
@@ -45,6 +50,7 @@ public class GeneratedProjectValidator {
             "(?m)^\\s*private\\s+(?:final\\s+)?([A-Z][A-Za-z0-9_$]*)(?:<([A-Z][A-Za-z0-9_$]*)>)?\\s+[A-Za-z_$][A-Za-z0-9_$]*\\s*(?:=|;)"
     );
     private static final Pattern FREEMARKER_EXPRESSION = Pattern.compile("\\$\\{([^}\\r\\n]+)}");
+    private static final Pattern OPENAPI_OPERATION_ID = Pattern.compile("(?m)^\\s+operationId:\\s*([A-Za-z0-9_]+)\\s*$");
     private static final Set<String> NON_GENERATED_SIMPLE_TYPES = Set.of(
             "String", "Integer", "Long", "Boolean", "BigDecimal", "LocalDate", "LocalDateTime", "UUID",
             "Set", "LinkedHashSet", "Serializable", "Object"
@@ -92,9 +98,79 @@ public class GeneratedProjectValidator {
 
         validateRequiredSkeleton(filesByPath, textByPath, diagnostics);
         validateJavaSources(textByPath, diagnostics);
+        validateApiArtifacts(textByPath, diagnostics);
 
         if (!diagnostics.isEmpty()) {
             throw new GeneratedProjectException(diagnostics);
+        }
+    }
+
+
+    private void validateApiArtifacts(
+            Map<String, String> textByPath,
+            List<GeneratedProjectDiagnostic> diagnostics
+    ) {
+        boolean hasOpenApi = textByPath.containsKey("openapi.yaml");
+        boolean hasPostman = textByPath.containsKey("postman_collection.json");
+        if (!hasOpenApi && !hasPostman) return;
+        if (!hasOpenApi || !hasPostman) {
+            add(diagnostics, GeneratedProjectDiagnosticCode.API_CONTRACT_ARTIFACT_MISSING, null,
+                    "OpenAPI and Postman artifacts must be generated together.");
+            return;
+        }
+
+        Set<String> openApiOperations = new HashSet<>();
+        try {
+            String yaml = textByPath.get("openapi.yaml");
+            YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
+            factory.setResources(new ByteArrayResource(yaml.getBytes(StandardCharsets.UTF_8)));
+            Properties properties = factory.getObject();
+            if (properties == null || !"3.0.3".equals(properties.getProperty("openapi"))) {
+                throw new IllegalArgumentException("OpenAPI root version must be 3.0.3.");
+            }
+            Matcher matcher = OPENAPI_OPERATION_ID.matcher(yaml);
+            while (matcher.find()) openApiOperations.add(matcher.group(1));
+            if (openApiOperations.isEmpty()) {
+                throw new IllegalArgumentException("OpenAPI must contain at least one operationId.");
+            }
+        } catch (RuntimeException exception) {
+            add(diagnostics, GeneratedProjectDiagnosticCode.API_CONTRACT_ARTIFACT_INVALID, "openapi.yaml",
+                    "Generated OpenAPI is not parseable/valid for the ClassForge contract: " + exception.getMessage());
+            return;
+        }
+
+        Set<String> postmanOperations = new HashSet<>();
+        try {
+            JsonNode root = JsonMapper.builder().build().readTree(textByPath.get("postman_collection.json"));
+            if (root == null || root.get("info") == null || root.get("info").get("schema") == null
+                    || !root.get("info").get("schema").asText().contains("/v2.1.0/")) {
+                throw new IllegalArgumentException("Postman collection schema must be v2.1.");
+            }
+            collectPostmanOperationIds(root.get("item"), postmanOperations);
+            if (postmanOperations.isEmpty()) {
+                throw new IllegalArgumentException("Postman collection must contain requests.");
+            }
+        } catch (Exception exception) {
+            add(diagnostics, GeneratedProjectDiagnosticCode.API_CONTRACT_ARTIFACT_INVALID, "postman_collection.json",
+                    "Generated Postman collection is not parseable/valid for the ClassForge contract: " + exception.getMessage());
+            return;
+        }
+
+        if (!openApiOperations.equals(postmanOperations)) {
+            add(diagnostics, GeneratedProjectDiagnosticCode.API_CONTRACT_OPERATION_MISMATCH, null,
+                    "OpenAPI operationIds and Postman request names must match exactly. OpenAPI="
+                            + openApiOperations + ", Postman=" + postmanOperations);
+        }
+    }
+
+    private void collectPostmanOperationIds(JsonNode items, Set<String> operations) {
+        if (items == null || !items.isArray()) return;
+        for (JsonNode item : items) {
+            if (item.has("request") && item.has("name")) {
+                operations.add(item.get("name").asText());
+            } else {
+                collectPostmanOperationIds(item.get("item"), operations);
+            }
         }
     }
 

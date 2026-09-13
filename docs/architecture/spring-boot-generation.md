@@ -86,7 +86,7 @@ SIMPLE_CRUD
   -> CRUD expresivo
   -> sin Spring Security/login/JWT
 
-AUTHENTICATED_INFORMATION_SYSTEM
+AUTH_INFORMATION_SYSTEM
   -> mismo CRUD expresivo
   -> auth class/table seleccionada
   -> username attribute seleccionado
@@ -110,3 +110,19 @@ La capa CU-14 se monta sobre el mismo `SpringGenerationModel` sin persistir una 
 El bootstrap inicial se resuelve con `POST /api/auth/bootstrap`: sólo se permite mientras la tabla de autenticación esté vacía y recibe el DTO de creación de la entidad seleccionada, por lo que también puede completar sus demás campos obligatorios e identificador. Después del bootstrap no existe registro público en CU-14. `POST /api/auth/login` permanece público; el resto requiere Bearer JWT. CU-14 no implementa refresh tokens, roles ni autorización por entidad/campo.
 
 La aceptación focal se ejecuta con `springCrudGenerationAcceptance`, que exporta un CRUD simple y un sistema Auth representativos, ejecuta el Gradle Wrapper de ambos proyectos y exige `contextLoads()` sobre H2.
+
+
+## Frontera aprobada hacia CU-15
+
+CU-15 no vuelve a inferir endpoints desde templates ni inspecciona clases Java generadas. Consume el mismo `SpringApiGenerationPlan` validado de CU-14 y deriva un contrato HTTP canónico, inmutable y determinista.
+
+```text
+SpringApiGenerationPlan
+  -> SpringApiContract / OpenAPI model
+      -> openapi.yaml
+      -> postman_collection.json
+```
+
+Los dos artefactos se incorporan al mismo `GeneratedProject` antes de validación/ZIP. La exportación sigue siendo read-only y no requiere levantar el backend generado ni invocar herramientas externas.
+
+En Simple no existe seguridad. En Auth, el contrato incluye bootstrap/login, Bearer JWT global, password write-only y ausencia de password en responses. CU-15 no incorpora Domain Manifest ni cliente TypeScript.

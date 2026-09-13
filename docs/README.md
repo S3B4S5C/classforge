@@ -33,11 +33,14 @@ Fase PUDS: Construcción
 Ciclo 1: CERRADO
 Ciclo 2: CERRADO
 Ciclo 3: CERRADO
+Ciclo 4: CERRADO
 CU-31: CERRADO
 CU-09: CERRADO
 CU-12: CERRADO
 CU-13: CERRADO
-Siguiente candidato: CU-15 — OpenAPI y Postman
+CU-14: CERRADO
+CU-15: CERRADO
+Incremento actual: C4-cu15-000
 Fecha: 13-09-2026
 ```
 
@@ -64,6 +67,7 @@ Para explicar UML -> relacional -> Spring Boot/JPA y el cierre de CU-13, usar en
 4. `architecture/spring-boot-generation.md` — arquitectura vigente del generador/export.
 5. `evidence/cu13/cu13-acceptance.json` — evidencia máquina-legible de determinismo y proyectos generados.
 6. `puds/cycles/cycle-03-construction.md` — cierre del Ciclo 3 con CU-12, CU-13 y CU-14 aceptados.
+7. `puds/cycles/cycle-04-api-contract.md` — Ciclo 4 abierto para CU-15 OpenAPI/Postman.
 
 
 ## Cierre normativo de CU-14
@@ -74,6 +78,20 @@ CU-14 conserva dos modos de generación explícitos y mutuamente excluyentes:
 2. **Sistema de Información con Auth:** genera la misma API más autenticación. Antes de exportar, el usuario debe seleccionar la **tabla/entidad de autenticación**, el **atributo de usuario/login** y el **atributo de contraseña** pertenecientes a esa misma tabla/entidad.
 
 La definición detallada está en `puds/use-cases.md`, `product/product.md` y `puds/iterations/cycle-03/C3-cu14-000-crud-auth-scope.md`.
+
+## CU-15 cerrado — OpenAPI y Postman
+
+CU-15 está CERRADO dentro del Ciclo 4. El contrato normativo y su cierre se concentran en:
+
+1. `puds/use-cases.md` — comportamiento del CU.
+2. `puds/cycles/cycle-04-api-contract.md` — objetivo, riesgos y salida del Ciclo 4.
+3. `puds/iterations/cycle-04/C4-cu15-000-openapi-postman-scope.md` — decisiones cerradas antes de implementar.
+4. `puds/iterations/cycle-04/C4-cu15-001-openapi-postman-generation.md` — incremento de implementación/cierre.
+5. `architecture/openapi-postman-generation.md` — arquitectura implementada.
+6. `evidence/cu15/` — acceptance y cierre.
+7. `../openspec/changes/cu15-openapi-postman/` — requisitos y tareas cerradas.
+
+CU-15 no genera Domain Manifest ni cliente TypeScript; esos consumidores pertenecen a CU-16/CU-17.
 
 ## Composición prevista del Word
 

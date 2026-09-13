@@ -247,3 +247,17 @@ test('exposes the two CU-14 generation modes and explicit Auth selectors', () =>
   assert.match(dialog, /formControlName="passwordAttributeId"/);
   assert.match(dialog, /login y JWT/);
 });
+
+test('advertises CU-15 OpenAPI and Postman artifacts without adding a new mode', () => {
+  const dialog = readFileSync(
+    new URL(
+      '../dialogs/spring-boot-export-dialog/spring-boot-export-dialog.component.ts',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+
+  assert.match(dialog, /openapi\.yaml/);
+  assert.match(dialog, /coleccion Postman/i);
+  assert.doesNotMatch(dialog, /formControlName="(?:openApi|postman|apiArtifacts)"/);
+});

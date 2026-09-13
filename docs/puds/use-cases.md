@@ -62,7 +62,7 @@ Participa en validación, persistencia, auditoría y generación.
 | CU-12 | Transformar UML a modelo relacional | CERRADO |
 | CU-13 | Generar backend Spring Boot/JPA | CERRADO |
 | CU-14 | Generar API CRUD expresiva — CRUD simple / Sistema de Información con Auth | CERRADO |
-| CU-15 | Generar OpenAPI y Postman | PLANIFICADO |
+| CU-15 | Generar OpenAPI y Postman | CERRADO |
 | CU-16 | Generar Domain Manifest | PLANIFICADO |
 | CU-17 | Generar frontend web Angular | PLANIFICADO |
 | CU-18 | Generar frontend mobile Android/Capacitor | PLANIFICADO |
@@ -233,8 +233,8 @@ Backend deriva usuario actual del token y solo devuelve proyectos cuyo `ownerId`
 
 ### CU-09 — Crear UML desde imagen/fotografía
 
-**Estado:** CERRADO.  
-**Actor principal:** Modelador con permiso de edición (`OWNER` o `EDITOR`).  
+**Estado:** CERRADO.
+**Actor principal:** Modelador con permiso de edición (`OWNER` o `EDITOR`).
 **Actor de soporte:** Sistema local de visión (`llama.cpp` + Qwen3-VL), backend ClassForge y servicios de colaboración.
 
 #### Propósito
@@ -373,8 +373,52 @@ La selección Auth debe validarse de forma fail-closed. Si la tabla/entidad o cu
 - Relaciones se representan mediante IDs en los DTOs para evitar ciclos de serialización y conservar navegación hacia el endpoint de la entidad relacionada.
 
 
-### CU-15 — OpenAPI y Postman
-Entregar contrato OpenAPI y colección Postman reproducible.
+### CU-15 — Generar OpenAPI y Postman
+
+**Actor:** OWNER o EDITOR con permiso de exportación.
+
+**Precondición:** CU-14 puede producir un `SpringApiGenerationPlan` válido en modo `SIMPLE_CRUD` o `AUTH_INFORMATION_SYSTEM`.
+
+CU-15 amplía el mismo ZIP de backend generado. No introduce un export separado ni un checkbox adicional.
+
+Flujo:
+
+1. el usuario solicita generar el sistema Spring Boot desde la UX existente;
+2. backend valida acceso, revisión y configuración CU-14;
+3. CU-12/CU-13/CU-14 construyen sus IR/planes efímeros;
+4. CU-15 deriva un contrato HTTP canónico determinista;
+5. del mismo contrato se renderizan `openapi.yaml` y `postman_collection.json`;
+6. ambos artefactos se incorporan a la raíz del ZIP antes de `GeneratedProjectValidator`/archivo final;
+7. la generación permanece read-only respecto de `ProjectDocument`, `UmlModel`, `RelationalModel` y revisión.
+
+**OpenAPI**
+
+- formato OpenAPI `3.0.3`;
+- representa exactamente los endpoints emitidos por CU-14;
+- documenta DTOs request/response, paginación, filtros, sorting, count, IDs simples/compuestos y errores 400/404/409;
+- en `AUTH_INFORMATION_SYSTEM` define `bearerAuth` JWT y seguridad global, dejando `POST /api/auth/bootstrap` y `POST /api/auth/login` como operaciones públicas;
+- el password de la entidad Auth es de escritura y no aparece en schemas de respuesta;
+- en `SIMPLE_CRUD` no se declara security scheme ni requisito de autenticación.
+
+**Postman**
+
+- colección JSON schema v2.1;
+- variable `baseUrl` con default `http://localhost:8080`;
+- una carpeta por entidad con list/count/create/get/update/delete y parámetros coherentes con OpenAPI;
+- en Auth agrega carpeta de autenticación con bootstrap y login;
+- login/bootstrap guardan `accessToken` en la variable de colección `jwt`;
+- requests protegidos usan `Bearer {{jwt}}`;
+- en Simple no existe token ni carpeta Auth.
+
+**Invariantes**
+
+- OpenAPI y Postman no se mantienen manualmente como contratos independientes;
+- ambos nacen del mismo contrato canónico derivado del plan CU-14;
+- orden, nombres, operationIds y contenido son deterministas;
+- no se ejecuta el backend generado ni una herramienta externa para producir los archivos;
+- CU-15 no genera Domain Manifest ni cliente TypeScript.
+
+**Postcondición:** el ZIP contiene un backend compilable más `openapi.yaml` y `postman_collection.json` coherentes y reproducibles.
 
 ### CU-16 — Domain Manifest
 Producir manifest de entidades, atributos, tipos, relaciones, endpoints y capacidades.
@@ -416,7 +460,7 @@ Proyecto veterinaria capaz de demostrar de extremo a extremo las capacidades ter
 
 **Estado: CERRADO.**
 
-**Actor principal:** Propietario.  
+**Actor principal:** Propietario.
 **Actor secundario:** Usuario invitado / Colaborador.
 
 Flujo vigente cerrado con C2-cu31-003:
@@ -540,3 +584,19 @@ CU-14: CERRADO — CRUD simple / Sistema de Información con Auth
 CU-12 estableció la IR relacional interna y determinista. CU-13 consume esa IR y entrega un backend Spring Boot/JPA reproducible mediante proyecto virtual validado, ZIP determinista, export OWNER/EDITOR y acceptance que compila los proyectos generados y carga Spring sobre H2.
 
 La evidencia de cierre de CU-13 está en `docs/evidence/cu13/cu13-closure-report.md` y `docs/evidence/cu13/cu13-acceptance.json`. El Ciclo 3 queda cerrado con CU-12, CU-13 y CU-14 aceptados.
+
+## 13. Ciclo 4
+
+El Ciclo 4 está **CERRADO** en fase de Construcción con CU-15 aceptado.
+
+Criterios de salida:
+
+- `openapi.yaml` y `postman_collection.json` se generan siempre junto con ambos modos CU-14;
+- Simple no declara seguridad;
+- Auth documenta y prueba bootstrap/login/Bearer JWT sin exponer password;
+- la colección Postman representa todas las operaciones OpenAPI relevantes y no inventa endpoints;
+- ambos artefactos son deterministas;
+- proyectos generados Simple/Auth continúan compilando y cargando contexto sobre H2;
+- CU-13 y CU-14 no regresionan.
+
+El alcance técnico quedó fijado en `docs/puds/iterations/cycle-04/C4-cu15-000-openapi-postman-scope.md` y el cierre ejecutable en `docs/puds/iterations/cycle-04/C4-cu15-001-openapi-postman-generation.md`.

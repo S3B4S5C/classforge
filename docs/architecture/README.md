@@ -1,6 +1,6 @@
 # Arquitectura de ClassForge
 
-**Estado:** arquitectura ejecutable en fase de Construcción; Ciclos 1, 2 y 3 cerrados; CU-12, CU-13 y CU-14 cerrados.
+**Estado:** arquitectura ejecutable en fase de Construcción; Ciclos 1, 2 y 3 cerrados; Ciclo 4 abierto; CU-15 en progreso con alcance fijado.
 
 ## Fuente de verdad
 
@@ -43,6 +43,7 @@ ProjectDocument
 | `uml-validation.md` | reglas UML | implementado |
 | `relational-model.md` | IR relacional interna | CU-12 cerrado |
 | `spring-boot-generation.md` | generación/export Spring Boot/JPA + API CRUD Simple/Auth | CU-13 y CU-14 cerrados |
+| `openapi-postman-generation.md` | contrato HTTP + OpenAPI/Postman deterministas | CU-15 implementado y aceptado |
 | `api-validation-errors.md` | contrato de errores | implementado |
 | `command-bus.md` | comandos y Undo/Redo | implementado |
 | `authentication-and-ownership.md` | auth y aislamiento | implementado |
@@ -75,8 +76,7 @@ ProjectDocument
 
 
 - XMI 2.1 / Enterprise Architect;
-- OpenAPI/Postman de CU-15;
-- OpenAPI/Postman generado;
+- implementación OpenAPI/Postman de CU-15 (alcance ya fijado);
 - Domain Manifest de aplicación generada;
 - frontend Angular generado;
 - Capacitor/Android generado;

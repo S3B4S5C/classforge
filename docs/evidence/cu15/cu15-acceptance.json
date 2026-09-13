@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0",
+  "status": "PASS",
+  "case": "CU-15",
+  "increment": "C4-cu15-001",
+  "artifacts": ["openapi.yaml", "postman_collection.json"],
+  "openapiVersion": "3.0.3",
+  "postmanSchema": "v2.1.0",
+  "modes": [
+    {"mode": "SIMPLE_CRUD", "parseable": "PASS", "operationParity": "PASS", "security": "NONE", "generatedBuild": "PASS", "contextLoads": "PASS", "h2": "PASS"},
+    {"mode": "AUTH_INFORMATION_SYSTEM", "parseable": "PASS", "operationParity": "PASS", "security": "BEARER_JWT", "passwordResponseExposure": "NONE", "tokenCapture": "PASS", "generatedBuild": "PASS", "contextLoads": "PASS", "h2": "PASS"}
+  ],
+  "determinism": "BYTE_IDENTICAL",
+  "cu13Regression": "PASS",
+  "cu14Regression": "PASS",
+  "backendTests": "PASS",
+  "frontendGenerationTests": "PASS",
+  "angularBuild": "PASS",
+  "staticAudit": "PASS"
+}
