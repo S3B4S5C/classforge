@@ -79,4 +79,4 @@ Archivos finales:
 
 ## Límite con CU-16/CU-17
 
-CU-15 produce contratos y herramientas de consumo manual. `domain-manifest.json` pertenece a CU-16. El cliente TypeScript y frontend Angular pertenecen a CU-17 y podrán consumir `openapi.yaml` sin cambiar la autoridad de CU-15.
+CU-15 produce el contrato HTTP y herramientas de consumo manual. CU-16 queda fijado para producir `domain-manifest.json` desde `SpringGenerationModel` + `SpringApiGenerationPlan` + `SpringApiContract`; no parseará OpenAPI/Postman para reconstruir semántica. CU-17 consumirá el manifest y el contrato API según corresponda.

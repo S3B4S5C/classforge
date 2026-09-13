@@ -15,6 +15,8 @@ Fase: Construcción
 Ciclo 1: CERRADO
 Ciclo 2: CERRADO
 Ciclo 3: CERRADO
+Ciclo 4: CERRADO
+Ciclo 5: CERRADO
 ```
 
 ## 2. Actores
@@ -63,7 +65,7 @@ Participa en validación, persistencia, auditoría y generación.
 | CU-13 | Generar backend Spring Boot/JPA | CERRADO |
 | CU-14 | Generar API CRUD expresiva — CRUD simple / Sistema de Información con Auth | CERRADO |
 | CU-15 | Generar OpenAPI y Postman | CERRADO |
-| CU-16 | Generar Domain Manifest | PLANIFICADO |
+| CU-16 | Generar Domain Manifest | CERRADO |
 | CU-17 | Generar frontend web Angular | PLANIFICADO |
 | CU-18 | Generar frontend mobile Android/Capacitor | PLANIFICADO |
 | CU-19 | Consultar datos mediante voz | PLANIFICADO |
@@ -420,8 +422,49 @@ Flujo:
 
 **Postcondición:** el ZIP contiene un backend compilable más `openapi.yaml` y `postman_collection.json` coherentes y reproducibles.
 
-### CU-16 — Domain Manifest
-Producir manifest de entidades, atributos, tipos, relaciones, endpoints y capacidades.
+### CU-16 — Generar Domain Manifest
+
+**Estado:** CERRADO — implementado y aceptado en C5-cu16-001.
+**Actor:** Sistema.
+**Disparador:** exportación exitosa de un proyecto con API CU-14.
+
+**Objetivo:** producir `domain-manifest.json` schema `1.0` como proyección semántica determinista para CU-17 y CU-19..23, sin crear una segunda fuente de verdad.
+
+**Autoridad:**
+
+```text
+SpringGenerationModel
+SpringApiGenerationPlan
+SpringApiContract
+        |
+        v
+DomainManifestPlan
+        |
+        v
+domain-manifest.json
+```
+
+No se reconstruye el dominio parseando `openapi.yaml` ni `postman_collection.json`.
+
+**Contenido mínimo:**
+
+- modo `SIMPLE_CRUD` / `AUTH_INFORMATION_SYSTEM`;
+- UUID fuente de clases, atributos y relaciones cuando exista;
+- entidades, nombres lógico/código, tabla, endpoint y displayName;
+- aliases vacíos por defecto, sin pluralización heurística;
+- IDs simples/compuestos;
+- herencia explícita;
+- atributos con tipo semántico, nullability, lectura/escritura, mutabilidad, search/filter/sort y validaciones básicas;
+- relaciones con target estable, tipo UML/API, optionalidad y campo request;
+- capacidades CRUD/query;
+- operaciones usando exactamente los `operationId` de CU-15;
+- metadata Auth cuando el modo la habilite.
+
+**Privacidad Auth:** password sensible/write-only, no readable/searchable/filterable/sortable, requerido en create/bootstrap y opcional en update.
+
+**Postcondición:** el ZIP generado contiene un `domain-manifest.json` parseable, referencialmente válido y determinista, coherente con el proyecto Spring, OpenAPI y Postman.
+
+**Fuera de alcance:** Angular generado, mobile, ejecución del asistente, roles/refresh, aliases inferidos por IA o nuevas reglas de negocio.
 
 ### CU-17 — Frontend web
 Generar Angular reutilizando template dirigido por Domain Manifest.

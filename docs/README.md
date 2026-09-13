@@ -34,13 +34,15 @@ Ciclo 1: CERRADO
 Ciclo 2: CERRADO
 Ciclo 3: CERRADO
 Ciclo 4: CERRADO
+Ciclo 5: CERRADO
 CU-31: CERRADO
 CU-09: CERRADO
 CU-12: CERRADO
 CU-13: CERRADO
 CU-14: CERRADO
 CU-15: CERRADO
-Incremento actual: C4-cu15-000
+CU-16: CERRADO
+Incremento actual: C5-cu16-001 CLOSED
 Fecha: 13-09-2026
 ```
 
@@ -67,7 +69,9 @@ Para explicar UML -> relacional -> Spring Boot/JPA y el cierre de CU-13, usar en
 4. `architecture/spring-boot-generation.md` — arquitectura vigente del generador/export.
 5. `evidence/cu13/cu13-acceptance.json` — evidencia máquina-legible de determinismo y proyectos generados.
 6. `puds/cycles/cycle-03-construction.md` — cierre del Ciclo 3 con CU-12, CU-13 y CU-14 aceptados.
-7. `puds/cycles/cycle-04-api-contract.md` — Ciclo 4 abierto para CU-15 OpenAPI/Postman.
+7. `puds/cycles/cycle-04-api-contract.md` — cierre del Ciclo 4 con CU-15 aceptado.
+8. `architecture/domain-manifest-generation.md` — arquitectura vigente de CU-16.
+9. `puds/cycles/cycle-05-domain-manifest.md` — cierre del Ciclo 5 con CU-16 aceptado.
 
 
 ## Cierre normativo de CU-14
@@ -91,7 +95,19 @@ CU-15 está CERRADO dentro del Ciclo 4. El contrato normativo y su cierre se con
 6. `evidence/cu15/` — acceptance y cierre.
 7. `../openspec/changes/cu15-openapi-postman/` — requisitos y tareas cerradas.
 
-CU-15 no genera Domain Manifest ni cliente TypeScript; esos consumidores pertenecen a CU-16/CU-17.
+CU-15 fija el contrato HTTP; CU-16 añade `domain-manifest.json`; el cliente TypeScript/frontend pertenece a CU-17.
+
+## CU-16 — cerrado
+
+CU-16 está implementado y aceptado. Sus fuentes principales son:
+
+1. `puds/use-cases.md` — definición vigente del caso.
+2. `puds/cycles/cycle-05-domain-manifest.md` — objetivo/riesgos/criterios de salida del Ciclo 5.
+3. `puds/iterations/cycle-05/C5-cu16-000-domain-manifest-scope.md` — schema v1 y acceptance previstos.
+4. `architecture/domain-manifest-generation.md` — autoridad y contrato técnico.
+5. `puds/iterations/cycle-05/C5-cu16-001-domain-manifest-generation.md` — implementación y acceptance.
+6. `evidence/cu16/` — cierre y evidencia estructurada.
+7. `../openspec/changes/cu16-domain-manifest/` — requisitos y tareas cerradas.
 
 ## Composición prevista del Word
 

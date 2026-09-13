@@ -261,3 +261,18 @@ test('advertises CU-15 OpenAPI and Postman artifacts without adding a new mode',
   assert.match(dialog, /coleccion Postman/i);
   assert.doesNotMatch(dialog, /formControlName="(?:openApi|postman|apiArtifacts)"/);
 });
+
+
+test('advertises CU-16 Domain Manifest as a generated artifact without adding configuration', () => {
+  const dialog = readFileSync(
+    new URL(
+      '../dialogs/spring-boot-export-dialog/spring-boot-export-dialog.component.ts',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+
+  assert.match(dialog, /domain-manifest\.json/);
+  assert.match(dialog, /semantica del dominio/i);
+  assert.doesNotMatch(dialog, /formControlName="(?:domainManifest|manifestSchema|manifestAliases)"/);
+});

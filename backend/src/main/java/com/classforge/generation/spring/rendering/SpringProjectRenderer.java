@@ -3,6 +3,10 @@ package com.classforge.generation.spring.rendering;
 import com.classforge.generation.spring.api.SpringApiEntityModel;
 import com.classforge.generation.spring.api.SpringApiGenerationPlan;
 import com.classforge.generation.spring.api.SpringApiGenerationPlanner;
+import com.classforge.generation.spring.api.contract.SpringApiContract;
+import com.classforge.generation.spring.api.contract.SpringApiContractPlanner;
+import com.classforge.generation.spring.domain.DomainManifestPlan;
+import com.classforge.generation.spring.domain.DomainManifestPlanner;
 import com.classforge.generation.spring.application.SpringBootGenerationOptions;
 import com.classforge.generation.spring.generated.GeneratedFile;
 import com.classforge.generation.spring.generated.GeneratedFileType;
@@ -35,6 +39,9 @@ public class SpringProjectRenderer {
     private final GeneratedProjectValidator validator;
     private final SpringApiGenerationPlanner apiPlanner = new SpringApiGenerationPlanner();
     private final SpringApiArtifactsRenderer apiArtifactsRenderer = new SpringApiArtifactsRenderer();
+    private final SpringApiContractPlanner apiContractPlanner = new SpringApiContractPlanner();
+    private final DomainManifestPlanner domainManifestPlanner = new DomainManifestPlanner();
+    private final DomainManifestRenderer domainManifestRenderer = new DomainManifestRenderer();
 
     public SpringProjectRenderer(SpringFreeMarkerRenderer templates, GeneratedProjectValidator validator) {
         this.templates = templates;
@@ -105,6 +112,11 @@ public class SpringProjectRenderer {
         }
 
         files.addAll(apiArtifactsRenderer.render(model, api));
+        if (api.enabled()) {
+            SpringApiContract apiContract = apiContractPlanner.plan(api);
+            DomainManifestPlan manifest = domainManifestPlanner.plan(model, api, apiContract);
+            files.add(domainManifestRenderer.render(manifest));
+        }
 
         GeneratedProject project = new GeneratedProject(model.artifactName(), files);
         validator.validate(project);

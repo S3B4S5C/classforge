@@ -23,7 +23,7 @@ Fuente normativa del estado: `../puds/current-status.md`.
 | Generador Spring Boot/JPA | IMPLEMENTADO — CU-13 cerrado |
 | API CRUD expresiva — CRUD simple / Sistema de Información con Auth | IMPLEMENTADO — CU-14 cerrado |
 | OpenAPI/Postman | CERRADO — CU-15 implementado y aceptado |
-| Domain Manifest | PLANIFICADO — CU-16 |
+| Domain Manifest | IMPLEMENTADO — CU-16 cerrado con schema v1 y acceptance determinista |
 | Frontend web/mobile generado | PLANIFICADO — CU-17/CU-18 |
 | Voz sobre la aplicación generada | PLANIFICADO |
 | Membresías e invitaciones | IMPLEMENTADO — CU-31 cerrado con membership, invitaciones, realtime/presencia/Assistant y hardening concurrente |
@@ -624,7 +624,7 @@ CU-15 entrega solamente:
 - `openapi.yaml`;
 - `postman_collection.json`.
 
-El Domain Manifest permanece en CU-16 y el cliente TypeScript se generará en CU-17 consumiendo el OpenAPI producido aquí.
+CU-16 añade `domain-manifest.json` schema v1 al mismo ZIP. Conserva UUIDs estables, IDs, atributos, relaciones, herencia, capacidades, operationIds y Auth, y se valida contra el contrato CU-15. El cliente/frontend TypeScript pertenece a CU-17 y podrá consumir Manifest + OpenAPI según corresponda.
 
 ---
 
@@ -738,53 +738,92 @@ Una veterinaria y una biblioteca podrán compartir el mismo motor de frontend ca
 
 ## 16. Domain Manifest
 
-Junto con cada aplicación generada se deberá crear un **Domain Manifest**.
+Junto con cada aplicación generada se creará `domain-manifest.json`: un contrato semántico compacto para el generador de frontend y el futuro asistente de la aplicación.
 
-Este archivo describe el dominio de forma compacta para el frontend y el asistente IA.
+CU-16 fija schema `1.0` y la siguiente autoridad:
 
-Ejemplo:
+```text
+SpringGenerationModel
+SpringApiGenerationPlan
+SpringApiContract
+        |
+        v
+DomainManifestPlan
+        |
+        v
+domain-manifest.json
+```
+
+El manifest **no** será reconstruido desde OpenAPI ni será una fuente manual independiente. Su valor diferencial frente a OpenAPI es preservar semántica y trazabilidad del dominio ClassForge.
+
+Ejemplo orientativo de schema v1:
 
 ```json
 {
+  "schemaVersion": "1.0",
+  "generationMode": "AUTH_INFORMATION_SYSTEM",
+  "api": {
+    "baseUrl": "http://localhost:8080",
+    "openApiFile": "openapi.yaml",
+    "postmanFile": "postman_collection.json"
+  },
+  "authentication": {
+    "enabled": true,
+    "scheme": "BEARER_JWT",
+    "entityId": "7e0d...",
+    "usernameAttributeId": "aa11...",
+    "passwordAttributeId": "bb22...",
+    "tokenVariable": "jwt",
+    "expiresInSeconds": 3600,
+    "bootstrapOperationId": "bootstrapAuthentication",
+    "loginOperationId": "loginAuthentication"
+  },
   "entities": [
     {
-      "name": "Animal",
-      "displayName": "animal",
-      "plural": "animales",
-      "aliases": ["mascota", "mascotas"],
-      "endpoint": "/api/animals",
-      "attributes": [
-        {
-          "name": "nombre",
-          "type": "String",
-          "searchable": true
-        },
-        {
-          "name": "fechaRegistro",
-          "type": "DateTime",
-          "sortable": true
-        }
-      ]
+      "id": "1f23...",
+      "logicalName": "Animal",
+      "codeName": "Animal",
+      "tableName": "animal",
+      "endpoint": "/api/animal",
+      "displayName": "Animal",
+      "aliases": [],
+      "identifier": {
+        "kind": "SIMPLE",
+        "fields": [
+          { "attributeId": "31ce...", "name": "id", "type": "UUID" }
+        ]
+      },
+      "attributes": [],
+      "relations": [],
+      "operationIds": ["listAnimal", "createAnimal", "getAnimal"]
     }
-  ]
+  ],
+  "operations": []
 }
 ```
 
 El manifiesto deberá contener al menos:
 
-- entidades;
-- atributos;
-- tipos;
-- endpoints;
-- relaciones;
-- aliases;
-- propiedades buscables;
-- propiedades ordenables;
-- operaciones permitidas;
-- validaciones básicas;
-- capacidades CRUD.
+- versión de schema y modo de generación;
+- UUIDs estables de clases, atributos y relaciones cuando existan;
+- entidades, IDs simples/compuestos y herencia;
+- atributos con tipos semánticos, nullability, mutabilidad y capacidades;
+- relaciones y targets estables;
+- endpoints/capacidades mediante los mismos `operationId` de CU-15;
+- metadata Auth cuando corresponda;
+- aliases explícitos, inicialmente vacíos si el modelo no los provee.
 
-El manifiesto será generado desde el modelo canónico y/o OpenAPI.
+Tipos semánticos iniciales:
+
+```text
+STRING | INTEGER | LONG | DECIMAL | BOOLEAN | DATE | DATETIME | UUID
+```
+
+No se inferirán plurales ni aliases con heurísticas/LLM durante CU-16. `displayName` parte del nombre lógico UML.
+
+En Auth, password será sensible y write-only: nunca aparecerá como dato de respuesta ni como campo searchable/filterable/sortable.
+
+El manifest será un artefacto efímero dentro del ZIP generado; no se persiste dentro de `ProjectDocument`.
 
 ---
 

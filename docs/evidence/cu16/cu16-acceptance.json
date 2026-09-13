@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0",
+  "status": "PASS",
+  "case": "CU-16",
+  "increment": "C5-cu16-001",
+  "artifact": "domain-manifest.json",
+  "manifestSchemaVersion": "1.0",
+  "fixtures": [
+    {"name": "simple-relations", "parseable": "PASS", "references": "PASS", "operationParity": "PASS", "determinism": "BYTE_IDENTICAL", "generatedBuild": "PASS", "contextLoads": "PASS", "h2": "PASS"},
+    {"name": "simple-composite", "parseable": "PASS", "compositeId": "PASS", "operationParity": "PASS", "determinism": "BYTE_IDENTICAL", "generatedBuild": "PASS", "contextLoads": "PASS", "h2": "PASS"},
+    {"name": "auth", "parseable": "PASS", "auth": "BEARER_JWT", "passwordPrivacy": "PASS", "operationParity": "PASS", "determinism": "BYTE_IDENTICAL", "generatedBuild": "PASS", "contextLoads": "PASS", "h2": "PASS"},
+    {"name": "joined", "parseable": "PASS", "inheritance": "JOINED", "operationParity": "PASS", "determinism": "BYTE_IDENTICAL", "generatedBuild": "PASS", "contextLoads": "PASS", "h2": "PASS"}
+  ],
+  "cu13Regression": "PASS",
+  "cu14Regression": "PASS",
+  "cu15Regression": "PASS",
+  "backendTests": "PASS",
+  "frontendGenerationTests": "PASS",
+  "angularBuild": "PASS",
+  "staticAudit": "PASS"
+}

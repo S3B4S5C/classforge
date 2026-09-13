@@ -1,6 +1,6 @@
 # Arquitectura de ClassForge
 
-**Estado:** arquitectura ejecutable en fase de Construcción; Ciclos 1, 2 y 3 cerrados; Ciclo 4 abierto; CU-15 en progreso con alcance fijado.
+**Estado:** arquitectura ejecutable en fase de Construcción; Ciclos 1, 2, 3, 4 y 5 cerrados; CU-16 cerrado.
 
 ## Fuente de verdad
 
@@ -44,6 +44,7 @@ ProjectDocument
 | `relational-model.md` | IR relacional interna | CU-12 cerrado |
 | `spring-boot-generation.md` | generación/export Spring Boot/JPA + API CRUD Simple/Auth | CU-13 y CU-14 cerrados |
 | `openapi-postman-generation.md` | contrato HTTP + OpenAPI/Postman deterministas | CU-15 implementado y aceptado |
+| `domain-manifest-generation.md` | contrato semántico `domain-manifest.json` | CU-16 implementado y aceptado |
 | `api-validation-errors.md` | contrato de errores | implementado |
 | `command-bus.md` | comandos y Undo/Redo | implementado |
 | `authentication-and-ownership.md` | auth y aislamiento | implementado |
@@ -71,13 +72,13 @@ ProjectDocument
 11. LLM no genera UUID.
 12. UML -> relacional es determinista, interno y no depende de IA.
 13. Spring Boot/JPA se genera desde `RelationalModel` mediante una IR de generación, proyecto virtual validado y ZIP determinista; la exportación es read-only.
+14. OpenAPI y Postman son proyecciones deterministas del mismo `SpringApiContract`; no se derivan por introspección runtime.
+15. CU-16 genera `domain-manifest.json` como proyección semántica de los planes canónicos, preservando UUIDs y operationIds sin parsear artefactos generados.
 
 ## Arquitectura todavía no implementada
 
 
 - XMI 2.1 / Enterprise Architect;
-- implementación OpenAPI/Postman de CU-15 (alcance ya fijado);
-- Domain Manifest de aplicación generada;
 - frontend Angular generado;
 - Capacitor/Android generado;
 - asistente de la aplicación generada;

@@ -8,7 +8,7 @@ The generated API provides CRUD, list/search/filter/sort/pagination/count endpoi
 
 ## API contract artifacts
 
-The project root includes `openapi.yaml` (OpenAPI 3.0.3) and `postman_collection.json` (Postman Collection v2.1). Both are generated from the same canonical ClassForge HTTP contract as the controllers.
+The project root includes `openapi.yaml` (OpenAPI 3.0.3), `postman_collection.json` (Postman Collection v2.1) and `domain-manifest.json` (ClassForge Domain Manifest schema 1.0). OpenAPI/Postman share the canonical HTTP contract; the Domain Manifest adds stable source UUIDs, identifiers, relations, inheritance, capabilities and Auth metadata for generated clients.
 </#if><#if api.authEnabled()>## Authentication
 
 Authentication is enabled. `/api/auth/login` accepts `username` and `password`. `/api/auth/bootstrap` is a one-time public bootstrap endpoint that only works while the selected authentication table is empty; it accepts the generated `${api.authEntity().className}Request` body, hashes the selected password field with BCrypt and returns a JWT.

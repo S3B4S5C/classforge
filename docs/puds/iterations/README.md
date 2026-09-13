@@ -35,3 +35,8 @@ Consultar `cycle-03/`. El ciclo está CERRADO en Construcción con CU-12, CU-13 
 ## Ciclo 4
 
 Consultar `cycle-04/`. El ciclo está CERRADO con CU-15 aceptado. El preflight normativo es `cycle-04/C4-cu15-000-openapi-postman-scope.md` y el incremento de cierre es `cycle-04/C4-cu15-001-openapi-postman-generation.md`.
+
+
+## Ciclo 5
+
+Consultar `cycle-05/`. El ciclo está CERRADO con CU-16 aceptado. El preflight normativo es `cycle-05/C5-cu16-000-domain-manifest-scope.md` y el cierre técnico `cycle-05/C5-cu16-001-domain-manifest-generation.md`.

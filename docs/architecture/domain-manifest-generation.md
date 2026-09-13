@@ -1,0 +1,266 @@
+# Domain Manifest generation
+
+**Status:** CU-16 implemented and accepted
+**Cycle:** 5 — Construction
+**Output:** `domain-manifest.json`
+
+## Purpose
+
+`domain-manifest.json` is the semantic contract of a generated ClassForge application. It exists for consumers that need more domain meaning than OpenAPI alone carries, especially the generated Angular UI (CU-17) and the future application assistant (CU-19..23).
+
+It is **not** a second source of truth and it is not hand-maintained. It is rendered deterministically from the same generation state that already produces JPA, CRUD/Auth, OpenAPI and Postman.
+
+## Authority chain
+
+```text
+ProjectDocument / UmlModel
+        |
+        v
+RelationalModel
+        |
+        v
+SpringGenerationModel
+        |
+        +--> SpringApiGenerationPlan
+        |        |
+        |        v
+        |   SpringApiContract
+        |        |
+        |        +--> openapi.yaml
+        |        +--> postman_collection.json
+        |
+        +------------------------------+
+                                       |
+                                       v
+                              DomainManifestPlan
+                                       |
+                                       v
+                            domain-manifest.json
+```
+
+The manifest planner may read `SpringGenerationModel`, `SpringApiGenerationPlan` and `SpringApiContract` together. This is intentional: the Spring model preserves stable UML identifiers and relationship semantics, while the API contract preserves the exact operations exposed over HTTP.
+
+CU-16 SHALL NOT parse `openapi.yaml` or `postman_collection.json` to reconstruct the domain.
+
+## File and schema version
+
+The generated project contains exactly one file at its root:
+
+```text
+domain-manifest.json
+```
+
+Schema version for CU-16:
+
+```json
+{
+  "schemaVersion": "1.0"
+}
+```
+
+The JSON is UTF-8, deterministic, pretty-printed with a stable property/order policy and a final newline.
+
+## Required top-level shape
+
+```json
+{
+  "schemaVersion": "1.0",
+  "generationMode": "SIMPLE_CRUD",
+  "api": {
+    "baseUrl": "http://localhost:8080",
+    "openApiFile": "openapi.yaml",
+    "postmanFile": "postman_collection.json"
+  },
+  "authentication": {
+    "enabled": false
+  },
+  "entities": [],
+  "operations": []
+}
+```
+
+`generationMode` MUST be the real generation mode already accepted by CU-14:
+
+- `SIMPLE_CRUD`;
+- `AUTH_INFORMATION_SYSTEM`.
+
+## Entity contract
+
+Each generated API entity is represented once and carries the stable source identity where one exists.
+
+Required entity information:
+
+- `id`: source UML class UUID (`sourceClassId`);
+- `logicalName`: original/canonical domain name;
+- `codeName`: generated Java entity/class name;
+- `tableName`;
+- `endpoint`;
+- `displayName`: initially equal to `logicalName`;
+- `aliases`: initially `[]`;
+- identifier definition;
+- inheritance metadata when applicable;
+- scalar attributes;
+- relations;
+- supported operation IDs;
+- CRUD/query capabilities.
+
+CU-16 does not invent localized labels, pluralization or aliases. If the canonical model does not contain that information, the generated manifest remains explicit and conservative.
+
+## Identifier contract
+
+Identifiers are represented structurally rather than as an opaque string:
+
+```json
+{
+  "identifier": {
+    "kind": "SIMPLE",
+    "fields": [
+      {
+        "attributeId": "uuid-from-classforge",
+        "name": "id",
+        "type": "UUID"
+      }
+    ]
+  }
+}
+```
+
+Composite IDs contain all fields in deterministic order. The same manifest entity points to the exact `/by-id` operations emitted by CU-14/CU-15.
+
+## Attribute contract
+
+Each scalar attribute contains at least:
+
+- `id`: source UML attribute UUID;
+- `logicalName`;
+- `apiName`;
+- `columnName`;
+- semantic `type`;
+- `nullable`;
+- `identifier`;
+- `immutable`;
+- `readable`;
+- `createWritable`;
+- `updateWritable`;
+- `searchable`;
+- `filterable`;
+- `sortable`;
+- `sensitive`;
+- `writeOnly`;
+- basic validation metadata.
+
+CU-16 semantic types are a closed enum for schema v1:
+
+```text
+STRING
+INTEGER
+LONG
+DECIMAL
+BOOLEAN
+DATE
+DATETIME
+UUID
+```
+
+Rules are derived from the generated API, not guessed:
+
+- response-visible scalar attributes are searchable/filterable/sortable because CU-14 applies those operations to response fields;
+- identifiers are immutable on update;
+- non-null fields are required according to the generated write contract;
+- in Auth mode, the selected username is required/unique;
+- in Auth mode, the selected password is `sensitive=true`, `writeOnly=true`, required on create/bootstrap and optional on update;
+- the password is never marked readable/searchable/filterable/sortable.
+
+## Relation contract
+
+Relations preserve source semantics when available.
+
+Each relation contains at least:
+
+- `id`: source UML relationship UUID;
+- `umlType`;
+- `kind`: `ONE_TO_ONE`, `MANY_TO_ONE` or `MANY_TO_MANY` for schema v1 API relations;
+- `name`: generated relation field name;
+- `targetEntityId`;
+- `targetEntityName`;
+- `optional` when applicable;
+- `requestField`: e.g. `ownerId` / `tagIds`;
+- target identifier description;
+- delete/cascade semantics when available.
+
+Inheritance is represented separately from normal association fields so CU-17/CU-19 consumers do not have to infer it from flattened DTOs.
+
+## Operation contract
+
+`operations` is a semantic index over the exact HTTP contract fixed by CU-15. Each item carries at least:
+
+- `operationId` — identical to OpenAPI;
+- capability (`LIST`, `COUNT`, `CREATE`, `GET`, `UPDATE`, `DELETE`, `AUTH_BOOTSTRAP`, `AUTH_LOGIN`);
+- related `entityId` when applicable;
+- HTTP method;
+- path;
+- `authenticationRequired`;
+- request schema name when present;
+- response schema name when present.
+
+The manifest SHALL NOT invent HTTP operations that do not exist in `SpringApiContract`.
+
+## Authentication contract
+
+Simple mode:
+
+```json
+{
+  "authentication": {
+    "enabled": false
+  }
+}
+```
+
+Auth mode includes at least:
+
+```json
+{
+  "authentication": {
+    "enabled": true,
+    "scheme": "BEARER_JWT",
+    "entityId": "...",
+    "usernameAttributeId": "...",
+    "passwordAttributeId": "...",
+    "tokenVariable": "jwt",
+    "expiresInSeconds": 3600,
+    "bootstrapOperationId": "bootstrapAuthentication",
+    "loginOperationId": "loginAuthentication"
+  }
+}
+```
+
+This mirrors the behavior already closed by CU-14; CU-16 does not add registration, refresh tokens, roles or authorization policy.
+
+## Determinism and validation
+
+Before the ZIP can be exported, generated-project validation requires:
+
+1. `domain-manifest.json` exists whenever the CU-14 API is enabled;
+2. JSON parses successfully;
+3. `schemaVersion == "1.0"`;
+4. generation mode matches the API plan;
+5. every manifest entity maps to exactly one generated API entity;
+6. stable class/attribute/relation IDs resolve back to the generation model;
+7. manifest `operationId`s exactly equal the operations in `SpringApiContract`;
+8. auth metadata is absent/disabled in Simple and complete in Auth;
+9. the selected password is never readable or exposed as a response field;
+10. repeated equivalent generation produces byte-identical manifest bytes.
+
+## Boundaries
+
+CU-16 does not generate:
+
+- Angular pages/components/forms (CU-17);
+- Capacitor/mobile packaging (CU-18);
+- natural-language execution in the generated application (CU-19..23);
+- aliases inferred by an LLM;
+- business rules absent from the canonical model;
+- a persisted Domain Manifest inside ClassForge.
+
+The manifest is an ephemeral generated artifact, just like OpenAPI and Postman.

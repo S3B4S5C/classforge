@@ -283,3 +283,34 @@ tasks.register('springApiArtifactsAcceptance', Test) {
         exceptionFormat = 'full'
     }
 }
+
+// C5-CU16: validate the semantic Domain Manifest against canonical Spring/API plans.
+tasks.register('domainManifestAcceptance', Test) {
+    group = 'verification'
+    description = 'Generates CU-16 Domain Manifest fixtures for relations, composite IDs, Auth and JOINED inheritance, validates semantics/determinism, and builds the exported projects.'
+
+    dependsOn testClasses
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+    useJUnitPlatform()
+    maxParallelForks = 1
+    filter {
+        includeTestsMatching 'com.classforge.generation.spring.acceptance.DomainManifestAcceptanceIntegrationTest'
+    }
+
+    systemProperty 'spring.domain.manifest.acceptance.enabled', 'true'
+    systemProperty 'spring.domain.manifest.acceptance.gradle-user-home', gradle.gradleUserHomeDir.absolutePath
+
+    def generatedJavaHome = providers.gradleProperty('generatedJavaHome')
+    if (generatedJavaHome.isPresent()) {
+        systemProperty 'spring.domain.manifest.acceptance.java-home', generatedJavaHome.get()
+    }
+
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+}

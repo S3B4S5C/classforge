@@ -12,6 +12,7 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
@@ -112,10 +113,16 @@ public class GeneratedProjectValidator {
     ) {
         boolean hasOpenApi = textByPath.containsKey("openapi.yaml");
         boolean hasPostman = textByPath.containsKey("postman_collection.json");
-        if (!hasOpenApi && !hasPostman) return;
+        boolean hasManifest = textByPath.containsKey("domain-manifest.json");
+        if (!hasOpenApi && !hasPostman && !hasManifest) return;
         if (!hasOpenApi || !hasPostman) {
             add(diagnostics, GeneratedProjectDiagnosticCode.API_CONTRACT_ARTIFACT_MISSING, null,
                     "OpenAPI and Postman artifacts must be generated together.");
+            return;
+        }
+        if (!hasManifest) {
+            add(diagnostics, GeneratedProjectDiagnosticCode.DOMAIN_MANIFEST_ARTIFACT_MISSING, "domain-manifest.json",
+                    "Domain Manifest must be generated with the API contract artifacts.");
             return;
         }
 
@@ -161,6 +168,174 @@ public class GeneratedProjectValidator {
                     "OpenAPI operationIds and Postman request names must match exactly. OpenAPI="
                             + openApiOperations + ", Postman=" + postmanOperations);
         }
+
+        validateDomainManifest(textByPath.get("domain-manifest.json"), openApiOperations, diagnostics);
+    }
+
+    private void validateDomainManifest(
+            String json,
+            Set<String> canonicalOperations,
+            List<GeneratedProjectDiagnostic> diagnostics
+    ) {
+        try {
+            JsonNode root = JsonMapper.builder().build().readTree(json);
+            if (root == null || !"1.0".equals(text(root, "schemaVersion"))) {
+                throw new IllegalArgumentException("schemaVersion must be 1.0.");
+            }
+            String mode = text(root, "generationMode");
+            if (!"SIMPLE_CRUD".equals(mode) && !"AUTH_INFORMATION_SYSTEM".equals(mode)) {
+                throw new IllegalArgumentException("generationMode is invalid: " + mode);
+            }
+            JsonNode api = root.get("api");
+            if (api == null
+                    || !"http://localhost:8080".equals(text(api, "baseUrl"))
+                    || !"openapi.yaml".equals(text(api, "openApiFile"))
+                    || !"postman_collection.json".equals(text(api, "postmanFile"))) {
+                throw new IllegalArgumentException("api metadata must reference the canonical generated contract files.");
+            }
+
+            JsonNode entities = root.get("entities");
+            if (entities == null || !entities.isArray() || entities.size() == 0) {
+                throw new IllegalArgumentException("entities must be a non-empty array.");
+            }
+            Set<String> entityIds = new HashSet<>();
+            Map<String, Set<String>> attributeIdsByEntity = new HashMap<>();
+            for (JsonNode entity : entities) {
+                String entityId = uuidText(entity, "id");
+                if (!entityIds.add(entityId)) {
+                    throw new IllegalArgumentException("entity ids must be unique: " + entityId);
+                }
+                JsonNode attributes = entity.get("attributes");
+                if (attributes == null || !attributes.isArray()) {
+                    throw new IllegalArgumentException("entity attributes must be an array: " + entityId);
+                }
+                Set<String> attributeIds = new HashSet<>();
+                for (JsonNode attribute : attributes) {
+                    attributeIds.add(uuidText(attribute, "id"));
+                }
+                attributeIdsByEntity.put(entityId, attributeIds);
+
+                JsonNode identifier = entity.get("identifier");
+                if (identifier == null || identifier.get("fields") == null || !identifier.get("fields").isArray()
+                        || identifier.get("fields").size() == 0) {
+                    throw new IllegalArgumentException("entity identifier must declare fields: " + entityId);
+                }
+                for (JsonNode field : identifier.get("fields")) {
+                    String attributeId = uuidText(field, "attributeId");
+                    if (!attributeIds.contains(attributeId)) {
+                        throw new IllegalArgumentException("identifier attribute does not resolve in entity " + entityId + ": " + attributeId);
+                    }
+                }
+            }
+
+            for (JsonNode entity : entities) {
+                String entityId = text(entity, "id");
+                JsonNode inheritance = entity.get("inheritance");
+                if (inheritance != null && inheritance.has("superEntityId")) {
+                    String superEntityId = uuidText(inheritance, "superEntityId");
+                    if (!entityIds.contains(superEntityId)) {
+                        add(diagnostics, GeneratedProjectDiagnosticCode.DOMAIN_MANIFEST_REFERENCE_INVALID, "domain-manifest.json",
+                                "Inheritance superEntityId does not resolve: " + superEntityId);
+                    }
+                }
+                JsonNode relations = entity.get("relations");
+                if (relations != null && relations.isArray()) {
+                    for (JsonNode relation : relations) {
+                        uuidText(relation, "id");
+                        String targetEntityId = uuidText(relation, "targetEntityId");
+                        if (!entityIds.contains(targetEntityId)) {
+                            add(diagnostics, GeneratedProjectDiagnosticCode.DOMAIN_MANIFEST_REFERENCE_INVALID, "domain-manifest.json",
+                                    "Relation targetEntityId does not resolve: " + targetEntityId + " from " + entityId);
+                        }
+                    }
+                }
+            }
+
+            JsonNode authentication = root.get("authentication");
+            if (authentication == null || !authentication.has("enabled")) {
+                throw new IllegalArgumentException("authentication.enabled is required.");
+            }
+            boolean authEnabled = authentication.get("enabled").asBoolean();
+            if ("SIMPLE_CRUD".equals(mode) && authEnabled) {
+                throw new IllegalArgumentException("Simple mode cannot enable authentication.");
+            }
+            if ("AUTH_INFORMATION_SYSTEM".equals(mode)) {
+                if (!authEnabled || !"BEARER_JWT".equals(text(authentication, "scheme"))) {
+                    throw new IllegalArgumentException("Auth mode requires BEARER_JWT authentication metadata.");
+                }
+                String authEntityId = uuidText(authentication, "entityId");
+                String usernameAttributeId = uuidText(authentication, "usernameAttributeId");
+                String passwordAttributeId = uuidText(authentication, "passwordAttributeId");
+                if (!entityIds.contains(authEntityId)) {
+                    throw new IllegalArgumentException("authentication.entityId does not resolve.");
+                }
+                Set<String> authAttributes = attributeIdsByEntity.get(authEntityId);
+                if (!authAttributes.contains(usernameAttributeId) || !authAttributes.contains(passwordAttributeId)) {
+                    throw new IllegalArgumentException("Authentication attribute ids must resolve in the auth entity.");
+                }
+                JsonNode password = findById(entities, authEntityId, passwordAttributeId);
+                if (password == null
+                        || !password.get("sensitive").asBoolean()
+                        || !password.get("writeOnly").asBoolean()
+                        || password.get("readable").asBoolean()
+                        || password.get("searchable").asBoolean()
+                        || password.get("filterable").asBoolean()
+                        || password.get("sortable").asBoolean()) {
+                    throw new IllegalArgumentException("Password privacy flags are invalid.");
+                }
+            }
+
+            JsonNode operations = root.get("operations");
+            if (operations == null || !operations.isArray()) {
+                throw new IllegalArgumentException("operations must be an array.");
+            }
+            Set<String> manifestOperations = new HashSet<>();
+            for (JsonNode operation : operations) {
+                String operationId = text(operation, "operationId");
+                if (operationId == null || operationId.isBlank()) {
+                    throw new IllegalArgumentException("Manifest operationId is required.");
+                }
+                manifestOperations.add(operationId);
+                if (operation.has("entityId")) {
+                    String entityId = uuidText(operation, "entityId");
+                    if (!entityIds.contains(entityId)) {
+                        throw new IllegalArgumentException("Operation entityId does not resolve: " + entityId);
+                    }
+                }
+            }
+            if (!manifestOperations.equals(canonicalOperations)) {
+                add(diagnostics, GeneratedProjectDiagnosticCode.DOMAIN_MANIFEST_OPERATION_MISMATCH, "domain-manifest.json",
+                        "Domain Manifest operationIds must equal the canonical API contract. Manifest="
+                                + manifestOperations + ", canonical=" + canonicalOperations);
+            }
+        } catch (Exception exception) {
+            add(diagnostics, GeneratedProjectDiagnosticCode.DOMAIN_MANIFEST_ARTIFACT_INVALID, "domain-manifest.json",
+                    "Generated Domain Manifest is not valid for schema v1: " + exception.getMessage());
+        }
+    }
+
+    private JsonNode findById(JsonNode entities, String entityId, String attributeId) {
+        for (JsonNode entity : entities) {
+            if (!entityId.equals(text(entity, "id"))) continue;
+            JsonNode attributes = entity.get("attributes");
+            if (attributes == null || !attributes.isArray()) return null;
+            for (JsonNode attribute : attributes) {
+                if (attributeId.equals(text(attribute, "id"))) return attribute;
+            }
+        }
+        return null;
+    }
+
+    private String text(JsonNode node, String field) {
+        JsonNode value = node == null ? null : node.get(field);
+        return value == null || value.isNull() ? null : value.asText();
+    }
+
+    private String uuidText(JsonNode node, String field) {
+        String value = text(node, field);
+        if (value == null || value.isBlank()) throw new IllegalArgumentException(field + " is required.");
+        UUID.fromString(value);
+        return value;
     }
 
     private void collectPostmanOperationIds(JsonNode items, Set<String> operations) {

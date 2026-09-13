@@ -20,16 +20,18 @@ Ciclo 1: CERRADO
 Ciclo 2: CERRADO
 Ciclo 3: CERRADO
 Ciclo 4: CERRADO
+Ciclo 5: CERRADO
 CU-31: CERRADO
 CU-09: CERRADO
 CU-12: CERRADO
 CU-13: CERRADO
 CU-14: CERRADO
 CU-15: CERRADO
+CU-16: CERRADO
 Corte: 13 de septiembre de 2026
 ```
 
-El Ciclo 1 consolidó la arquitectura ejecutable base. El Ciclo 2 cerró colaboración e imagen; el Ciclo 3 cerró CU-12/13/14; el Ciclo 4 cerró CU-15 (OpenAPI/Postman).
+El Ciclo 1 consolidó la arquitectura ejecutable base. El Ciclo 2 cerró colaboración e imagen; el Ciclo 3 cerró CU-12/13/14; el Ciclo 4 cerró CU-15 (OpenAPI/Postman); el Ciclo 5 cerró CU-16 Domain Manifest.
 
 ## Fuentes
 
@@ -41,6 +43,8 @@ El Ciclo 1 consolidó la arquitectura ejecutable base. El Ciclo 2 cerró colabor
 - `../evidence/cu09/`: evidencia técnica y de aceptación de Imagen -> UML.
 - `../evidence/cu13/`: evidencia técnica y de aceptación de generación Spring Boot/JPA.
 - `../evidence/cu14/`: cierre y acceptance de CRUD simple / Sistema de Información con Auth.
+- `../evidence/cu15/`: cierre y acceptance de OpenAPI/Postman.
+- `../evidence/cu16/`: cierre y acceptance de Domain Manifest.
 
 ## Regla de trazabilidad
 
@@ -79,7 +83,7 @@ La aceptación estructurada y el SHA-256 determinista están en:
 
 `docs/evidence/cu13/cu13-acceptance.json`
 
-CU-14 está CERRADO y con él se cerró el Ciclo 3. CU-15 está CERRADO y con él se cierra el Ciclo 4; preflight: `iterations/cycle-04/C4-cu15-000-openapi-postman-scope.md`, cierre: `iterations/cycle-04/C4-cu15-001-openapi-postman-generation.md`.
+CU-14 está CERRADO y con él se cerró el Ciclo 3. CU-15 está CERRADO y con él se cerró el Ciclo 4. CU-16 está CERRADO y con él se cerró el Ciclo 5; el preflight es `iterations/cycle-05/C5-cu16-000-domain-manifest-scope.md` y el incremento de cierre `iterations/cycle-05/C5-cu16-001-domain-manifest-generation.md`.
 
 ## UML académico
 

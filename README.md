@@ -8,7 +8,7 @@ La visión completa del producto está en `docs/product/product.md`. El estado r
 
 ## Estado actual
 
-**Fase de Construcción — Ciclos 1, 2, 3 y 4 CERRADOS; CU-15 CERRADO.**
+**Fase de Construcción — Ciclos 1, 2, 3, 4 y 5 CERRADOS; CU-16 CERRADO.**
 
 En ClassForge llamamos **Ciclo** a una **iteración PUDS**.
 
@@ -32,7 +32,9 @@ El incremento ejecutable actual incluye:
 - CU-09 Imagen -> UML: pipeline local Qwen3-VL + OpenCV + Java, fail-closed, BATCH/preview/Apply canónico y persistencia validada;
 - CU-12 UML -> `RelationalModel`: IR interna, efímera y determinista;
 - CU-13 generación Spring Boot/JPA: Java 21, Spring Boot 4.0.8, Gradle Wrapper 9.2.0, entidades/repositorios, H2/PostgreSQL, ZIP determinista y acceptance compilable.
-- CU-14 API CRUD expresiva: DTOs/services/controllers, búsqueda/filtros/orden/paginación/conteo y dos perfiles explícitos: CRUD simple o Sistema de Información con Auth (BCrypt + JWT).
+- CU-14 API CRUD expresiva: DTOs/services/controllers, búsqueda/filtros/orden/paginación/conteo y dos perfiles explícitos: CRUD simple o Sistema de Información con Auth (BCrypt + JWT);
+- CU-15 OpenAPI/Postman: `openapi.yaml` 3.0.3 + `postman_collection.json` 2.1 deterministas desde un contrato HTTP canónico;
+- CU-16 Domain Manifest: `domain-manifest.json` schema 1.0 determinista con UUIDs estables, IDs, atributos, relaciones, herencia, capacidades, operationIds y metadata Auth.
 
 También están implementados como infraestructura transversal:
 
@@ -44,7 +46,6 @@ También están implementados como infraestructura transversal:
 Aún no están implementados:
 
 - CU-10/11 XMI Enterprise Architect;
-- CU-15 OpenAPI/Postman CERRADO: `openapi.yaml` + `postman_collection.json` deterministas desde un contrato HTTP canónico; CU-16 Domain Manifest permanece PLANIFICADO;
 - CU-17/18 frontend web/mobile generado;
 - CU-19..23 voz sobre la aplicación generada;
 - CU-26 auditoría histórica completa;
@@ -55,6 +56,8 @@ CU-31 quedó cerrado en C2-cu31-003. CU-09 — Imagen → UML — quedó cerrado
 En el Ciclo 3, CU-12 cerró la transformación determinista UML -> modelo relacional, CU-13 la generación/exportación Spring Boot/JPA y CU-14 la API CRUD expresiva con perfiles Simple/Auth. La evidencia de CU-13 está en `docs/evidence/cu13/` y la de CU-14 en `docs/evidence/cu14/`.
 
 El **Ciclo 4** está CERRADO con CU-15. Cada export CU-14 incluye `openapi.yaml` y `postman_collection.json` generados determinísticamente desde el mismo contrato canónico de API; Auth documenta bootstrap/login/Bearer JWT y Simple no declara seguridad.
+
+El **Ciclo 5** está CERRADO con CU-16. Cada export CU-14/15 incluye `domain-manifest.json` schema `1.0`, generado directamente desde los modelos/planes canónicos y validado contra OpenAPI/Postman antes del ZIP.
 
 ## Arquitectura vigente
 
@@ -158,7 +161,7 @@ Un posible archivo `*.classforge` continúa siendo un formato portable futuro, n
 
 ## Próximo hito
 
-Los **Ciclos 1, 2, 3 y 4 están formalmente CERRADOS**. **CU-15 — OpenAPI y Postman** queda cerrado por `C4-cu15-001`; la evidencia está en `docs/evidence/cu15/`. El siguiente candidato es CU-16 — Domain Manifest.
+Los **Ciclos 1, 2, 3, 4 y 5 están formalmente CERRADOS**. **CU-16 — Domain Manifest** está CERRADO con acceptance dedicado; el siguiente candidato es **CU-17 — frontend web Angular generado**.
 
 La evidencia de cierre está en:
 

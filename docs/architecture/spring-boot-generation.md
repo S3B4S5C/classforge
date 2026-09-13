@@ -125,4 +125,4 @@ SpringApiGenerationPlan
 
 Los dos artefactos se incorporan al mismo `GeneratedProject` antes de validación/ZIP. La exportación sigue siendo read-only y no requiere levantar el backend generado ni invocar herramientas externas.
 
-En Simple no existe seguridad. En Auth, el contrato incluye bootstrap/login, Bearer JWT global, password write-only y ausencia de password en responses. CU-15 no incorpora Domain Manifest ni cliente TypeScript.
+En Simple no existe seguridad. En Auth, el contrato incluye bootstrap/login, Bearer JWT global, password write-only y ausencia de password en responses. CU-16 genera `domain-manifest.json` schema 1.0 desde los mismos planes canónicos, con UUIDs/relaciones/herencia/capacidades y paridad de operationIds; el cliente TypeScript permanece en CU-17.
