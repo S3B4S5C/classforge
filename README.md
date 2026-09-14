@@ -8,7 +8,7 @@ La visión completa del producto está en `docs/product/product.md`. El estado r
 
 ## Estado actual
 
-**Fase de Construcción — Ciclos 1–8 CERRADOS; CU-19 CERRADO (absorbe CU-20..23).**
+**Fase de Construcción — Ciclos 1–9 CERRADOS; CU-10/CU-11 XMI 2.1 y CU-19 Assistant generado CERRADOS.**
 
 En ClassForge llamamos **Ciclo** a una **iteración PUDS**.
 
@@ -30,6 +30,7 @@ El incremento ejecutable actual incluye:
 - preview, grounding, validación, BATCH atómico y protección por revisión;
 - health de runtimes locales y diagnóstico del pipeline;
 - CU-09 Imagen -> UML: pipeline local Qwen3-VL + OpenCV + Java, fail-closed, BATCH/preview/Apply canónico y persistencia validada;
+- CU-10/CU-11 XMI 2.1 / Enterprise Architect: import seguro con preview/apply y export determinista del subconjunto UML canónico, con round-trip semántico;
 - CU-12 UML -> `RelationalModel`: IR interna, efímera y determinista;
 - CU-13 generación Spring Boot/JPA: Java 21, Spring Boot 4.0.8, Gradle Wrapper 9.2.0, entidades/repositorios, H2/PostgreSQL, ZIP determinista y acceptance compilable.
 - CU-14 API CRUD expresiva: DTOs/services/controllers, búsqueda/filtros/orden/paginación/conteo y dos perfiles explícitos: CRUD simple o Sistema de Información con Auth (BCrypt + JWT);
@@ -48,9 +49,9 @@ También están implementados como infraestructura transversal:
 
 Aún no están implementados:
 
-- CU-10/11 XMI Enterprise Architect;
-- CU-26 auditoría histórica completa;
 - CU-27 demo reproducible formal;
+
+CU-26 — auditoría histórica — quedó **DESCARTADO / FUERA DE ALCANCE** por decisión de producto; se conserva en la trazabilidad histórica.
 
 CU-31 quedó cerrado en C2-cu31-003. CU-09 — Imagen → UML — quedó cerrado el 5 de septiembre de 2026 después del hardening hybrid-CV, política fail-closed, E2E canónico, canonicalización de identificadores y smoke manual de producto. La validación multi-pizarra adicional se conserva como recomendación de robustez y no se presenta como evidencia ejecutada.
 
@@ -166,7 +167,7 @@ Un posible archivo `*.classforge` continúa siendo un formato portable futuro, n
 
 ## Próximo hito
 
-Los **Ciclos 1–8 están formalmente CERRADOS**. **CU-19 — interacción con datos mediante lenguaje natural y voz** está CERRADO y absorbe CU-20..23. El siguiente candidato funcional es **CU-26 — registrar cambios del proyecto**; CU-24/25 continúan como infraestructura local ya reutilizada por CU-08 y CU-19.
+Los **Ciclos 1–9 están formalmente CERRADOS**. **CU-10/CU-11 — XMI 2.1 / Enterprise Architect** están CERRADOS y **CU-26** queda DESCARTADO / FUERA DE ALCANCE. El siguiente caso funcional es **CU-27 — demo reproducible**, que incorporará el smoke manual de intercambio con la instalación de Enterprise Architect usada en la presentación.
 
 La evidencia de cierre está en:
 
@@ -174,4 +175,5 @@ La evidencia de cierre está en:
 - CU-13: `docs/evidence/cu13/cu13-closure-report.md` y `docs/evidence/cu13/cu13-acceptance.json`.
 - CU-17: `docs/evidence/cu17/cu17-closure-report.md` y `docs/evidence/cu17/cu17-acceptance.json`;
 - CU-18: `docs/evidence/cu18/cu18-closure-report.md` y `docs/evidence/cu18/cu18-acceptance.json`;
-- CU-19: `docs/evidence/cu19/cu19-closure-report.md` y `docs/evidence/cu19/cu19-acceptance.json`.
+- CU-19: `docs/evidence/cu19/cu19-closure-report.md` y `docs/evidence/cu19/cu19-acceptance.json`;
+- CU-10/CU-11: `docs/evidence/cu10-cu11/cu10-cu11-closure-report.md` y `docs/evidence/cu10-cu11/cu10-cu11-acceptance.json`.

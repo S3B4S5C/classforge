@@ -14,21 +14,25 @@ Ciclo 5: CERRADO
 Ciclo 6: CERRADO
 Ciclo 7: CERRADO
 Ciclo 8: CERRADO
+Ciclo 9: CERRADO
 CU-12: CERRADO
 CU-13: CERRADO
 CU-14: CERRADO
-Current increment: C8-cu19-001 CLOSED - Assistant de datos generado; CU-20..23 absorbidos
+Current increment: C9-cu10-cu11-001 CLOSED - XMI 2.1 / Enterprise Architect bidireccional
 CU-15: CERRADO
 CU-16: CERRADO
 CU-17: CERRADO
 CU-18: CERRADO
 CU-19: CERRADO
 CU-20..23: ABSORBIDOS POR CU-19
+CU-10: CERRADO
+CU-11: CERRADO
+CU-26: DESCARTADO / FUERA DE ALCANCE
 ```
 
 ## Resumen ejecutivo del corte
 
-Los Ciclos 1–8 están cerrados. El Ciclo 3 completó CU-12, CU-13 y CU-14; el Ciclo 4 cerró CU-15; el Ciclo 5 cerró CU-16; el Ciclo 6 cerró CU-17 Angular; el Ciclo 7 cerró CU-18 Flutter/Android; y el Ciclo 8 cerró CU-19, Assistant de datos por chat/voz con Whisper/Qwen locales, native tools, grounding Java y preview/apply. CU-20..23 quedan absorbidos por CU-19.
+Los Ciclos 1–9 están cerrados. El Ciclo 3 completó CU-12, CU-13 y CU-14; el Ciclo 4 cerró CU-15; el Ciclo 5 cerró CU-16; el Ciclo 6 cerró CU-17 Angular; el Ciclo 7 cerró CU-18 Flutter/Android; el Ciclo 8 cerró CU-19 y absorbió CU-20..23; y el Ciclo 9 cerró CU-10/CU-11 con import/export XMI 2.1 seguro, determinista y con round-trip semántico. CU-26 queda descartado/fuera de alcance por decisión de producto.
 
 Como antecedente inmediato, el Ciclo 2 se cerró después de resolver sus dos riesgos principales:
 
@@ -50,6 +54,8 @@ CU-09 queda funcionalmente aceptado el 5 de septiembre de 2026. La imagen nunca 
 | CU-07 Presencia | CERRADO | presencia efímera, selección y cursor |
 | CU-08 Voz/lenguaje natural a UML | CERRADO | texto/voz -> plan -> BATCH -> preview -> aplicar |
 | CU-09 Imagen/fotografía a UML | CERRADO | imagen -> VLM/OpenCV -> propuesta -> BATCH -> preview -> Apply -> persistencia |
+| CU-10 Importar XMI Enterprise Architect | CERRADO | XMI 2.1 -> parser seguro -> ProjectDocument -> preview token -> apply con revisión |
+| CU-11 Exportar XMI Enterprise Architect | CERRADO | ProjectDocument -> XMI 2.1 determinista -> round-trip semántico |
 | CU-28 Registrar cuenta | CERRADO | identidad local, BCrypt y JWT |
 | CU-29 Iniciar sesión | CERRADO | autenticación stateless |
 | CU-30 Proyectos propios | CERRADO | ownership persistente |
@@ -231,7 +237,7 @@ Por tanto:
 Ciclo 2: CERRADO
 ```
 
-CU-10/CU-11 y el resto del backlog permanecen para ciclos posteriores.
+CU-10/CU-11 quedan cerrados en el Ciclo 9. El único caso funcional planificado restante es CU-27; CU-26 se conserva como descartado/fuera de alcance.
 
 ## CU-13 — cierre final
 
@@ -245,12 +251,12 @@ Evidencia: `docs/evidence/cu13/cu13-closure-report.md` y `docs/evidence/cu13/cu1
 
 1. No existe eliminación de membership activa ni revocación inmediata de una sesión STOMP ya conectada.
 2. La generalización estadística de Imagen -> UML sobre múltiples pizarras reales puede reforzarse con un conjunto adicional de fotografías.
-3. XMI/Enterprise Architect no está implementado.
+3. XMI/Enterprise Architect está implementado para el subconjunto UML canónico de CU-10/CU-11; no se preserva metadata propietaria de diagramas, perfiles o tagged values de EA.
 4. `RelationalModel` no tiene UI ni se persiste. CU-13 está CERRADO: exporta un backend Spring Boot/JPA reproducible, con fallback PK explícito y no persistente, validación estructural previa al ZIP y acceptance que compila los proyectos generados y carga Spring sobre H2.
 5. CU-14 está cerrado con dos modos explícitos. CRUD simple no genera seguridad; Auth exige entidad + atributos STRING de usuario/password, hashea passwords con BCrypt, excluye password de responses, expone bootstrap inicial + login y protege el resto con JWT. CU-17 genera el frontend web y CU-19 ya incorpora el Assistant de chat/voz en los clientes generados, reutilizando Whisper/Qwen locales.
-6. Auditoría histórica completa CU-26 permanece pendiente.
+6. CU-26 auditoría histórica fue descartado/fuera de alcance por decisión de producto.
 7. `docs/uml/` conserva el catálogo de diagramas académicos pendientes de elaboración/presentación final.
 
 ## Próximo paso PUDS
 
-Ciclos 3, 4, 5, 6, 7 y 8 están CERRADOS. CU-19 queda cerrado con evidencia en `docs/evidence/cu19/` y absorbe CU-20..23. El siguiente candidato funcional es CU-26 — registrar cambios del proyecto; CU-24/25 son infraestructura local ya reutilizada.
+Ciclos 3–9 están CERRADOS. CU-10/CU-11 quedan cerrados con evidencia en `docs/evidence/cu10-cu11/`; CU-26 está DESCARTADO / FUERA DE ALCANCE. El siguiente y último caso funcional planificado es CU-27 — demo reproducible, incluyendo smoke manual de Enterprise Architect.

@@ -18,7 +18,7 @@ Fuente normativa del estado: `../puds/current-status.md`.
 | Assistant texto/voz para modificar UML | IMPLEMENTADO |
 | llama.cpp y whisper.cpp locales | IMPLEMENTADO |
 | Imagen a UML | IMPLEMENTADO |
-| XMI / Enterprise Architect | PLANIFICADO |
+| XMI / Enterprise Architect | IMPLEMENTADO — CU-10/CU-11 cerrados |
 | UML a modelo relacional | IMPLEMENTADO — CU-12 cerrado |
 | Generador Spring Boot/JPA | IMPLEMENTADO — CU-13 cerrado |
 | API CRUD expresiva — CRUD simple / Sistema de Información con Auth | IMPLEMENTADO — CU-14 cerrado |
@@ -26,7 +26,7 @@ Fuente normativa del estado: `../puds/current-status.md`.
 | Domain Manifest | IMPLEMENTADO — CU-16 cerrado con schema v1 y acceptance determinista |
 | Frontend web generado | IMPLEMENTADO — CU-17 cerrado |
 | Frontend mobile generado | IMPLEMENTADO — CU-18 Flutter/Android cerrado |
-| Voz sobre la aplicación generada | PLANIFICADO |
+| Voz sobre la aplicación generada | IMPLEMENTADO — CU-19 cerrado |
 | Membresías e invitaciones | IMPLEMENTADO — CU-31 cerrado con membership, invitaciones, realtime/presencia/Assistant y hardening concurrente |
 
 La separación anterior permite utilizar `product.md` como visión estable sin confundir alcance objetivo con estado actual.
@@ -288,6 +288,8 @@ Enterprise Architect
 ```
 
 El primer objetivo será soportar correctamente el subconjunto UML utilizado por ClassForge en lugar de intentar cubrir todo XMI desde el primer día.
+
+**Estado vigente:** CU-10/CU-11 implementan ese subconjunto mediante XMI 2.1, parser seguro, preview/apply y export determinista. Package se aplana; diagramas, profiles, tagged values y extensiones propietarias de EA quedan fuera del alcance actual.
 
 Tecnologías previstas:
 

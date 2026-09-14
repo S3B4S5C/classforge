@@ -72,6 +72,9 @@ import {
 import {
   ProjectPresenceService,
 } from '../../presence/project-presence.service';
+import {
+  XmiInterchangeDialogComponent,
+} from '../../xmi/xmi-interchange-dialog.component';
 
 @Component({
   selector: 'app-project-workspace-page',
@@ -366,6 +369,33 @@ export class ProjectWorkspacePage {
 
   save(): void {
     this.store.saveDocument();
+  }
+
+  openXmiInterchange(): void {
+    const project = this.store.project();
+
+    if (
+      !project
+      || this.springBootExportBlockReason()
+    ) {
+      return;
+    }
+
+    this.dialog.open(
+      XmiInterchangeDialogComponent,
+      {
+        data: {
+          projectId: project.id,
+          projectName: project.name,
+        },
+        width: '720px',
+        maxWidth: '94vw',
+      },
+    ).afterClosed().subscribe((result) => {
+      if (result?.applied) {
+        this.store.load(project.id);
+      }
+    });
   }
 
   openSpringBootExport(): void {

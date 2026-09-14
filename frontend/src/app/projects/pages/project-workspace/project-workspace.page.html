@@ -270,6 +270,26 @@
 
         <button
           mat-button
+          class="cf-button-secondary"
+          type="button"
+          [disabled]="springBootExportBlockReason() !== null"
+          [title]="
+            springBootExportBlockReason()
+            ?? 'Importar o exportar XMI 2.1 para Enterprise Architect'
+          "
+          (click)="openXmiInterchange()"
+        >
+          <span
+            class="material-symbols-rounded"
+            aria-hidden="true"
+          >
+            swap_horiz
+          </span>
+          XMI / Enterprise Architect
+        </button>
+
+        <button
+          mat-button
           class="cf-button-secondary spring-export-button"
           type="button"
           [disabled]="springBootExportBlockReason() !== null"

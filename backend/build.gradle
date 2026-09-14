@@ -408,3 +408,26 @@ tasks.register('generatedAssistantAcceptance', Test) {
         exceptionFormat = 'full'
     }
 }
+
+// C9-CU10/CU11: Enterprise Architect XMI 2.1 import/export + semantic round-trip.
+tasks.register('xmiEnterpriseArchitectAcceptance', Test) {
+    group = 'verification'
+    description = 'Runs CU-10/CU-11 Enterprise Architect XMI 2.1 fixture import, secure parsing, HTTP preview/apply/export, and semantic round-trip acceptance.'
+
+    dependsOn testClasses
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+    useJUnitPlatform()
+    maxParallelForks = 1
+    filter {
+        includeTestsMatching 'com.classforge.integration.xmi.*'
+    }
+
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+}

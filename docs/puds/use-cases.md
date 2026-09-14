@@ -18,6 +18,9 @@ Ciclo 3: CERRADO
 Ciclo 4: CERRADO
 Ciclo 5: CERRADO
 Ciclo 6: CERRADO
+Ciclo 7: CERRADO
+Ciclo 8: CERRADO
+Ciclo 9: CERRADO
 ```
 
 ## 2. Actores
@@ -46,6 +49,8 @@ Participa en validación, persistencia, auditoría y generación.
 - **INFRAESTRUCTURA:** capacidad técnica implementada, aunque el escenario futuro que la reutiliza no esté cerrado.
 - **EN PROGRESO:** implementación dividida en incrementos; el CU aún no cumple su Definition of Done completa.
 - **PLANIFICADO:** especificado, no implementado.
+- **ABSORBIDO:** alcance implementado dentro de otro CU para conservar trazabilidad.
+- **DESCARTADO / FUERA DE ALCANCE:** caso conservado históricamente pero retirado del producto a implementar.
 
 ## 4. Catálogo vigente
 
@@ -60,8 +65,8 @@ Participa en validación, persistencia, auditoría y generación.
 | CU-07 | Visualizar presencia colaborativa | CERRADO |
 | CU-08 | Crear/modificar UML mediante lenguaje natural y voz | CERRADO |
 | CU-09 | Crear UML desde imagen/fotografía | CERRADO |
-| CU-10 | Importar XMI de Enterprise Architect | PLANIFICADO |
-| CU-11 | Exportar XMI para Enterprise Architect | PLANIFICADO |
+| CU-10 | Importar XMI de Enterprise Architect | CERRADO |
+| CU-11 | Exportar XMI para Enterprise Architect | CERRADO |
 | CU-12 | Transformar UML a modelo relacional | CERRADO |
 | CU-13 | Generar backend Spring Boot/JPA | CERRADO |
 | CU-14 | Generar API CRUD expresiva — CRUD simple / Sistema de Información con Auth | CERRADO |
@@ -76,7 +81,7 @@ Participa en validación, persistencia, auditoría y generación.
 | CU-23 | Eliminar información mediante voz | ABSORBIDO POR CU-19 |
 | CU-24 | Ejecutar STT local | INFRAESTRUCTURA |
 | CU-25 | Ejecutar IA local | INFRAESTRUCTURA |
-| CU-26 | Registrar cambios del proyecto | PLANIFICADO |
+| CU-26 | Registrar cambios del proyecto | DESCARTADO / FUERA DE ALCANCE |
 | CU-27 | Generar demo reproducible | PLANIFICADO |
 | CU-28 | Registrar cuenta | CERRADO |
 | CU-29 | Iniciar sesión | CERRADO |
@@ -316,10 +321,10 @@ La evidencia final está consolidada en `docs/evidence/cu09/cu09-closure-report.
 La generalización estadística con dos pizarras adicionales y la ejecución archivada del agregador completo de acceptance se registran como validación adicional diferida y no se presentan como ejecutadas. La aceptación funcional de CU-09 fue concedida con ese riesgo residual explícito.
 
 ### CU-10 — Importar XMI
-Importar subconjunto XMI 2.1 compatible con Enterprise Architect.
+**Estado: CERRADO.** Importa XMI 2.1 al `ProjectDocument` canónico mediante parser XML seguro, UUIDs deterministas, validación, preview token y `Apply` protegido por revisión. El subconjunto incluye Package (aplanado), Class, Property/DataType, Association, Aggregation, Composition, Generalization y Multiplicity. DTD/XXE y payloads mayores a 5 MiB fallan cerrados.
 
 ### CU-11 — Exportar XMI
-Exportar el mismo subconjunto y probar round-trip con Enterprise Architect.
+**Estado: CERRADO.** Exporta el mismo subconjunto como XMI 2.1 UTF-8 determinista. Los UUID de ClassForge se serializan en IDs XMI recuperables; el acceptance exige igualdad byte a byte para entradas iguales y round-trip semántico `ProjectDocument -> XMI -> ProjectDocument`. La metadata propietaria de diagramas/perfiles de EA queda fuera del alcance; el smoke manual con la instalación del examen se incorpora a CU-27.
 
 ### CU-12 — UML a modelo relacional
 **Estado: CERRADO.** Transformación determinista e interna de `UmlModel` a `RelationalModel`. La IR no es visible al usuario, no se persiste y es consumida por CU-13.
@@ -530,13 +535,13 @@ Intents soportados: `QUERY`, `COUNT`, `GET`, `CREATE`, `UPDATE`, `DELETE`, `SET_
 **Estado: ABSORBIDO POR CU-19.** `DELETE` exige resolución no ambigua, preview sanitizado y confirmación explícita.
 
 ### CU-24 — STT local
-La infraestructura whisper.cpp ya existe para CU-08 y debe reutilizarse en la futura aplicación generada.
+La infraestructura whisper.cpp ya existe para CU-08 y CU-19 la reutiliza en la aplicación generada.
 
 ### CU-25 — IA local
-La infraestructura llama.cpp/Qwen2.5 native tools ya existe para CU-08 y debe reutilizarse con `DomainManifest`, manteniendo Java como autoridad de resolución/validación.
+La infraestructura llama.cpp/Qwen2.5 native tools ya existe para CU-08 y CU-19 la reutiliza con `DomainManifest`, manteniendo Java como autoridad de resolución/validación.
 
 ### CU-26 — Registrar cambios
-Auditoría persistente con operación, usuario, fecha, revisión anterior/nueva y elemento afectado.
+**Estado: DESCARTADO / FUERA DE ALCANCE.** Se conserva para trazabilidad PUDS, pero la auditoría histórica persistente no se implementará en el alcance actual.
 
 ### CU-27 — Demo reproducible
 Proyecto veterinaria capaz de demostrar de extremo a extremo las capacidades terminadas.

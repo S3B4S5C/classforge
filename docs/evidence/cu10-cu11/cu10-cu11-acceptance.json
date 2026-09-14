@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "useCases": ["CU-10", "CU-11"],
+  "cycle": 9,
+  "status": "PASS",
+  "acceptanceTask": "xmiEnterpriseArchitectAcceptance",
+  "xmiVersion": "2.1",
+  "supportedSubset": [
+    "Package",
+    "Class",
+    "Property",
+    "DataType",
+    "Association",
+    "Aggregation",
+    "Composition",
+    "Generalization",
+    "Multiplicity"
+  ],
+  "security": {
+    "maxBytes": 5242880,
+    "doctypeAllowed": false,
+    "externalEntitiesAllowed": false,
+    "previewBeforeMutation": true,
+    "revisionGuard": true,
+    "oneShotPreviewToken": true
+  },
+  "manualEaSmoke": "DEFERRED_TO_CU27_TRANSITION"
+}

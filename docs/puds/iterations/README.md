@@ -52,3 +52,8 @@ Consultar `cycle-07/`. El ciclo está CERRADO con CU-18 aceptado. El cierre téc
 ## Ciclo 8
 
 Consultar `cycle-08/`. El ciclo está CERRADO con CU-19 aceptado; CU-20..23 quedan absorbidos por CU-19. El cierre técnico está en `cycle-08/C8-cu19-001-generated-assistant.md`.
+
+
+## Ciclo 9
+
+Consultar `cycle-09/`. El ciclo está CERRADO con CU-10/CU-11 XMI 2.1 aceptados. El incremento de cierre es `cycle-09/C9-cu10-cu11-001-xmi-enterprise-architect.md`.

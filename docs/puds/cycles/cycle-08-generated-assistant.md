@@ -36,4 +36,4 @@ Cerrar en una sola capacidad las consultas y mutaciones mediante chat/voz de la 
 
 ## Resultado
 
-CU-19 y Ciclo 8 quedan CERRADOS. CU-20..23 quedan ABSORBIDOS POR CU-19. El siguiente candidato funcional es CU-26 — registrar cambios del proyecto; CU-24/25 son infraestructura ya reutilizada.
+CU-19 y Ciclo 8 quedan CERRADOS. CU-20..23 quedan ABSORBIDOS POR CU-19. El siguiente ciclo funcional es CU-10/CU-11 — XMI / Enterprise Architect. CU-26 se descarta posteriormente por decisión de producto.

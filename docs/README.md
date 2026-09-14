@@ -145,3 +145,9 @@ CU-17 está CERRADO en Ciclo 6: el ZIP generado incluye `frontend/` Angular stan
 
 
 CU-18 está CERRADO en Ciclo 7: el ZIP generado incluye `mobile/` Flutter independiente con dashboard, pantallas específicas por entidad, Simple/Auth, color primario compartido, `flutter_secure_storage` y Android validado. Evidencia: `evidence/cu18/`.
+
+
+## Interoperabilidad XMI
+
+- `architecture/xmi-enterprise-architect.md`: diseño vigente CU-10/CU-11.
+- `evidence/cu10-cu11/`: acceptance y reporte de cierre XMI 2.1.

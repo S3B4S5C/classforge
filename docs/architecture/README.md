@@ -1,6 +1,6 @@
 # Arquitectura de ClassForge
 
-**Estado:** arquitectura ejecutable en fase de Construcción; Ciclos 1–8 cerrados; CU-19 cerrado y CU-20..23 absorbidos.
+**Estado:** arquitectura ejecutable en fase de Construcción; Ciclos 1–9 cerrados; CU-10/CU-11 y CU-19 cerrados.
 
 ## Fuente de verdad
 
@@ -48,6 +48,7 @@ ProjectDocument
 | `angular-frontend-generation.md` | frontend Angular específico por entidad + dashboard/Auth/theme | CU-17 implementado y aceptado |
 | `flutter-mobile-generation.md` | Flutter mobile específico por entidad + dashboard/Auth/theme + Android | CU-18 implementado y aceptado |
 | `generated-assistant-generation.md` | Assistant de datos chat/voz, Whisper/Qwen native tools, grounding y preview/apply | CU-19 implementado y aceptado |
+| `xmi-enterprise-architect.md` | import/export XMI 2.1, identidad, seguridad XML y round-trip | CU-10/CU-11 implementados y aceptados |
 | `api-validation-errors.md` | contrato de errores | implementado |
 | `command-bus.md` | comandos y Undo/Redo | implementado |
 | `authentication-and-ownership.md` | auth y aislamiento | implementado |
@@ -80,14 +81,13 @@ ProjectDocument
 16. CU-17 genera componentes Angular específicos desde Domain Manifest/contrato API; el theme primario es una opción de exportación, no estado UML.
 17. CU-18 genera Flutter como cliente hermano de Angular desde el mismo contrato.
 18. CU-19 reutiliza los runtimes Whisper/Qwen locales desde el Spring generado; el LLM propone native tools y Java grounded-valida antes de ejecutar. Las mutaciones solo se ejecutan mediante preview token + apply.
+19. CU-10/CU-11 proyectan XMI 2.1 directamente a/desde `ProjectDocument`; import usa preview/revisión y export es read-only/determinista. La jerarquía Package se aplana y `DiagramLayout` no se exporta como semántica UML.
 
 ## Arquitectura todavía no implementada
 
 
-- XMI 2.1 / Enterprise Architect;
 - iOS/desktop Flutter formalmente aceptados;
-- asistente de la aplicación generada;
-- auditoría persistente.
+- auditoría persistente (CU-26 descartado/fuera de alcance).
 
 ## UML académico
 

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.1"
+         xmlns:xmi="http://schema.omg.org/spec/XMI/2.1"
+         xmlns:uml="http://schema.omg.org/spec/UML/2.1">
+  <xmi:Documentation exporter="Enterprise Architect" exporterVersion="17.2"/>
+  <uml:Model xmi:type="uml:Model" xmi:id="EA_MODEL" name="EA_Model" visibility="public">
+    <packagedElement xmi:type="uml:Package" xmi:id="EAPK_11111111111111111111111111111111" name="Veterinaria" visibility="public">
+      <packagedElement xmi:type="uml:PrimitiveType" xmi:id="EA_DT_STRING" name="String" visibility="public"/>
+      <packagedElement xmi:type="uml:PrimitiveType" xmi:id="EA_DT_UUID" name="UUID" visibility="public"/>
+      <packagedElement xmi:type="uml:PrimitiveType" xmi:id="EA_DT_DATETIME" name="DateTime" visibility="public"/>
+
+      <packagedElement xmi:type="uml:Class" xmi:id="EAID_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" name="Persona" visibility="public">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="EAID_a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1" name="id" visibility="private" type="EA_DT_UUID" isID="true">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="LOW_1" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="UP_1" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="EAID_a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2" name="nombre" visibility="private">
+          <type xmi:type="uml:PrimitiveType" href="http://schema.omg.org/spec/UML/2.1/uml.xml#String"/>
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="LOW_2" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="UP_2" value="1"/>
+        </ownedAttribute>
+      </packagedElement>
+
+      <packagedElement xmi:type="uml:Class" xmi:id="EAID_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" name="Veterinario" visibility="public">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="EAID_b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1" name="especialidad" visibility="private" type="EA_DT_STRING">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="LOW_3" value="0"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="UP_3" value="1"/>
+        </ownedAttribute>
+        <generalization xmi:type="uml:Generalization" xmi:id="EAID_b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2" general="EAID_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"/>
+      </packagedElement>
+
+      <packagedElement xmi:type="uml:Class" xmi:id="EAID_cccccccccccccccccccccccccccccccc" name="Cliente" visibility="public"/>
+      <packagedElement xmi:type="uml:Class" xmi:id="EAID_dddddddddddddddddddddddddddddddd" name="Animal" visibility="public"/>
+      <packagedElement xmi:type="uml:Class" xmi:id="EAID_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" name="Cita" visibility="public">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="EAID_e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1e1" name="fecha" visibility="private" type="EA_DT_DATETIME">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="LOW_4" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="UP_4" value="1"/>
+        </ownedAttribute>
+      </packagedElement>
+
+      <packagedElement xmi:type="uml:Association" xmi:id="EAID_10101010101010101010101010101010" visibility="public" memberEnd="EA_END_1 EA_END_2">
+        <ownedEnd xmi:type="uml:Property" xmi:id="EA_END_1" type="EAID_cccccccccccccccccccccccccccccccc" association="EAID_10101010101010101010101010101010" aggregation="none">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="LOW_A1" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="UP_A1" value="1"/>
+        </ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="EA_END_2" type="EAID_dddddddddddddddddddddddddddddddd" association="EAID_10101010101010101010101010101010" aggregation="none">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="LOW_A2" value="0"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="UP_A2" value="*"/>
+        </ownedEnd>
+      </packagedElement>
+
+      <packagedElement xmi:type="uml:Association" xmi:id="EAID_20202020202020202020202020202020" visibility="public" memberEnd="EA_END_3 EA_END_4">
+        <ownedEnd xmi:type="uml:Property" xmi:id="EA_END_3" type="EAID_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" association="EAID_20202020202020202020202020202020" aggregation="shared">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="LOW_A3" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="UP_A3" value="1"/>
+        </ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="EA_END_4" type="EAID_dddddddddddddddddddddddddddddddd" association="EAID_20202020202020202020202020202020" aggregation="none">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="LOW_A4" value="0"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="UP_A4" value="*"/>
+        </ownedEnd>
+      </packagedElement>
+
+      <packagedElement xmi:type="uml:Association" xmi:id="EAID_30303030303030303030303030303030" visibility="public" memberEnd="EA_END_5 EA_END_6">
+        <ownedEnd xmi:type="uml:Property" xmi:id="EA_END_5" type="EAID_dddddddddddddddddddddddddddddddd" association="EAID_30303030303030303030303030303030" aggregation="composite">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="LOW_A5" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="UP_A5" value="1"/>
+        </ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="EA_END_6" type="EAID_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" association="EAID_30303030303030303030303030303030" aggregation="none">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="LOW_A6" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="UP_A6" value="*"/>
+        </ownedEnd>
+      </packagedElement>
+    </packagedElement>
+  </uml:Model>
+  <xmi:Extension extender="Enterprise Architect" extenderID="17.2"/>
+</xmi:XMI>
