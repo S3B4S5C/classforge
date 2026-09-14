@@ -7,7 +7,10 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test:generation": "node --experimental-strip-types --test src/app/projects/generation/spring-boot-generation.utils.test.ts"
+    "test:generation": "node --experimental-strip-types --test src/app/projects/generation/spring-boot-generation.utils.test.ts",
+    "test:commands": "node --experimental-transform-types --experimental-loader ./scripts/ts-extension-loader.mjs --test src/app/projects/commands/uml-command-characterization.test.ts",
+    "test:characterization": "npm run test:generation && npm run test:commands && npm run test:workspace",
+    "test:workspace": "node --experimental-transform-types --experimental-loader ./scripts/ts-extension-loader.mjs --test src/app/projects/state/workspace/workspace-state-characterization.test.ts"
   },
   "engines": {
     "node": ">=22.22.3"

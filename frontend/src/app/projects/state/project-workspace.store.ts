@@ -32,17 +32,13 @@ import {
   UmlCommand,
 } from '../commands/uml-command';
 import {
-  UmlCommandBus,
-} from '../commands/uml-command-bus';
-import {
   UmlCommandError,
 } from '../commands/uml-command-error';
 import {
-  UmlCommandExecutor,
-} from '../commands/uml-command-executor';
-import {
   ProjectApiService,
 } from '../data/project-api.service';
+import { WorkspaceDocumentSession } from './workspace/workspace-document-session';
+import { WorkspaceCollaborationState } from './workspace/workspace-collaboration-state';
 import {
   normalizeUmlClassLayout,
   UML_CLASS_MIN_WIDTH,
@@ -81,11 +77,11 @@ export class ProjectWorkspaceStore {
   private readonly destroyRef =
     inject(DestroyRef);
 
-  private readonly commandBus =
-    new UmlCommandBus();
+  private readonly documentSession =
+    new WorkspaceDocumentSession();
 
-  private readonly authoritativeExecutor =
-    new UmlCommandExecutor();
+  private readonly realtimeState =
+    new WorkspaceCollaborationState();
 
   private readonly projectState =
     signal<Project | null>(null);
@@ -98,20 +94,6 @@ export class ProjectWorkspaceStore {
 
   private readonly historyCanRedo =
     signal(false);
-
-  private confirmedDocument:
-    ProjectDocument | null = null;
-
-  private confirmedRevision = 0;
-
-  private readonly pendingOperations =
-    new Map<string, ProjectOperation>();
-
-  private bufferedAppliedOperations:
-    ProjectOperationApplied[] = [];
-
-  private mustResyncOnReconnect = false;
-  private resyncGeneration = 0;
 
   private readonly clientId =
     this.collaboration.clientId;
@@ -604,7 +586,7 @@ export class ProjectWorkspaceStore {
 
     try {
       const inverseCommand =
-        this.commandBus.undoCommand();
+        this.documentSession.undoCommand();
 
       if (!inverseCommand) {
         return;
@@ -635,7 +617,7 @@ export class ProjectWorkspaceStore {
 
     try {
       const forwardCommand =
-        this.commandBus.redoCommand();
+        this.documentSession.redoCommand();
 
       if (!forwardCommand) {
         return;
@@ -931,7 +913,7 @@ export class ProjectWorkspaceStore {
   ): void {
     try {
       const changed =
-        this.commandBus.dispatch(
+        this.documentSession.dispatch(
           command,
         );
 
@@ -1009,8 +991,8 @@ export class ProjectWorkspaceStore {
         clientId:
           this.clientId,
         baseRevision:
-          this.confirmedRevision
-          + this.pendingOperations.size,
+          this.documentSession.confirmedRevision()
+          + this.realtimeState.pendingCount(),
         command,
       };
 
@@ -1031,13 +1013,10 @@ export class ProjectWorkspaceStore {
       return;
     }
 
-    this.pendingOperations.set(
-      operation.operationId,
-      operation,
-    );
+    this.realtimeState.addPending(operation);
 
     this.pendingOperationCount.set(
-      this.pendingOperations.size,
+      this.realtimeState.pendingCount(),
     );
 
     this.collaborationStatus.set(
@@ -1071,10 +1050,9 @@ export class ProjectWorkspaceStore {
 
   private handleConnected(): void {
     if (
-      this.mustResyncOnReconnect
+      this.realtimeState.resyncRequiredOnReconnect()
     ) {
-      this.mustResyncOnReconnect =
-        false;
+      this.realtimeState.clearReconnectResyncRequirement();
 
       this.beginResync(
         'Recuperando el estado autoritativo despues de una desconexion...',
@@ -1113,13 +1091,12 @@ export class ProjectWorkspaceStore {
     }
 
     if (
-      this.pendingOperations.size > 0
+      this.realtimeState.pendingCount() > 0
     ) {
-      this.pendingOperations.clear();
+      this.realtimeState.clearPending();
       this.pendingOperationCount.set(0);
 
-      this.mustResyncOnReconnect =
-        true;
+      this.realtimeState.requireResyncOnReconnect();
 
       this.collaborationMessage.set(
         'La conexion se interrumpio con operaciones pendientes. Al reconectar se recuperara el estado del servidor.',
@@ -1168,39 +1145,37 @@ export class ProjectWorkspaceStore {
       this.collaborationStatus()
         === 'resyncing'
     ) {
-      this.bufferedAppliedOperations.push(
-        operation,
-      );
+      this.realtimeState.buffer(operation);
       return;
     }
 
-    if (
-      operation.revision
-        <= this.confirmedRevision
-    ) {
-      this.pendingOperations.delete(
+    const revisionDisposition =
+      this.realtimeState.classifyRevision(
+        this.documentSession.confirmedRevision(),
+        operation.revision,
+      );
+
+    if (revisionDisposition === 'stale') {
+      this.realtimeState.removePending(
         operation.operationId,
       );
 
       this.pendingOperationCount.set(
-        this.pendingOperations.size,
+        this.realtimeState.pendingCount(),
       );
 
       return;
     }
 
-    if (
-      operation.revision
-        !== this.confirmedRevision + 1
-    ) {
+    if (revisionDisposition === 'gap') {
       this.beginResync(
-        `Se detecto un salto de revision (${this.confirmedRevision} → ${operation.revision}). Recuperando el estado del servidor...`,
+        `Se detecto un salto de revision (${this.documentSession.confirmedRevision()} → ${operation.revision}). Recuperando el estado del servidor...`,
       );
       return;
     }
 
     const ownOperation =
-      this.pendingOperations.has(
+      this.realtimeState.hasPending(
         operation.operationId,
       );
 
@@ -1216,16 +1191,16 @@ export class ProjectWorkspaceStore {
     }
 
     if (ownOperation) {
-      this.pendingOperations.delete(
+      this.realtimeState.removePending(
         operation.operationId,
       );
 
       this.pendingOperationCount.set(
-        this.pendingOperations.size,
+        this.realtimeState.pendingCount(),
       );
 
       if (
-        this.pendingOperations.size === 0
+        this.realtimeState.pendingCount() === 0
       ) {
         this.finishOwnSynchronization();
       } else {
@@ -1238,7 +1213,7 @@ export class ProjectWorkspaceStore {
     }
 
     if (
-      this.pendingOperations.size > 0
+      this.realtimeState.pendingCount() > 0
     ) {
       /*
        * El draft contiene comandos optimistas locales aplicados sobre
@@ -1276,7 +1251,7 @@ export class ProjectWorkspaceStore {
       return;
     }
 
-    this.pendingOperations.clear();
+    this.realtimeState.clearPending();
     this.pendingOperationCount.set(0);
 
     this.collaborationStatus.set(
@@ -1306,7 +1281,7 @@ export class ProjectWorkspaceStore {
     }
 
     const generation =
-      ++this.resyncGeneration;
+      this.realtimeState.nextResyncGeneration();
 
     this.collaborationStatus.set(
       'resyncing',
@@ -1318,7 +1293,7 @@ export class ProjectWorkspaceStore {
       );
     }
 
-    this.bufferedAppliedOperations = [];
+    this.realtimeState.resetBuffer();
 
     this.projectApi
       .get(project.id)
@@ -1326,12 +1301,12 @@ export class ProjectWorkspaceStore {
         next: (fresh) => {
           if (
             generation
-              !== this.resyncGeneration
+              !== this.realtimeState.currentResyncGeneration()
           ) {
             return;
           }
 
-          this.pendingOperations.clear();
+          this.realtimeState.clearPending();
           this.pendingOperationCount.set(0);
 
           this.installAuthoritativeProject(
@@ -1340,30 +1315,23 @@ export class ProjectWorkspaceStore {
           );
 
           const buffered =
-            [...this.bufferedAppliedOperations]
-              .sort(
-                (left, right) =>
-                  left.revision
-                  - right.revision,
-              );
-
-          this.bufferedAppliedOperations = [];
+            this.realtimeState.takeBufferedInRevisionOrder();
 
           for (
             const operation
             of buffered
           ) {
-            if (
-              operation.revision
-                <= this.confirmedRevision
-            ) {
+            const revisionDisposition =
+              this.realtimeState.classifyRevision(
+                this.documentSession.confirmedRevision(),
+                operation.revision,
+              );
+
+            if (revisionDisposition === 'stale') {
               continue;
             }
 
-            if (
-              operation.revision
-                !== this.confirmedRevision + 1
-            ) {
+            if (revisionDisposition === 'gap') {
               this.collaborationStatus.set(
                 'connected',
               );
@@ -1407,7 +1375,7 @@ export class ProjectWorkspaceStore {
         error: () => {
           if (
             generation
-              !== this.resyncGeneration
+              !== this.realtimeState.currentResyncGeneration()
           ) {
             return;
           }
@@ -1426,20 +1394,10 @@ export class ProjectWorkspaceStore {
   private applyToConfirmedDocument(
     operation: ProjectOperationApplied,
   ): void {
-    if (!this.confirmedDocument) {
-      throw new Error(
-        'Confirmed document is not loaded',
+    const confirmedDocument =
+      this.documentSession.applyConfirmed(
+        operation,
       );
-    }
-
-    this.confirmedDocument =
-      this.authoritativeExecutor.execute(
-        this.confirmedDocument,
-        operation.command,
-      );
-
-    this.confirmedRevision =
-      operation.revision;
 
     const project =
       this.projectState();
@@ -1450,9 +1408,7 @@ export class ProjectWorkspaceStore {
         revision:
           operation.revision,
         document:
-          structuredClone(
-            this.confirmedDocument,
-          ),
+          confirmedDocument,
         updatedAt:
           operation.appliedAt,
       });
@@ -1460,109 +1416,62 @@ export class ProjectWorkspaceStore {
   }
 
   private finishOwnSynchronization(): void {
-    if (!this.confirmedDocument) {
+    if (!this.documentSession.confirmedDocument()) {
       return;
     }
 
-    this.commandBus.markSaved(
-      this.confirmedDocument,
-    );
-
-    this.syncDraftFromBus(
-      false,
-    );
-
-    this.collaborationStatus.set(
-      'connected',
-    );
-
-    this.collaborationMessage.set(
-      null,
-    );
+    this.documentSession.finishOwnSynchronization();
+    this.syncDraftFromBus(false);
+    this.collaborationStatus.set('connected');
+    this.collaborationMessage.set(null);
   }
 
   private installConfirmedDocumentIntoEditor(): void {
-    if (!this.confirmedDocument) {
+    if (!this.documentSession.confirmedDocument()) {
       return;
     }
 
-    /*
-     * Un cambio remoto invalida el historial local. CU06-003
-     * implementara Undo/Redo colaborativo mediante comandos inversos.
-     */
-    this.commandBus.load(
-      this.confirmedDocument,
-    );
-
-    this.syncDraftFromBus(
-      false,
-    );
+    /* A remote change invalidates local history; authoritative state wins. */
+    this.documentSession.installConfirmedIntoEditor();
+    this.syncDraftFromBus(false);
   }
 
   private installAuthoritativeProject(
     project: Project,
     resetHistory: boolean,
   ): void {
-    this.projectState.set(
+    this.projectState.set(project);
+    this.documentSession.loadAuthoritative(
       project,
+      resetHistory,
     );
-
-    this.confirmedDocument =
-      structuredClone(
-        project.document,
-      );
-
-    this.confirmedRevision =
-      project.revision;
-
-    if (resetHistory) {
-      this.commandBus.load(
-        project.document,
-      );
-    } else {
-      this.commandBus.markSaved(
-        project.document,
-      );
-    }
-
-    this.syncDraftFromBus(
-      false,
-    );
+    this.syncDraftFromBus(false);
   }
 
   private syncDraftFromBus(
     clearDiagnostics: boolean,
   ): void {
     this.documentDraftState.set(
-      this.commandBus.document(),
+      this.documentSession.draft(),
     );
 
     const isDirty =
-      this.commandBus.isDirty();
+      this.documentSession.dirty();
 
-    this.dirty.set(
-      isDirty,
-    );
-
+    this.dirty.set(isDirty);
     this.historyCanUndo.set(
-      this.commandBus.canUndo(),
+      this.documentSession.canUndo(),
     );
-
     this.historyCanRedo.set(
-      this.commandBus.canRedo(),
+      this.documentSession.canRedo(),
     );
-
     this.undoDepth.set(
-      this.commandBus.undoDepth(),
+      this.documentSession.undoDepth(),
     );
-
     this.redoDepth.set(
-      this.commandBus.redoDepth(),
+      this.documentSession.redoDepth(),
     );
-
-    this.conflictRevision.set(
-      null,
-    );
+    this.conflictRevision.set(null);
 
     if (clearDiagnostics) {
       this.clearValidationFeedback();
@@ -1570,9 +1479,7 @@ export class ProjectWorkspaceStore {
     }
 
     this.saveState.set(
-      isDirty
-        ? 'dirty'
-        : 'saved',
+      isDirty ? 'dirty' : 'saved',
     );
   }
 
@@ -1589,26 +1496,13 @@ export class ProjectWorkspaceStore {
     this.historyCanRedo.set(false);
     this.undoDepth.set(0);
     this.redoDepth.set(0);
+    this.saveState.set('saved');
 
-    this.saveState.set(
-      'saved',
-    );
-
-    this.collaborationStatus.set(
-      'disconnected',
-    );
-
-    this.collaborationMessage.set(
-      null,
-    );
-
-    this.pendingOperations.clear();
+    this.collaborationStatus.set('disconnected');
+    this.collaborationMessage.set(null);
     this.pendingOperationCount.set(0);
-    this.bufferedAppliedOperations = [];
-    this.mustResyncOnReconnect = false;
-    this.resyncGeneration++;
-    this.confirmedDocument = null;
-    this.confirmedRevision = 0;
+    this.realtimeState.reset();
+    this.documentSession.reset();
   }
 
   private clearValidationFeedback(): void {

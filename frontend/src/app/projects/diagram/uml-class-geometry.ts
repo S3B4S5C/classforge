@@ -1,4 +1,4 @@
-import { DiagramNodeLayout } from '../model/project';
+import type { DiagramNodeLayout } from '../model/project';
 
 export const UML_CLASS_MIN_WIDTH = 260;
 export const UML_CLASS_MIN_HEIGHT = 160;

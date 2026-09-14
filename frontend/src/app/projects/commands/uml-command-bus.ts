@@ -1,10 +1,8 @@
-import {
+import type {
   ProjectDocument,
 } from '../model/project';
-import {
-  commandMetadata,
-  UmlCommand,
-} from './uml-command';
+import { commandMetadata } from './uml-command';
+import type { UmlCommand } from './uml-command';
 import {
   UmlCommandExecutor,
 } from './uml-command-executor';
@@ -31,13 +29,21 @@ export class UmlCommandBus {
   private readonly redoStack:
     UmlHistoryEntry[] = [];
 
+  private readonly executor: UmlCommandExecutor;
+
+  private readonly inverter: UmlCommandInverter;
+
+  private readonly maxHistory: number;
+
   constructor(
-    private readonly executor =
-      new UmlCommandExecutor(),
-    private readonly inverter =
-      new UmlCommandInverter(),
-    private readonly maxHistory = 100,
-  ) {}
+    executor = new UmlCommandExecutor(),
+    inverter = new UmlCommandInverter(),
+    maxHistory = 100,
+  ) {
+    this.executor = executor;
+    this.inverter = inverter;
+    this.maxHistory = maxHistory;
+  }
 
   load(
     document: ProjectDocument,

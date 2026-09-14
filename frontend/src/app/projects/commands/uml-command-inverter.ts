@@ -1,13 +1,11 @@
-import {
+import type {
   ProjectDocument,
   UmlAttribute,
   UmlClass,
   UmlRelationship,
 } from '../model/project';
-import {
-  commandMetadata,
-  UmlCommand,
-} from './uml-command';
+import { commandMetadata } from './uml-command';
+import type { UmlCommand } from './uml-command';
 import {
   UmlCommandError,
 } from './uml-command-error';
