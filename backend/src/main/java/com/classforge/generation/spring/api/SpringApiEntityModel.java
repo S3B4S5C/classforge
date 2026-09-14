@@ -24,6 +24,23 @@ public record SpringApiEntityModel(
         manyToManyRelations = List.copyOf(manyToManyRelations == null ? List.of() : manyToManyRelations);
     }
 
+    public List<SpringScalarFieldModel> requestFields() {
+        if (!id.automaticallyGenerated()) {
+            return scalarFields;
+        }
+        return scalarFields.stream()
+                .filter(field -> !field.identifier() || isAuthenticationCredential(field))
+                .toList();
+    }
+
+    private boolean isAuthenticationCredential(SpringScalarFieldModel field) {
+        if (!authEntity || field.sourceAttributeId() == null) {
+            return false;
+        }
+        return field.sourceAttributeId().equals(usernameAttributeId)
+                || field.sourceAttributeId().equals(passwordAttributeId);
+    }
+
     public List<SpringScalarFieldModel> responseFields() {
         if (!authEntity || passwordAttributeId == null) {
             return scalarFields;

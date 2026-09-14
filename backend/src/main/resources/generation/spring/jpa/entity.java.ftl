@@ -14,10 +14,18 @@ package ${model.basePackage}.entity;
     <#if api.enabled()>public<#else>protected</#if> ${entity.className}() { }
 
 <#list entity.scalarFields as field><#if field.identifier && entity.id.declaredByEntity>    @Id
-</#if>    @Column(name = "${field.columnName}", nullable = <#if api.enabled() && (apiEntity.isUsernameAttribute(field.sourceAttributeId) || apiEntity.isPasswordAttribute(field.sourceAttributeId))>false<#else>${field.nullable?c}</#if><#if api.enabled() && apiEntity.isUsernameAttribute(field.sourceAttributeId)>, unique = true</#if>)
+<#if entity.id.generatedByJpa()>    @GeneratedValue(strategy = GenerationType.${entity.id.jpaGenerationType()})
+</#if></#if>    @Column(name = "${field.columnName}", nullable = <#if api.enabled() && (apiEntity.isUsernameAttribute(field.sourceAttributeId) || apiEntity.isPasswordAttribute(field.sourceAttributeId))>false<#else>${field.nullable?c}</#if><#if api.enabled() && apiEntity.isUsernameAttribute(field.sourceAttributeId)>, unique = true</#if>)
     private ${field.javaType.simpleName()} ${field.fieldName};
 
-</#list><#list entity.directRelations as relation><#if relation.onDeleteCascade>    @OnDelete(action = OnDeleteAction.CASCADE)
+</#list><#if entity.id.declaredByEntity && entity.id.generatedAsRandomUuidString()>    @PrePersist
+    private void ensureGeneratedIdentifier() {
+        if (${entity.id.fields[0].fieldName} == null || ${entity.id.fields[0].fieldName}.isBlank()) {
+            ${entity.id.fields[0].fieldName} = UUID.randomUUID().toString();
+        }
+    }
+
+</#if><#list entity.directRelations as relation><#if relation.onDeleteCascade>    @OnDelete(action = OnDeleteAction.CASCADE)
 </#if>    @<#if relation.kind?string == "MANY_TO_ONE">ManyToOne<#else>OneToOne</#if>(fetch = FetchType.LAZY, optional = ${relation.optional?c})
 <#if relation.joinColumns?size == 1>    @JoinColumn(name = "${relation.joinColumns[0].localColumnName}", referencedColumnName = "${relation.joinColumns[0].referencedColumnName}", nullable = ${relation.joinColumns[0].nullable?c})
 <#else>    @JoinColumns({<#list relation.joinColumns as column>

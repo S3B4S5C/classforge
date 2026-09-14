@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:h2:file:./data/classforge-demo
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create
+    open-in-view: false
+
+classforge:
+  security:
+    jwt:
+      secret: classforge-cu27-demo-secret-local-only-2026
+      expiration-minutes: 480

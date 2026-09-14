@@ -45,6 +45,8 @@ class AngularFrontendRenderingTests {
         assertFalse(tsconfig.contains("\"downlevelIteration\""));
         assertFalse(text(simple, "frontend/src/app/entities/usuario/usuario-list.component.ts")
                 .contains("?? ''"));
+        assertFalse(text(simple, "frontend/src/app/entities/usuario/usuario-form.component.ts")
+                .contains("formControlName=\"id\""));
 
         GeneratedProject auth = renderer.render(
                 fixture.model(),
@@ -62,6 +64,14 @@ class AngularFrontendRenderingTests {
         assertNotNull(file(auth, "frontend/src/app/core/auth/auth.interceptor.ts"));
         assertTrue(text(auth, "frontend/src/app/entities/usuario/usuario-form.component.ts")
                 .contains("type=\"password\" formControlName=\"password\""));
+        assertFalse(text(auth, "frontend/src/app/auth/bootstrap.component.ts")
+                .contains("formControlName=\"id\""));
+        String app = text(auth, "frontend/src/app/app.component.ts");
+        assertTrue(app.contains("@if (auth.authenticated())"));
+        assertTrue(app.indexOf("@if (auth.authenticated())") < app.indexOf("<header class=\"app-header\">"));
+        String assistant = text(auth, "frontend/src/app/assistant/assistant.component.ts");
+        assertTrue(assistant.contains("class=\"btn btn-primary\" (click)=\"send()\""));
+        assertTrue(assistant.contains("class=\"btn\" (click)=\"startVoice()\""));
         assertTrue(text(auth, "frontend/src/styles.css").contains("--app-primary: #0F766E;"));
     }
 

@@ -52,6 +52,11 @@ class SpringApiArtifactsRenderingTests {
         GeneratedProject auth = renderer.render(fixture.model, authOptions);
         GeneratedProject authAgain = renderer.render(fixture.model, authOptions);
         String authOpenApi = text(auth, "openapi.yaml");
+        int requestStart = authOpenApi.indexOf("  UsuarioRequest:");
+        int responseStart = authOpenApi.indexOf("  UsuarioResponse:");
+        assertTrue(requestStart >= 0 && responseStart > requestStart);
+        String requestSchema = authOpenApi.substring(requestStart, responseStart);
+        assertFalse(requestSchema.contains("    id:"), "UsuarioRequest must not expose generated id");
         String authPostman = text(auth, "postman_collection.json");
         assertEquals(authOpenApi, text(authAgain, "openapi.yaml"));
         assertEquals(authPostman, text(authAgain, "postman_collection.json"));

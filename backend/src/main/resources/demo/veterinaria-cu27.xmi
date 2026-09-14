@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.1"
+         xmlns:xmi="http://schema.omg.org/spec/XMI/2.1"
+         xmlns:uml="http://schema.omg.org/spec/UML/2.1">
+  <xmi:Documentation exporter="ClassForge CU-27" exporterVersion="1.0"/>
+  <uml:Model xmi:type="uml:Model" xmi:id="CF_27000000000000000000000000000001" name="Veterinaria_CU27" visibility="public">
+    <packagedElement xmi:type="uml:Package" xmi:id="CF_27000000000000000000000000000002" name="Veterinaria" visibility="public">
+      <packagedElement xmi:type="uml:PrimitiveType" xmi:id="CF_27000000000000000000000000000011" name="String" visibility="public"/>
+      <packagedElement xmi:type="uml:PrimitiveType" xmi:id="CF_27000000000000000000000000000012" name="UUID" visibility="public"/>
+      <packagedElement xmi:type="uml:PrimitiveType" xmi:id="CF_27000000000000000000000000000013" name="Date" visibility="public"/>
+      <packagedElement xmi:type="uml:PrimitiveType" xmi:id="CF_27000000000000000000000000000014" name="DateTime" visibility="public"/>
+
+      <packagedElement xmi:type="uml:Class" xmi:id="CF_27000000000000000000000000000101" name="Propietario" visibility="public">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000201" name="id" visibility="private" type="CF_27000000000000000000000000000012" isID="true">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001001" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001002" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000202" name="nombre" visibility="private" type="CF_27000000000000000000000000000011">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001003" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001004" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000203" name="email" visibility="private" type="CF_27000000000000000000000000000011">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001005" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001006" value="1"/>
+        </ownedAttribute>
+      </packagedElement>
+
+      <packagedElement xmi:type="uml:Class" xmi:id="CF_27000000000000000000000000000102" name="Animal" visibility="public">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000211" name="id" visibility="private" type="CF_27000000000000000000000000000012" isID="true">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001011" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001012" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000212" name="nombre" visibility="private" type="CF_27000000000000000000000000000011">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001013" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001014" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000213" name="especie" visibility="private" type="CF_27000000000000000000000000000011">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001015" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001016" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000214" name="fechaNacimiento" visibility="private" type="CF_27000000000000000000000000000013">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001017" value="0"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001018" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000215" name="createdAt" visibility="private" type="CF_27000000000000000000000000000014">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001019" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001020" value="1"/>
+        </ownedAttribute>
+      </packagedElement>
+
+      <packagedElement xmi:type="uml:Class" xmi:id="CF_27000000000000000000000000000103" name="Veterinario" visibility="public">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000221" name="id" visibility="private" type="CF_27000000000000000000000000000012" isID="true">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001021" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001022" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000222" name="nombre" visibility="private" type="CF_27000000000000000000000000000011">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001023" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001024" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000223" name="especialidad" visibility="private" type="CF_27000000000000000000000000000011">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001025" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001026" value="1"/>
+        </ownedAttribute>
+      </packagedElement>
+
+      <packagedElement xmi:type="uml:Class" xmi:id="CF_27000000000000000000000000000104" name="Cita" visibility="public">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000231" name="id" visibility="private" type="CF_27000000000000000000000000000012" isID="true">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001031" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001032" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000232" name="fecha" visibility="private" type="CF_27000000000000000000000000000014">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001033" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001034" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000233" name="motivo" visibility="private" type="CF_27000000000000000000000000000011">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001035" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001036" value="1"/>
+        </ownedAttribute>
+      </packagedElement>
+
+      <packagedElement xmi:type="uml:Class" xmi:id="CF_27000000000000000000000000000105" name="Tratamiento" visibility="public">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000241" name="id" visibility="private" type="CF_27000000000000000000000000000012" isID="true">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001041" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001042" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000242" name="descripcion" visibility="private" type="CF_27000000000000000000000000000011">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001043" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001044" value="1"/>
+        </ownedAttribute>
+      </packagedElement>
+
+      <packagedElement xmi:type="uml:Class" xmi:id="CF_27000000000000000000000000000106" name="Usuario" visibility="public">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000251" name="id" visibility="private" type="CF_27000000000000000000000000000012" isID="true">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001051" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001052" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000252" name="username" visibility="private" type="CF_27000000000000000000000000000011">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001053" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001054" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000253" name="password" visibility="private" type="CF_27000000000000000000000000000011">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001055" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001056" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000000254" name="rol" visibility="private" type="CF_27000000000000000000000000000011">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000001057" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000001058" value="1"/>
+        </ownedAttribute>
+      </packagedElement>
+
+      <packagedElement xmi:type="uml:Association" xmi:id="CF_27000000000000000000000000000301" visibility="public" memberEnd="CF_27000000000000000000000000002001 CF_27000000000000000000000000002002">
+        <ownedEnd xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000002001" type="CF_27000000000000000000000000000101" association="CF_27000000000000000000000000000301" aggregation="shared">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000002101" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000002102" value="1"/>
+        </ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000002002" type="CF_27000000000000000000000000000102" association="CF_27000000000000000000000000000301" aggregation="none">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000002103" value="0"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000002104" value="*"/>
+        </ownedEnd>
+      </packagedElement>
+
+      <packagedElement xmi:type="uml:Association" xmi:id="CF_27000000000000000000000000000302" visibility="public" memberEnd="CF_27000000000000000000000000002003 CF_27000000000000000000000000002004">
+        <ownedEnd xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000002003" type="CF_27000000000000000000000000000102" association="CF_27000000000000000000000000000302" aggregation="composite">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000002105" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000002106" value="1"/>
+        </ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000002004" type="CF_27000000000000000000000000000104" association="CF_27000000000000000000000000000302" aggregation="none">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000002107" value="0"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000002108" value="*"/>
+        </ownedEnd>
+      </packagedElement>
+
+      <packagedElement xmi:type="uml:Association" xmi:id="CF_27000000000000000000000000000303" visibility="public" memberEnd="CF_27000000000000000000000000002005 CF_27000000000000000000000000002006">
+        <ownedEnd xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000002005" type="CF_27000000000000000000000000000103" association="CF_27000000000000000000000000000303" aggregation="none">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000002109" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000002110" value="1"/>
+        </ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000002006" type="CF_27000000000000000000000000000104" association="CF_27000000000000000000000000000303" aggregation="none">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000002111" value="0"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000002112" value="*"/>
+        </ownedEnd>
+      </packagedElement>
+
+      <packagedElement xmi:type="uml:Association" xmi:id="CF_27000000000000000000000000000304" visibility="public" memberEnd="CF_27000000000000000000000000002007 CF_27000000000000000000000000002008">
+        <ownedEnd xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000002007" type="CF_27000000000000000000000000000104" association="CF_27000000000000000000000000000304" aggregation="none">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000002113" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000002114" value="1"/>
+        </ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000002008" type="CF_27000000000000000000000000000105" association="CF_27000000000000000000000000000304" aggregation="none">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000002115" value="0"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000002116" value="*"/>
+        </ownedEnd>
+      </packagedElement>
+
+      <packagedElement xmi:type="uml:Association" xmi:id="CF_27000000000000000000000000000305" visibility="public" memberEnd="CF_27000000000000000000000000002009 CF_27000000000000000000000000002010">
+        <ownedEnd xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000002009" type="CF_27000000000000000000000000000106" association="CF_27000000000000000000000000000305" aggregation="none">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000002117" value="1"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000002118" value="1"/>
+        </ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="CF_27000000000000000000000000002010" type="CF_27000000000000000000000000000103" association="CF_27000000000000000000000000000305" aggregation="none">
+          <lowerValue xmi:type="uml:LiteralInteger" xmi:id="CF_27000000000000000000000000002119" value="0"/>
+          <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="CF_27000000000000000000000000002120" value="1"/>
+        </ownedEnd>
+      </packagedElement>
+    </packagedElement>
+  </uml:Model>
+</xmi:XMI>

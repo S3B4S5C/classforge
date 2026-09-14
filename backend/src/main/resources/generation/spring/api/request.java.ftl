@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public record ${entity.className}Request(
-<#list entity.scalarFields as field>        <#if !field.nullable && !entity.isPasswordAttribute(field.sourceAttributeId)>@NotNull </#if>${field.javaType.simpleName()} ${field.fieldName}<#if field_has_next || entity.directRelations?size != 0 || entity.manyToManyRelations?size != 0>,</#if>
+<#list entity.requestFields() as field>        <#if !field.nullable && !entity.isPasswordAttribute(field.sourceAttributeId)>@NotNull </#if>${field.javaType.simpleName()} ${field.fieldName}<#if field_has_next || entity.directRelations?size != 0 || entity.manyToManyRelations?size != 0>,</#if>
 </#list><#list entity.directRelations as relation>        <#if !relation.optional>@NotNull </#if>${relation.targetId.typeSimpleName()} ${relation.fieldName}Id<#if relation_has_next || entity.manyToManyRelations?size != 0>,</#if>
 </#list><#list entity.manyToManyRelations as relation>        Set<${relation.targetId.typeSimpleName()}> ${relation.fieldName}Ids<#if relation_has_next>,</#if>
 </#list>) { }

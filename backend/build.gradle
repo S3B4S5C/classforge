@@ -431,3 +431,26 @@ tasks.register('xmiEnterpriseArchitectAcceptance', Test) {
         exceptionFormat = 'full'
     }
 }
+
+// C10-CU27: deterministic final transition/demo scenario.
+tasks.register('demoScenarioAcceptance', Test) {
+    group = 'verification'
+    description = 'Validates the deterministic CU-27 Veterinaria demo profile, owner/editor access, canonical UML fixture, and XMI round-trip.'
+
+    dependsOn testClasses
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+    useJUnitPlatform()
+    maxParallelForks = 1
+    filter {
+        includeTestsMatching 'com.classforge.demo.DemoScenarioAcceptanceIntegrationTest'
+    }
+
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+}

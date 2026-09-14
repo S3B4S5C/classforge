@@ -8,7 +8,7 @@ La visión completa del producto está en `docs/product/product.md`. El estado r
 
 ## Estado actual
 
-**Fase de Construcción — Ciclos 1–9 CERRADOS; CU-10/CU-11 XMI 2.1 y CU-19 Assistant generado CERRADOS.**
+**Fase de Transición — Ciclos 1–10 CERRADOS; CU-27 demo reproducible final CERRADO.**
 
 En ClassForge llamamos **Ciclo** a una **iteración PUDS**.
 
@@ -39,6 +39,7 @@ El incremento ejecutable actual incluye:
 - CU-17 frontend web Angular: SPA standalone dentro de `frontend/`, dashboard, componentes específicos por entidad, CRUD/relaciones, Simple/Auth y color primario seleccionable;
 - CU-18 frontend mobile Flutter: app independiente dentro de `mobile/`, dashboard, pantallas específicas por entidad, Simple/Auth, almacenamiento seguro de JWT y Android validado;
 - CU-19 interacción con datos mediante chat y voz en la aplicación generada: Whisper + Qwen/llama.cpp locales, native tool calling, grounding Java, consultas directas y mutaciones con preview/token/apply.
+- hardening post-CU-19: las apps generadas autogeneran PK simples seguras (`UUID`, `Integer`, `Long`, `String`), las ocultan en formularios web/mobile salvo una PK `String` elegida explícitamente como credencial Auth, ocultan navegación web Auth hasta login y reutilizan estilos globales en los controles del Assistant.
 
 También están implementados como infraestructura transversal:
 
@@ -47,9 +48,7 @@ También están implementados como infraestructura transversal:
 - CU-30 ownership persistente, ampliado en CU-31 con proyectos compartidos;
 - CU-24 STT local y CU-25 IA local en el contexto del Asistente UML.
 
-Aún no están implementados:
-
-- CU-27 demo reproducible formal;
+CU-27 — demo reproducible final — está **CERRADO**. El perfil `demo` crea un proyecto Veterinaria determinista con OWNER/EDITOR, fixture XMI 2.1, scripts de reset/start/smoke, acceptance agregado y smoke opcional con Enterprise Architect real.
 
 CU-26 — auditoría histórica — quedó **DESCARTADO / FUERA DE ALCANCE** por decisión de producto; se conserva en la trazabilidad histórica.
 
@@ -165,9 +164,9 @@ Un posible archivo `*.classforge` continúa siendo un formato portable futuro, n
 - `docs/runtime/`: instalación y ejecución de runtimes locales;
 - `docs/uml/`: catálogo de diagramas UML académicos y su estado.
 
-## Próximo hito
+## Cierre funcional
 
-Los **Ciclos 1–9 están formalmente CERRADOS**. **CU-10/CU-11 — XMI 2.1 / Enterprise Architect** están CERRADOS y **CU-26** queda DESCARTADO / FUERA DE ALCANCE. El siguiente caso funcional es **CU-27 — demo reproducible**, que incorporará el smoke manual de intercambio con la instalación de Enterprise Architect usada en la presentación.
+Los **Ciclos 1–10 están formalmente CERRADOS**. CU-27 es el último caso funcional planificado: la demo Veterinaria se reconstruye con `scripts/demo-reset.ps1`, luego Spring y Angular se arrancan manualmente en consolas separadas; se recertifica con `scripts/demo-acceptance.ps1` y dispone de `scripts/demo-ea-smoke.ps1` para la prueba de transición con una instalación real de Enterprise Architect. CU-26 permanece DESCARTADO / FUERA DE ALCANCE. El trabajo restante es de presentación, documentación académica y ejecución del runbook final.
 
 La evidencia de cierre está en:
 
@@ -176,4 +175,5 @@ La evidencia de cierre está en:
 - CU-17: `docs/evidence/cu17/cu17-closure-report.md` y `docs/evidence/cu17/cu17-acceptance.json`;
 - CU-18: `docs/evidence/cu18/cu18-closure-report.md` y `docs/evidence/cu18/cu18-acceptance.json`;
 - CU-19: `docs/evidence/cu19/cu19-closure-report.md` y `docs/evidence/cu19/cu19-acceptance.json`;
-- CU-10/CU-11: `docs/evidence/cu10-cu11/cu10-cu11-closure-report.md` y `docs/evidence/cu10-cu11/cu10-cu11-acceptance.json`.
+- CU-10/CU-11: `docs/evidence/cu10-cu11/cu10-cu11-closure-report.md` y `docs/evidence/cu10-cu11/cu10-cu11-acceptance.json`;
+- CU-27: `docs/evidence/cu27/cu27-closure-report.md`, `docs/evidence/cu27/cu27-acceptance.json` y `docs/runtime/cu27-demo.md`.

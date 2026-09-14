@@ -1340,9 +1340,9 @@ ClassForge produce:
 
 ```text
 output/
-├── backend/
-├── frontend-web/
-├── frontend-mobile/
+├── src/                      # Spring Boot generado
+├── frontend/                 # Angular generado
+├── mobile/                   # Flutter generado
 ├── openapi.yaml
 ├── postman_collection.json
 └── domain-manifest.json

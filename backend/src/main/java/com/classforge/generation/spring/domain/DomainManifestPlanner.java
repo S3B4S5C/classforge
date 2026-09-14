@@ -158,6 +158,10 @@ public final class DomainManifestPlanner {
         boolean username = entity.isUsernameAttribute(field.sourceAttributeId());
         boolean readable = !password;
         boolean identifier = field.identifier();
+        boolean automaticallyGeneratedIdentifier = identifier
+                && entity.id().automaticallyGenerated()
+                && !username
+                && !password;
         return new DomainManifestPlan.Attribute(
                 field.sourceAttributeId(),
                 field.logicalName(),
@@ -168,7 +172,7 @@ public final class DomainManifestPlanner {
                 identifier,
                 identifier,
                 readable,
-                true,
+                !automaticallyGeneratedIdentifier,
                 !identifier,
                 readable,
                 readable,
@@ -176,7 +180,7 @@ public final class DomainManifestPlanner {
                 password,
                 password,
                 new DomainManifestPlan.Validation(
-                        password || username || !field.nullable(),
+                        !automaticallyGeneratedIdentifier && (password || username || !field.nullable()),
                         username || (!identifier && !password && !field.nullable()),
                         username
                 )

@@ -107,9 +107,13 @@ La capa CU-14 se monta sobre el mismo `SpringGenerationModel` sin persistir una 
 
 `SIMPLE_CRUD` genera CRUD completo, `q`, filtros `filter.<campo>`, `sort`, `direction`, `page`, `size`, `/count` y referencias de relaciones mediante IDs. `AUTH_INFORMATION_SYSTEM` añade selección estable por UUID de clase/atributos, BCrypt, username único/no nulo, password no nulo y nunca presente en DTOs de respuesta, JWT stateless de 3600 s y protección global del API.
 
-El bootstrap inicial se resuelve con `POST /api/auth/bootstrap`: sólo se permite mientras la tabla de autenticación esté vacía y recibe el DTO de creación de la entidad seleccionada, por lo que también puede completar sus demás campos obligatorios e identificador. Después del bootstrap no existe registro público en CU-14. `POST /api/auth/login` permanece público; el resto requiere Bearer JWT. CU-14 no implementa refresh tokens, roles ni autorización por entidad/campo.
+El bootstrap inicial se resuelve con `POST /api/auth/bootstrap`: sólo se permite mientras la tabla de autenticación esté vacía y recibe el DTO de creación de la entidad seleccionada. Las PK simples con estrategia automática no forman parte del request: `UUID` usa `GenerationType.UUID`, `Integer`/`Long` usan `GenerationType.IDENTITY` y `String` se inicializa con un UUID aleatorio en `@PrePersist`. La única excepción es una PK `String` que el propio modelo haya seleccionado explícitamente como username/password Auth: debe seguir siendo escribible para no invalidar la semántica de la credencial; `@PrePersist` sólo genera el valor cuando llega vacío. Las PK compuestas y los tipos sin estrategia genérica segura (`DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`) permanecen explícitos. Después del bootstrap no existe registro público en CU-14. `POST /api/auth/login` permanece público; el resto requiere Bearer JWT. CU-14 no implementa refresh tokens, roles ni autorización por entidad/campo.
 
 La aceptación focal se ejecuta con `springCrudGenerationAcceptance`, que exporta un CRUD simple y un sistema Auth representativos, ejecuta el Gradle Wrapper de ambos proyectos y exige `contextLoads()` sobre H2.
+
+### Generación automática de PK en aplicaciones exportadas
+
+La generación no elimina la exigencia UML de identificar una PK; cambia quién aporta su valor al crear registros. Para PK simples generables, Spring es la autoridad y los clientes no deben solicitar el valor al usuario, salvo la excepción de una PK `String` usada explícitamente como credencial Auth. La regla se aplica de forma uniforme a CRUD, bootstrap Auth, OpenAPI/Postman, Angular, Flutter y Assistant generado. El identificador sigue apareciendo en responses, paths, detalle y relaciones después de persistir.
 
 
 ## Frontera aprobada hacia CU-15

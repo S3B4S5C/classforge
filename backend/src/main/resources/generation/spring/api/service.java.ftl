@@ -142,7 +142,7 @@ public class ${entity.className}Service {
     }
 
     private void applyCreate(${entity.className} entity, ${entity.className}Request request) {
-<#list entity.scalarFields as field><#if entity.isPasswordAttribute(field.sourceAttributeId)>        if (request.${field.fieldName}() == null || request.${field.fieldName}().isBlank()) {
+<#list entity.requestFields() as field><#if entity.isPasswordAttribute(field.sourceAttributeId)>        if (request.${field.fieldName}() == null || request.${field.fieldName}().isBlank()) {
             throw new IllegalArgumentException("Password is required.");
         }
         entity.set${field.fieldName?cap_first}(passwordEncoder.encode(request.${field.fieldName}()));

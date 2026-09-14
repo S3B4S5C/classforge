@@ -96,6 +96,13 @@ class DomainManifestPlannerTests {
         assertEquals("JOINED_SUBCLASS", employee.inheritance().kind());
         assertEquals(rootClass, employee.inheritance().superEntityId());
         assertEquals(rootId, employee.identifier().fields().getFirst().attributeId());
+        DomainManifestPlan.Attribute rootIdentifier = employee.attributes().stream()
+                .filter(DomainManifestPlan.Attribute::identifier)
+                .findFirst()
+                .orElseThrow();
+        assertFalse(rootIdentifier.createWritable());
+        assertFalse(rootIdentifier.updateWritable());
+        assertFalse(rootIdentifier.validation().requiredOnCreate());
         assertTrue(employee.attributes().stream().anyMatch(a -> a.id().equals(rootId)));
         assertTrue(employee.attributes().stream().anyMatch(a -> a.id().equals(childName)));
     }

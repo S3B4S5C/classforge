@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "useCase": "CU-27",
+  "status": "PASS_ON_PATCH_GATES",
+  "scenario": "Veterinaria CU-27",
+  "projectId": "27000000-0000-0000-0000-000000000100",
+  "actors": {
+    "owner": "demo@classforge.local",
+    "editor": "colaborador@classforge.local"
+  },
+  "model": {
+    "classes": 6,
+    "relationships": 5,
+    "xmi": "2.1"
+  },
+  "automatedGates": [
+    "demoScenarioAcceptance",
+    "xmiEnterpriseArchitectAcceptance",
+    "generatedAssistantAcceptance",
+    "generatedFlutterAcceptance",
+    "generatedAngularAcceptance",
+    "domainManifestAcceptance",
+    "springApiArtifactsAcceptance",
+    "springCrudGenerationAcceptance",
+    "springGenerationAcceptance",
+    "backend test",
+    "frontend test:generation",
+    "frontend build",
+    "git diff --check"
+  ],
+  "transitionSmokes": {
+    "assistantRuntimes": "scripts/demo-smoke.ps1 -RequireAi",
+    "enterpriseArchitect": "scripts/demo-ea-smoke.ps1 -RepositoryPath <disposable-repository>"
+  }
+}

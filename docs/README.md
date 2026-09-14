@@ -29,7 +29,7 @@ Los `.md` son documentos versionables y constituyen la fuente de verdad. El Word
 ## Corte actual
 
 ```text
-Fase PUDS: Construcción
+Fase PUDS: Transición
 Ciclo 1: CERRADO
 Ciclo 2: CERRADO
 Ciclo 3: CERRADO
@@ -38,6 +38,9 @@ Ciclo 5: CERRADO
 Ciclo 6: CERRADO
 Ciclo 7: CERRADO
 Ciclo 8: CERRADO
+Ciclo 9: CERRADO
+Ciclo 10: CERRADO
+CU-27: CERRADO
 CU-31: CERRADO
 CU-09: CERRADO
 CU-12: CERRADO
@@ -49,7 +52,7 @@ CU-17: CERRADO
 CU-18: CERRADO
 CU-19: CERRADO
 CU-20..23: ABSORBIDOS POR CU-19
-Incremento actual: C8-cu19-001 CLOSED
+Incremento actual: C10-cu27-001 CLOSED
 Fecha: 13-09-2026
 ```
 
@@ -116,6 +119,10 @@ CU-16 está implementado y aceptado. Sus fuentes principales son:
 6. `evidence/cu16/` — cierre y evidencia estructurada.
 7. `../openspec/changes/cu16-domain-manifest/` — requisitos y tareas cerradas.
 
+
+## CU-27 — demo reproducible final
+
+CU-27 cierra el último caso funcional planificado. Fuentes principales: `runtime/cu27-demo.md`, `evidence/cu27/`, `puds/cycles/cycle-10-transition-demo.md`, `puds/iterations/cycle-10/C10-cu27-001-reproducible-final-demo.md` y `../examples/veterinaria-cu27/`.
 
 ## CU-19 — cerrado
 

@@ -1,6 +1,6 @@
 # Arquitectura de ClassForge
 
-**Estado:** arquitectura ejecutable en fase de Construcción; Ciclos 1–9 cerrados; CU-10/CU-11 y CU-19 cerrados.
+**Estado:** arquitectura funcional cerrada en fase de Transición; Ciclos 1–10 cerrados; CU-27 demo reproducible final cerrada.
 
 ## Fuente de verdad
 

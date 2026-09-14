@@ -45,6 +45,7 @@ class FlutterMobileRenderingTests {
         assertTrue(dashboard.contains("/api/usuario"));
         assertTrue(dashboard.contains("${entity.endpoint}/count"));
         assertTrue(text(simple, "mobile/README.md").contains("plataforma formalmente aceptada: Android"));
+        assertFalse(text(simple, "mobile/lib/entities/usuario/usuario_form_page.dart").contains("idController"));
 
         GeneratedProject auth = renderer.render(
                 fixture.model(),
@@ -63,6 +64,8 @@ class FlutterMobileRenderingTests {
         assertTrue(text(auth, "mobile/pubspec.yaml").contains("flutter_secure_storage: ^11.1.1"));
         assertTrue(text(auth, "mobile/android/app/build.gradle.kts").contains("minSdk = 23"));
         assertTrue(text(auth, "mobile/lib/auth/login_page.dart").contains("obscureText: true"));
+        assertFalse(text(auth, "mobile/lib/entities/usuario/usuario_form_page.dart").contains("idController"));
+        assertFalse(text(auth, "mobile/lib/auth/bootstrap_page.dart").contains("'id'"));
         assertTrue(text(auth, "mobile/lib/core/theme/app_theme.dart").contains("Color(0xFF0F766E)"));
     }
 

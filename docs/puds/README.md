@@ -15,7 +15,7 @@ Inicio -> Elaboración -> Construcción -> Transición
 ## Estado vigente
 
 ```text
-Fase: Construcción
+Fase: Transición
 Ciclo 1: CERRADO
 Ciclo 2: CERRADO
 Ciclo 3: CERRADO
@@ -24,6 +24,9 @@ Ciclo 5: CERRADO
 Ciclo 6: CERRADO
 Ciclo 7: CERRADO
 Ciclo 8: CERRADO
+Ciclo 9: CERRADO
+Ciclo 10: CERRADO
+CU-27: CERRADO
 CU-31: CERRADO
 CU-09: CERRADO
 CU-12: CERRADO
@@ -38,7 +41,7 @@ CU-20..23: ABSORBIDOS POR CU-19
 Corte: 13 de septiembre de 2026
 ```
 
-El Ciclo 1 consolidó la arquitectura ejecutable base. El Ciclo 2 cerró colaboración e imagen; el Ciclo 3 cerró CU-12/13/14; el Ciclo 4 cerró CU-15 (OpenAPI/Postman); el Ciclo 5 cerró CU-16 Domain Manifest; el Ciclo 6 cerró CU-17 Angular, el Ciclo 7 cerró CU-18 Flutter/Android y el Ciclo 8 cerró CU-19 Assistant de datos, absorbiendo CU-20..23.
+El Ciclo 1 consolidó la arquitectura ejecutable base. El Ciclo 2 cerró colaboración e imagen; el Ciclo 3 cerró CU-12/13/14; el Ciclo 4 cerró CU-15 (OpenAPI/Postman); el Ciclo 5 cerró CU-16 Domain Manifest; el Ciclo 6 cerró CU-17 Angular; el Ciclo 7 cerró CU-18 Flutter/Android; el Ciclo 8 cerró CU-19 Assistant de datos y absorbió CU-20..23; el Ciclo 9 cerró CU-10/CU-11 XMI y el Ciclo 10 cerró CU-27 en Transición.
 
 ## Fuentes
 
@@ -55,6 +58,7 @@ El Ciclo 1 consolidó la arquitectura ejecutable base. El Ciclo 2 cerró colabor
 - `../evidence/cu17/`: cierre y acceptance de Angular generado.
 - `../evidence/cu18/`: cierre y acceptance de Flutter mobile/Android.
 - `../evidence/cu19/`: cierre y acceptance del Assistant generado de chat/voz.
+- `../evidence/cu27/`: cierre de la demo reproducible final y transición.
 
 ## Regla de trazabilidad
 

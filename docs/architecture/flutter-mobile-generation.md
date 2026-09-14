@@ -49,7 +49,8 @@ Password se trata como secreto y usa controles `obscureText`.
 
 - to-one: selector simple;
 - many-to-many / one-to-many: selector múltiple con chips;
-- IDs simples y compuestos se conservan en requests.
+- IDs de relaciones y PK explícitas se conservan en requests;
+- PK simples autogenerables (`UUID`, `Integer`, `Long`, `String`) se omiten de creación/bootstrap y no se solicitan en formularios, salvo una PK `String` seleccionada explícitamente como credencial Auth.
 
 ## Tema
 

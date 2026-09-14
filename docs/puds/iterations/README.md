@@ -57,3 +57,7 @@ Consultar `cycle-08/`. El ciclo está CERRADO con CU-19 aceptado; CU-20..23 qued
 ## Ciclo 9
 
 Consultar `cycle-09/`. El ciclo está CERRADO con CU-10/CU-11 XMI 2.1 aceptados. El incremento de cierre es `cycle-09/C9-cu10-cu11-001-xmi-enterprise-architect.md`.
+
+## Ciclo 10
+
+Consultar `cycle-10/`. El ciclo está CERRADO con CU-27 aceptado. El incremento de cierre es `cycle-10/C10-cu27-001-reproducible-final-demo.md`.

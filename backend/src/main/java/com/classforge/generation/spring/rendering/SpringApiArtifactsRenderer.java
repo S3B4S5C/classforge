@@ -246,14 +246,14 @@ public final class SpringApiArtifactsRenderer {
         line(out, 2, entity.className() + "Request:");
         line(out, 3, "type: object");
         List<String> required = new ArrayList<>();
-        entity.scalarFields().stream()
+        entity.requestFields().stream()
                 .filter(field -> !field.nullable() && !entity.isPasswordAttribute(field.sourceAttributeId()))
                 .map(SpringScalarFieldModel::fieldName).forEach(required::add);
         entity.directRelations().stream().filter(relation -> !relation.optional())
                 .map(relation -> relation.fieldName() + "Id").forEach(required::add);
         if (!required.isEmpty()) line(out, 3, "required: [" + String.join(", ", required) + "]");
         line(out, 3, "properties:");
-        for (SpringScalarFieldModel field : entity.scalarFields()) {
+        for (SpringScalarFieldModel field : entity.requestFields()) {
             javaTypeProperty(out, 4, field.fieldName(), field.javaType(),
                     entity.isPasswordAttribute(field.sourceAttributeId()), field.nullable());
             if (entity.isPasswordAttribute(field.sourceAttributeId())) {
@@ -527,7 +527,7 @@ public final class SpringApiArtifactsRenderer {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Unknown generated request schema: " + schema));
         LinkedHashMap<String, Object> body = new LinkedHashMap<>();
-        for (SpringScalarFieldModel field : entity.scalarFields()) {
+        for (SpringScalarFieldModel field : entity.requestFields()) {
             if (entity.isUsernameAttribute(field.sourceAttributeId())) body.put(field.fieldName(), "{{username}}");
             else if (entity.isPasswordAttribute(field.sourceAttributeId())) body.put(field.fieldName(), "{{password}}");
             else body.put(field.fieldName(), sampleValue(field.javaType()));

@@ -180,6 +180,14 @@ public class SpringProjectRenderer {
         result.add("jakarta.persistence.Entity");
         result.add("jakarta.persistence.Table");
         if (entity.id().declaredByEntity()) result.add("jakarta.persistence.Id");
+        if (entity.id().declaredByEntity() && entity.id().generatedByJpa()) {
+            result.add("jakarta.persistence.GeneratedValue");
+            result.add("jakarta.persistence.GenerationType");
+        }
+        if (entity.id().declaredByEntity() && entity.id().generatedAsRandomUuidString()) {
+            result.add("jakarta.persistence.PrePersist");
+            result.add("java.util.UUID");
+        }
         if (entity.id().kind() == SpringIdKind.COMPOSITE && entity.id().declaredByEntity()) result.add("jakarta.persistence.IdClass");
         if (entity.inheritance().kind() == SpringInheritanceKind.JOINED_ROOT) {
             result.add("jakarta.persistence.Inheritance");

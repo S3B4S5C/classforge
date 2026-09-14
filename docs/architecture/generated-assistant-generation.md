@@ -31,7 +31,7 @@ El patrón replica la autoridad del Assistant principal sin crear una dependenci
 2. se expone una tool pesada compatible con el intent;
 3. Qwen devuelve native `tool_call`;
 4. Java resuelve entidad/campo/relación contra metadata derivada de Domain Manifest;
-5. Java valida capacidades, tipos, filtros, writeability, sensibilidad y unicidad de selectores;
+5. Java valida capacidades, tipos, filtros, writeability, sensibilidad y unicidad de selectores; las PK autogenerables llegan como `createWritable=false` y nunca se piden al LLM en CREATE, salvo una PK `String` seleccionada explícitamente como credencial Auth;
 6. solo entonces se ejecuta o se crea preview.
 
 Intents: `QUERY`, `COUNT`, `GET`, `CREATE`, `UPDATE`, `DELETE`, `SET_RELATION`, `ADD_RELATION`, `REMOVE_RELATION`.

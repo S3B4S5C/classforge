@@ -201,3 +201,26 @@ pwsh -NoProfile -File .\scripts\assistant-vision-whiteboard.ps1 `
 ```
 
 Inspeccionar `backend/build/reports/assistant-vision/geometry/library-whiteboard-realistic/` y, en particular, `class-regions.png`, `mapping.json`, `geometry.json` y `overlay.png`.
+
+
+## CU-27 — demo reproducible final
+
+Los scripts de CU-27 ya no abren ni cierran Spring/Angular. Flujo mínimo:
+
+```powershell
+.\scripts\demo-reset.ps1
+
+# Consola 1
+cd backend
+.\gradlew.bat bootRun --no-daemon --args="--spring.profiles.active=demo"
+
+# Consola 2
+cd frontend
+npm start
+
+# Tercera consola, desde la raíz
+.\scripts\demo-smoke.ps1 -RequireAi
+.\scripts\demo-acceptance.ps1
+```
+
+`demo-stop.ps1` no termina procesos: Spring y Angular se detienen con `Ctrl+C` en sus consolas. `demo-ea-smoke.ps1 -RepositoryPath <repo-desechable>` ejecuta el round-trip XMI real contra la Automation Interface de Enterprise Architect. Ver `GUIA-DEMO-CU27.md` y `docs/runtime/cu27-demo.md`.

@@ -20,6 +20,7 @@ backend/data/
 *.log
 
 # Generated ClassForge outputs
+.demo/
 .patch-backups/
 classforge.zip
 /classforge.rar

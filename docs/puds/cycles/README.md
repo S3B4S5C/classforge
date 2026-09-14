@@ -29,3 +29,4 @@ La evidencia técnica granular vive en `../iterations/`.
 | `cycle-07-flutter-mobile.md` | Construcción | CERRADO | CU-18 frontend Flutter mobile + Android |
 | `cycle-08-generated-assistant.md` | Construcción | CERRADO | CU-19 Assistant de datos chat/voz; CU-20..23 absorbidos |
 | `cycle-09-xmi-enterprise-architect.md` | Construcción | CERRADO | CU-10/CU-11 XMI 2.1 / Enterprise Architect |
+| `cycle-10-transition-demo.md` | Transición | CERRADO | CU-27 demo reproducible final / cierre funcional |

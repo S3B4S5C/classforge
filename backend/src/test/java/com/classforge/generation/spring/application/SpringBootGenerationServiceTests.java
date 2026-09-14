@@ -91,7 +91,7 @@ class SpringBootGenerationServiceTests {
                 artifact.content(),
                 "biblioteca/src/main/java/com/example/biblioteca/entity/Cliente.java"
         );
-        assertTrue(source.contains("@Id\n    @Column(name = \"id\", nullable = false)"));
+        assertTrue(source.contains("@Id\n    @GeneratedValue(strategy = GenerationType.UUID)\n    @Column(name = \"id\", nullable = false)"));
         assertTrue(source.contains("private UUID id;"));
         assertFalse(document.umlModel().classes().get(0).attributes().get(0).identifier());
         assertEquals(7, fixture.project.revision());

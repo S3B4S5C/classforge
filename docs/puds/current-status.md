@@ -1,9 +1,9 @@
 # Estado actual PUDS
 
-**Fecha de corte:** 13 de septiembre de 2026.
+**Fecha de corte:** 13 de septiembre de 2026 (cierre CU-27).
 
 ```text
-Fase PUDS: Construcción
+Fase PUDS: Transición
 Ciclo 1: CERRADO
 Ciclo 2: CERRADO
 CU-31: CERRADO
@@ -15,10 +15,12 @@ Ciclo 6: CERRADO
 Ciclo 7: CERRADO
 Ciclo 8: CERRADO
 Ciclo 9: CERRADO
+Ciclo 10: CERRADO
+CU-27: CERRADO
 CU-12: CERRADO
 CU-13: CERRADO
 CU-14: CERRADO
-Current increment: C9-cu10-cu11-001 CLOSED - XMI 2.1 / Enterprise Architect bidireccional
+Current increment: C10-cu27-001 CLOSED - demo reproducible final
 CU-15: CERRADO
 CU-16: CERRADO
 CU-17: CERRADO
@@ -32,7 +34,7 @@ CU-26: DESCARTADO / FUERA DE ALCANCE
 
 ## Resumen ejecutivo del corte
 
-Los Ciclos 1–9 están cerrados. El Ciclo 3 completó CU-12, CU-13 y CU-14; el Ciclo 4 cerró CU-15; el Ciclo 5 cerró CU-16; el Ciclo 6 cerró CU-17 Angular; el Ciclo 7 cerró CU-18 Flutter/Android; el Ciclo 8 cerró CU-19 y absorbió CU-20..23; y el Ciclo 9 cerró CU-10/CU-11 con import/export XMI 2.1 seguro, determinista y con round-trip semántico. CU-26 queda descartado/fuera de alcance por decisión de producto.
+Los Ciclos 1–10 están cerrados. El Ciclo 3 completó CU-12, CU-13 y CU-14; el Ciclo 4 cerró CU-15; el Ciclo 5 cerró CU-16; el Ciclo 6 cerró CU-17 Angular; el Ciclo 7 cerró CU-18 Flutter/Android; el Ciclo 8 cerró CU-19 y absorbió CU-20..23; el Ciclo 9 cerró CU-10/CU-11 XMI; y el Ciclo 10 cerró CU-27 con un escenario Veterinaria determinista, scripts de transición y acceptance agregado. CU-26 queda descartado/fuera de alcance por decisión de producto.
 
 Como antecedente inmediato, el Ciclo 2 se cerró después de resolver sus dos riesgos principales:
 
@@ -69,6 +71,7 @@ CU-09 queda funcionalmente aceptado el 5 de septiembre de 2026. La imagen nunca 
 | CU-18 Generar frontend mobile Flutter | CERRADO | `mobile/` Flutter con dashboard, páginas específicas, CRUD/relaciones, Simple/Auth, secure JWT y Android debug-build acceptance |
 | CU-19 Interactuar con datos mediante lenguaje natural y voz | CERRADO | Assistant Spring + Angular/Flutter; Whisper/Qwen native tools, grounding Java, reads directos y mutaciones preview/apply |
 | CU-20..23 | ABSORBIDOS POR CU-19 | creación, relaciones, actualización y eliminación pasan a ser intents de CU-19 |
+| CU-27 Demo reproducible | CERRADO | perfil demo aislado, Veterinaria determinista, OWNER/EDITOR, scripts de transición, acceptance final y smoke EA |
 
 ## CU-09 — estado final
 
@@ -237,7 +240,7 @@ Por tanto:
 Ciclo 2: CERRADO
 ```
 
-CU-10/CU-11 quedan cerrados en el Ciclo 9. El único caso funcional planificado restante es CU-27; CU-26 se conserva como descartado/fuera de alcance.
+CU-10/CU-11 quedan cerrados en el Ciclo 9 y CU-27 cierra el Ciclo 10. No quedan casos funcionales planificados; CU-26 se conserva como descartado/fuera de alcance.
 
 ## CU-13 — cierre final
 
@@ -259,4 +262,4 @@ Evidencia: `docs/evidence/cu13/cu13-closure-report.md` y `docs/evidence/cu13/cu1
 
 ## Próximo paso PUDS
 
-Ciclos 3–9 están CERRADOS. CU-10/CU-11 quedan cerrados con evidencia en `docs/evidence/cu10-cu11/`; CU-26 está DESCARTADO / FUERA DE ALCANCE. El siguiente y último caso funcional planificado es CU-27 — demo reproducible, incluyendo smoke manual de Enterprise Architect.
+Ciclos 3–10 están CERRADOS y no quedan casos funcionales planificados. CU-27 queda respaldado por `docs/evidence/cu27/` y el runbook `docs/runtime/cu27-demo.md`; CU-26 está DESCARTADO / FUERA DE ALCANCE. El trabajo siguiente es Transición: ejecutar los smokes sobre el hardware del examen, conservar evidencia, completar diagramas académicos y preparar la presentación/documento final.

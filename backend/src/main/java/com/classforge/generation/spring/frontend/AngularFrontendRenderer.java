@@ -360,11 +360,7 @@ public final class AngularFrontendRenderer {
                 ? "  readonly auth = inject(AuthService);\n"
                 : "";
         String logout = manifest.authentication().enabled()
-                ? """
-                          @if (auth.authenticated()) {
-                            <button type="button" (click)="logout()">Salir</button>
-                          }
-                  """
+                ? "          <button type=\"button\" (click)=\"logout()\">Salir</button>"
                 : "";
         String logoutMethod = manifest.authentication().enabled()
                 ? """
@@ -381,6 +377,24 @@ public final class AngularFrontendRenderer {
         String routerField = manifest.authentication().enabled()
                 ? "  private readonly router = inject(Router);\n"
                 : "";
+        String header = """
+                      <header class="app-header">
+                        <a class="app-brand" routerLink="/dashboard">Sistema generado</a>
+                        <nav class="app-nav" aria-label="Navegacion principal">
+                          <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+                          <a routerLink="/assistant" routerLinkActive="active">Asistente</a>
+                %s
+                %s
+                        </nav>
+                      </header>
+                """.formatted(nav, logout);
+        if (manifest.authentication().enabled()) {
+            header = """
+                      @if (auth.authenticated()) {
+                %s
+                      }
+                """.formatted(indent(header.strip(), 2));
+        }
         return """
                 import { Component%s } from '@angular/core';
                 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -391,15 +405,7 @@ public final class AngularFrontendRenderer {
                   imports: [RouterOutlet, RouterLink, RouterLinkActive],
                   template: `
                     <div class="app-shell">
-                      <header class="app-header">
-                        <a class="app-brand" routerLink="/dashboard">Sistema generado</a>
-                        <nav class="app-nav" aria-label="Navegacion principal">
-                          <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
-                          <a routerLink="/assistant" routerLinkActive="active">Asistente</a>
                 %s
-                %s
-                        </nav>
-                      </header>
                       <router-outlet />
                     </div>
                   `,
@@ -407,7 +413,7 @@ public final class AngularFrontendRenderer {
                 export class AppComponent {
                 %s%s
                 %s}
-                """.formatted(injectImport, authImports, routerInject, nav, indent(logout, 10), authInject, routerField, indent(logoutMethod, 2));
+                """.formatted(injectImport, authImports, routerInject, indent(header.strip(), 6), authInject, routerField, indent(logoutMethod, 2));
     }
 
     private String routes(DomainManifestPlan manifest) {
@@ -1580,14 +1586,14 @@ public final class AngularFrontendRenderer {
                           }
                         </div>
                         @if (pending) {
-                          <div class="detail-item"><strong>Confirmacion requerida</strong><p>{{ pending.summary }}</p><div class="actions"><button type="button" (click)="apply()" [disabled]="busy">Confirmar</button><button type="button" class="secondary" (click)="pending = null" [disabled]="busy">Cancelar</button></div></div>
+                          <div class="detail-item"><strong>Confirmacion requerida</strong><p>{{ pending.summary }}</p><div class="actions"><button type="button" class="btn btn-primary" (click)="apply()" [disabled]="busy">Confirmar</button><button type="button" class="btn" (click)="pending = null" [disabled]="busy">Cancelar</button></div></div>
                         }
                         @if (error) { <p class="error">{{ error }}</p> }
                         <label>Instruccion<textarea rows="3" [(ngModel)]="text" [disabled]="busy || recording"></textarea></label>
                         <div class="actions">
-                          <button type="button" (click)="send()" [disabled]="busy || recording || !text.trim()">Enviar</button>
-                          @if (!recording) { <button type="button" class="secondary" (click)="startVoice()" [disabled]="busy">🎤 Hablar</button> }
-                          @else { <button type="button" (click)="stopVoice()" [disabled]="busy">Detener y enviar</button> }
+                          <button type="button" class="btn btn-primary" (click)="send()" [disabled]="busy || recording || !text.trim()">Enviar</button>
+                          @if (!recording) { <button type="button" class="btn" (click)="startVoice()" [disabled]="busy">🎤 Hablar</button> }
+                          @else { <button type="button" class="btn btn-primary" (click)="stopVoice()" [disabled]="busy">Detener y enviar</button> }
                         </div>
                       </section>
                     </main>

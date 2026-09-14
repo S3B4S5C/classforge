@@ -59,6 +59,7 @@ Genera:
 - edición;
 - eliminación;
 - formularios derivados de tipos/nullability/capacidades;
+- PK simples autogenerables (`UUID`, `Integer`, `Long`, `String`) no aparecen en formularios de creación ni bootstrap, salvo una PK `String` seleccionada explícitamente como username/password Auth;
 - controles de relaciones.
 
 No genera login, JWT, guards ni interceptores Auth.
@@ -73,10 +74,11 @@ Además genera:
 - interceptor Bearer JWT;
 - route guard;
 - logout;
+- header/navegación ocultos mientras no exista sesión autenticada;
 - redirección a login ante 401;
 - password con `input type="password"` y nunca como campo readable.
 
-El bootstrap usa el mismo request de la entidad Auth y el endpoint público de CU-14.
+El bootstrap usa el mismo request de la entidad Auth y el endpoint público de CU-14. Si la PK es autogenerable, el campo no se renderiza ni se envía; una PK `String` usada explícitamente como credencial Auth conserva writeability. Los controles principales del Assistant reutilizan el sistema global `.btn`/`.btn-primary`, incluyendo Enviar, Hablar, Detener y Confirmar.
 
 ## Dashboard
 

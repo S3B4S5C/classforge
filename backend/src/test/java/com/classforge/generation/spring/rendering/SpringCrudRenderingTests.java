@@ -29,6 +29,11 @@ class SpringCrudRenderingTests {
         assertFalse(simpleService.contains(".repository.*"));
         assertTrue(simpleController.contains("import java.util.UUID;"));
         assertTrue(simpleService.contains("import java.util.UUID;"));
+        String simpleRequest = text(simple, "src/main/java/com/example/demo/dto/UsuarioRequest.java");
+        assertFalse(simpleRequest.contains("UUID id"));
+        assertFalse(simpleService.contains("request.id()"));
+        String simpleEntity = text(simple, "src/main/java/com/example/demo/entity/Usuario.java");
+        assertTrue(simpleEntity.contains("@GeneratedValue(strategy = GenerationType.UUID)"));
 
         GeneratedProject auth = renderer.render(
                 fixture.model,

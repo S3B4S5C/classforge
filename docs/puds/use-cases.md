@@ -11,7 +11,7 @@ La bitácora acumulativa anterior se conserva en `history/use-cases-pre-cycle1-n
 En ClassForge llamamos **Ciclo** a una **iteración PUDS**.
 
 ```text
-Fase: Construcción
+Fase: Transición
 Ciclo 1: CERRADO
 Ciclo 2: CERRADO
 Ciclo 3: CERRADO
@@ -21,6 +21,7 @@ Ciclo 6: CERRADO
 Ciclo 7: CERRADO
 Ciclo 8: CERRADO
 Ciclo 9: CERRADO
+Ciclo 10: CERRADO
 ```
 
 ## 2. Actores
@@ -82,7 +83,7 @@ Participa en validación, persistencia, auditoría y generación.
 | CU-24 | Ejecutar STT local | INFRAESTRUCTURA |
 | CU-25 | Ejecutar IA local | INFRAESTRUCTURA |
 | CU-26 | Registrar cambios del proyecto | DESCARTADO / FUERA DE ALCANCE |
-| CU-27 | Generar demo reproducible | PLANIFICADO |
+| CU-27 | Generar demo reproducible | CERRADO |
 | CU-28 | Registrar cuenta | CERRADO |
 | CU-29 | Iniciar sesión | CERRADO |
 | CU-30 | Acceder a proyectos propios | CERRADO |
@@ -324,7 +325,7 @@ La generalización estadística con dos pizarras adicionales y la ejecución arc
 **Estado: CERRADO.** Importa XMI 2.1 al `ProjectDocument` canónico mediante parser XML seguro, UUIDs deterministas, validación, preview token y `Apply` protegido por revisión. El subconjunto incluye Package (aplanado), Class, Property/DataType, Association, Aggregation, Composition, Generalization y Multiplicity. DTD/XXE y payloads mayores a 5 MiB fallan cerrados.
 
 ### CU-11 — Exportar XMI
-**Estado: CERRADO.** Exporta el mismo subconjunto como XMI 2.1 UTF-8 determinista. Los UUID de ClassForge se serializan en IDs XMI recuperables; el acceptance exige igualdad byte a byte para entradas iguales y round-trip semántico `ProjectDocument -> XMI -> ProjectDocument`. La metadata propietaria de diagramas/perfiles de EA queda fuera del alcance; el smoke manual con la instalación del examen se incorpora a CU-27.
+**Estado: CERRADO.** Exporta el mismo subconjunto como XMI 2.1 UTF-8 determinista. Los UUID de ClassForge se serializan en IDs XMI recuperables; el acceptance exige igualdad byte a byte para entradas iguales y round-trip semántico `ProjectDocument -> XMI -> ProjectDocument`. La metadata propietaria de diagramas/perfiles de EA queda fuera del alcance; CU-27 incorpora un smoke de transición automatizable mediante la Automation Interface de la instalación local de EA.
 
 ### CU-12 — UML a modelo relacional
 **Estado: CERRADO.** Transformación determinista e interna de `UmlModel` a `RelationalModel`. La IR no es visible al usuario, no se persiste y es consumida por CU-13.
@@ -544,7 +545,20 @@ La infraestructura llama.cpp/Qwen2.5 native tools ya existe para CU-08 y CU-19 l
 **Estado: DESCARTADO / FUERA DE ALCANCE.** Se conserva para trazabilidad PUDS, pero la auditoría histórica persistente no se implementará en el alcance actual.
 
 ### CU-27 — Demo reproducible
-Proyecto veterinaria capaz de demostrar de extremo a extremo las capacidades terminadas.
+**Estado: CERRADO.** La fase de Transición conserva un escenario Veterinaria determinista y aislado del almacenamiento normal.
+
+El perfil Spring `demo` crea dos actores (`OWNER` y `EDITOR`) y el proyecto `Veterinaria CU-27` con UUID estable, revisión inicial 1, seis clases y cinco relaciones. El documento se carga desde un fixture XMI 2.1 compartido con `examples/veterinaria-cu27/`.
+
+Scripts oficiales:
+
+- `demo-reset.ps1`: limpia exclusivamente la base demo y deja preparado el siguiente arranque manual;
+- `demo-start.ps1`: valida perfil/fixture y muestra los comandos de arranque manual, sin abrir servidores;
+- `demo-stop.ps1`: recordatorio de apagado manual con `Ctrl+C`, sin terminar procesos;
+- `demo-smoke.ps1`: login, proyecto, UML y estado de runtimes;
+- `demo-acceptance.ps1`: regresión final agregada;
+- `demo-ea-smoke.ps1`: import/export real mediante la Automation Interface de Enterprise Architect y revalidación por preview en ClassForge.
+
+**Postcondición:** el examen puede comenzar desde un estado conocido sin modificar `data/classforge`, y todas las capacidades deterministas del pipeline disponen de gates reproducibles.
 
 ### CU-31 — Invitar colaborador
 

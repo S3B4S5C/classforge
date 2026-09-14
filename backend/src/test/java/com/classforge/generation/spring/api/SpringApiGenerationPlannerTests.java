@@ -45,6 +45,47 @@ class SpringApiGenerationPlannerTests {
     }
 
     @Test
+    void stringPrimaryKeySelectedAsUsernameRemainsWritable() {
+        UUID classId = UUID.fromString("90000000-0000-0000-0000-000000000001");
+        UUID usernameId = UUID.fromString("90000000-0000-0000-0000-000000000002");
+        UUID passwordId = UUID.fromString("90000000-0000-0000-0000-000000000003");
+        SpringEntityIdModel id = new SpringEntityIdModel(
+                SpringIdKind.SIMPLE,
+                SpringJavaType.STRING,
+                null,
+                List.of(new SpringIdFieldModel(usernameId, "username", "username", SpringJavaType.STRING)),
+                true
+        );
+        SpringEntityModel entity = new SpringEntityModel(
+                classId,
+                "Usuario",
+                "Usuario",
+                "usuario",
+                new SpringInheritanceModel(SpringInheritanceKind.NONE, null, List.of()),
+                id,
+                List.of(
+                        new SpringScalarFieldModel(usernameId, "username", "username", "username", SpringJavaType.STRING, false, true),
+                        new SpringScalarFieldModel(passwordId, "password", "password", "password", SpringJavaType.STRING, false, false)
+                ),
+                List.of(), List.of(), List.of(), List.of()
+        );
+        SpringGenerationModel model = new SpringGenerationModel(
+                "1.0", "demo", "com.example.demo", "DemoApplication", "21", "4.0.8", "9.2.0",
+                List.of(entity),
+                List.of(new SpringRepositoryModel("UsuarioRepository", "Usuario", "String", "java.lang.String", false))
+        );
+
+        SpringApiEntityModel auth = planner.plan(
+                model,
+                SpringBootGenerationOptions.authenticated(false, classId, usernameId, passwordId)
+        ).authEntity();
+
+        assertNotNull(auth);
+        assertTrue(auth.id().automaticallyGenerated());
+        assertTrue(auth.requestFields().stream().anyMatch(field -> field.sourceAttributeId().equals(usernameId)));
+    }
+
+    @Test
     void authFailsClosedForStaleOrNonStringCredentialSelection() {
         Fixture fixture = fixture();
         SpringApiGenerationException stale = assertThrows(
