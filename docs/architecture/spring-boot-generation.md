@@ -141,3 +141,7 @@ Acceptance: `generatedAngularAcceptance`.
 Cuando la API está habilitada, `SpringProjectRenderer` añade `mobile/` mediante `FlutterMobileRenderer` a partir del mismo Domain Manifest/contrato API usados por CU-17. El proyecto es Flutter independiente del Angular web; genera páginas específicas por entidad, dashboard, relaciones, Simple/Auth y reutiliza el mismo color primario de exportación.
 
 Auth usa `flutter_secure_storage`; Android es la plataforma formalmente aceptada mediante `generatedFlutterAcceptance` (`flutter analyze`, `flutter test`, `flutter build apk --debug`).
+
+## CU-19 — Assistant de datos en el mismo ZIP
+
+Los exports API incluyen un Assistant Spring generado y clientes Angular/Flutter. Spring expone `/api/assistant/plan`, `/api/assistant/voice` y `/api/assistant/apply`, reutiliza por defecto llama.cpp/Qwen en `127.0.0.1:8092` y whisper.cpp en `127.0.0.1:8093`, y grounded-valida native tool calls contra metadata derivada del Domain Manifest. Las consultas pueden ejecutarse al planificar; las mutaciones permanecen pendientes en memoria y solo se ejecutan mediante token opaco + `apply`.

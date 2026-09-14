@@ -1,6 +1,6 @@
 # Arquitectura de ClassForge
 
-**Estado:** arquitectura ejecutable en fase de Construcción; Ciclos 1–7 cerrados; CU-18 cerrado.
+**Estado:** arquitectura ejecutable en fase de Construcción; Ciclos 1–8 cerrados; CU-19 cerrado y CU-20..23 absorbidos.
 
 ## Fuente de verdad
 
@@ -47,6 +47,7 @@ ProjectDocument
 | `domain-manifest-generation.md` | contrato semántico `domain-manifest.json` | CU-16 implementado y aceptado |
 | `angular-frontend-generation.md` | frontend Angular específico por entidad + dashboard/Auth/theme | CU-17 implementado y aceptado |
 | `flutter-mobile-generation.md` | Flutter mobile específico por entidad + dashboard/Auth/theme + Android | CU-18 implementado y aceptado |
+| `generated-assistant-generation.md` | Assistant de datos chat/voz, Whisper/Qwen native tools, grounding y preview/apply | CU-19 implementado y aceptado |
 | `api-validation-errors.md` | contrato de errores | implementado |
 | `command-bus.md` | comandos y Undo/Redo | implementado |
 | `authentication-and-ownership.md` | auth y aislamiento | implementado |
@@ -77,6 +78,8 @@ ProjectDocument
 14. OpenAPI y Postman son proyecciones deterministas del mismo `SpringApiContract`; no se derivan por introspección runtime.
 15. CU-16 genera `domain-manifest.json` como proyección semántica de los planes canónicos, preservando UUIDs y operationIds sin parsear artefactos generados.
 16. CU-17 genera componentes Angular específicos desde Domain Manifest/contrato API; el theme primario es una opción de exportación, no estado UML.
+17. CU-18 genera Flutter como cliente hermano de Angular desde el mismo contrato.
+18. CU-19 reutiliza los runtimes Whisper/Qwen locales desde el Spring generado; el LLM propone native tools y Java grounded-valida antes de ejecutar. Las mutaciones solo se ejecutan mediante preview token + apply.
 
 ## Arquitectura todavía no implementada
 

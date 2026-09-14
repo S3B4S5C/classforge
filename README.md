@@ -8,7 +8,7 @@ La visión completa del producto está en `docs/product/product.md`. El estado r
 
 ## Estado actual
 
-**Fase de Construcción — Ciclos 1–7 CERRADOS; CU-18 CERRADO.**
+**Fase de Construcción — Ciclos 1–8 CERRADOS; CU-19 CERRADO (absorbe CU-20..23).**
 
 En ClassForge llamamos **Ciclo** a una **iteración PUDS**.
 
@@ -36,7 +36,8 @@ El incremento ejecutable actual incluye:
 - CU-15 OpenAPI/Postman: `openapi.yaml` 3.0.3 + `postman_collection.json` 2.1 deterministas desde un contrato HTTP canónico;
 - CU-16 Domain Manifest: `domain-manifest.json` schema 1.0 determinista con UUIDs estables, IDs, atributos, relaciones, herencia, capacidades, operationIds y metadata Auth;
 - CU-17 frontend web Angular: SPA standalone dentro de `frontend/`, dashboard, componentes específicos por entidad, CRUD/relaciones, Simple/Auth y color primario seleccionable;
-- CU-18 frontend mobile Flutter: app independiente dentro de `mobile/`, dashboard, pantallas específicas por entidad, Simple/Auth, almacenamiento seguro de JWT y Android validado.
+- CU-18 frontend mobile Flutter: app independiente dentro de `mobile/`, dashboard, pantallas específicas por entidad, Simple/Auth, almacenamiento seguro de JWT y Android validado;
+- CU-19 interacción con datos mediante chat y voz en la aplicación generada: Whisper + Qwen/llama.cpp locales, native tool calling, grounding Java, consultas directas y mutaciones con preview/token/apply.
 
 También están implementados como infraestructura transversal:
 
@@ -48,7 +49,6 @@ También están implementados como infraestructura transversal:
 Aún no están implementados:
 
 - CU-10/11 XMI Enterprise Architect;
-- CU-19..23 voz sobre la aplicación generada;
 - CU-26 auditoría histórica completa;
 - CU-27 demo reproducible formal;
 
@@ -166,11 +166,12 @@ Un posible archivo `*.classforge` continúa siendo un formato portable futuro, n
 
 ## Próximo hito
 
-Los **Ciclos 1–7 están formalmente CERRADOS**. **CU-18 — frontend mobile Flutter** está CERRADO con `flutter analyze`, `flutter test` y `flutter build apk --debug` sobre Simple/Auth. El siguiente candidato es **CU-19 — consultar datos mediante voz sobre la aplicación generada**.
+Los **Ciclos 1–8 están formalmente CERRADOS**. **CU-19 — interacción con datos mediante lenguaje natural y voz** está CERRADO y absorbe CU-20..23. El siguiente candidato funcional es **CU-26 — registrar cambios del proyecto**; CU-24/25 continúan como infraestructura local ya reutilizada por CU-08 y CU-19.
 
 La evidencia de cierre está en:
 
 - CU-09: `docs/evidence/cu09/cu09-closure-report.md`;
 - CU-13: `docs/evidence/cu13/cu13-closure-report.md` y `docs/evidence/cu13/cu13-acceptance.json`.
 - CU-17: `docs/evidence/cu17/cu17-closure-report.md` y `docs/evidence/cu17/cu17-acceptance.json`;
-- CU-18: `docs/evidence/cu18/cu18-closure-report.md` y `docs/evidence/cu18/cu18-acceptance.json`.
+- CU-18: `docs/evidence/cu18/cu18-closure-report.md` y `docs/evidence/cu18/cu18-acceptance.json`;
+- CU-19: `docs/evidence/cu19/cu19-closure-report.md` y `docs/evidence/cu19/cu19-acceptance.json`.

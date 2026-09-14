@@ -625,7 +625,15 @@ CU-15 entrega solamente:
 - `openapi.yaml`;
 - `postman_collection.json`.
 
-CU-16 añade `domain-manifest.json` schema v1 al mismo ZIP. Conserva UUIDs estables, IDs, atributos, relaciones, herencia, capacidades, operationIds y Auth, y se valida contra el contrato CU-15. CU-17 consume ese contrato y genera `frontend/`: Angular standalone, dashboard, componentes específicos por entidad, Simple/Auth y color primario configurable. CU-18 genera un proyecto Flutter independiente desde el mismo Domain Manifest/API canónica; no empaqueta Angular mediante Capacitor.
+CU-16 añade `domain-manifest.json` schema v1 al mismo ZIP. Conserva UUIDs estables, IDs, atributos, relaciones, herencia, capacidades, operationIds y Auth, y se valida contra el contrato CU-15. CU-17 y CU-18 son clientes hermanos: generan respectivamente `frontend/` Angular y `mobile/` Flutter desde el mismo Domain Manifest/API canónica. CU-19 añade un Assistant compartido por ambos clientes; el Spring generado reutiliza Whisper/Qwen locales y mantiene la autoridad de grounding/ejecución.
+
+---
+
+## 12.1 Assistant de la aplicación generada (CU-19)
+
+CU-19 fusiona los antiguos CU-19..23 en una sola capacidad de interacción con datos por chat y voz. El backend Spring generado llama a Whisper en `127.0.0.1:8093` y Qwen/llama.cpp en `127.0.0.1:8092`; Angular y Flutter nunca contactan directamente esos runtimes. Qwen propone native tool calls y Java valida contra Domain Manifest antes de consultar o mutar. QUERY/GET/COUNT ejecutan directamente; CREATE/UPDATE/relaciones/DELETE requieren preview sanitizado y un token opaco consumido por `apply`.
+
+CU-20, CU-21, CU-22 y CU-23 se conservan como trazabilidad pero quedan absorbidos por CU-19.
 
 ---
 
@@ -639,10 +647,11 @@ El docente podrá solicitar un frontend web o móvil, por lo que el generador de
 
 ### Estrategia elegida
 
-Mantener **una sola base tecnológica**:
+Mantener **dos clientes generados independientes sobre el mismo contrato canónico**:
 
 - Angular para Web;
-- Angular para web y Flutter para Mobile/Android.
+- Flutter para Mobile/Android;
+- Spring generado como backend común, incluido el Assistant CU-19.
 
 Flujo:
 

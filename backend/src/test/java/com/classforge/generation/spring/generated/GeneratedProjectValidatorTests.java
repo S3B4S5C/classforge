@@ -144,6 +144,25 @@ class GeneratedProjectValidatorTests {
     }
 
     @Test
+    void allowsGeneratedAssistantRuntimeSpringPlaceholders() {
+        GeneratedProject assistantRuntime = withExtra(
+                validProject(),
+                file(
+                        "src/main/java/com/example/demo/assistant/AssistantRuntimeConfig.java",
+                        "package com.example.demo.assistant;\n"
+                                + "class AssistantRuntimeConfig {\n"
+                                + "  String llama = \"${app.assistant.llama-url:http://127.0.0.1:8092}\";\n"
+                                + "  String model = \"${app.assistant.llama-model:local-model}\";\n"
+                                + "  String whisper = \"${app.assistant.whisper-url:http://127.0.0.1:8093}\";\n"
+                                + "  String language = \"${app.assistant.whisper-language:es}\";\n"
+                                + "  String api = \"${app.assistant.api-base-url:http://127.0.0.1:8080}\";\n"
+                                + "}\n"
+                )
+        );
+        assertDoesNotThrow(() -> validator.validate(assistantRuntime));
+    }
+
+    @Test
     void rejectsUnresolvedFreeMarkerButAllowsGeneratedRuntimeAndWrapperExpressions() {
         assertCode(
                 replace(validProject(), "README.md", file("README.md", "${model.basePackage}\n")),

@@ -122,7 +122,7 @@ Además se ejecutan regresiones CU-13/CU-14/CU-15/CU-16, suite backend completa,
 ## Fuera de alcance
 
 - Flutter/Android: CU-18, como proyecto móvil independiente (no empaquetado de Angular).
-- IA/voz de la aplicación generada: CU-19..23.
+- IA/voz de la aplicación generada: CU-19.
 - roles/refresh token;
 - dashboards semánticos o BI;
 - personalización visual distinta del color primario;

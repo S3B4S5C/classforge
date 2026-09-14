@@ -13,7 +13,7 @@
 | UML-07 | Secuencia voz a UML | Whisper, Qwen native tools, plan, BATCH, apply | CU08 | PENDIENTE |
 | UML-08 | Despliegue offline/LAN | navegador, Spring, llama, whisper | CU06, CU08, CU24, CU25 | PENDIENTE |
 | UML-09 | Componentes de generación | pipeline de generadores | CU12..18 | FUTURO |
-| UML-10 | Secuencia voz app generada | DomainManifest a API | CU19..23 | FUTURO |
+| UML-10 | Secuencia voz app generada | Whisper/Qwen native tools, DomainManifest, preview/apply | CU19 | PENDIENTE |
 
 ## Prioridad
 

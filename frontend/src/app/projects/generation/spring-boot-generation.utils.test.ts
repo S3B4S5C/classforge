@@ -318,3 +318,19 @@ test('advertises CU-18 Flutter Android generation without adding a new mode or c
   assert.match(dialog, /interfaces Angular y Flutter/i);
   assert.doesNotMatch(dialog, /formControlName="(?:flutter|mobileMode|mobilePrimaryColor)"/);
 });
+
+test('advertises CU-19 generated application assistant without adding a new mode', () => {
+  const dialog = readFileSync(
+    new URL(
+      '../dialogs/spring-boot-export-dialog/spring-boot-export-dialog.component.ts',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+
+  assert.match(dialog, /Assistant de chat y voz/i);
+  assert.match(dialog, /Whisper/i);
+  assert.match(dialog, /Qwen\/llama\.cpp/i);
+  assert.match(dialog, /preview\/confirmacion/i);
+  assert.doesNotMatch(dialog, /formControlName="(?:assistant|llama|whisper|voiceMode)"/);
+});

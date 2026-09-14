@@ -23,6 +23,7 @@ Ciclo 4: CERRADO
 Ciclo 5: CERRADO
 Ciclo 6: CERRADO
 Ciclo 7: CERRADO
+Ciclo 8: CERRADO
 CU-31: CERRADO
 CU-09: CERRADO
 CU-12: CERRADO
@@ -32,10 +33,12 @@ CU-15: CERRADO
 CU-16: CERRADO
 CU-17: CERRADO
 CU-18: CERRADO
+CU-19: CERRADO
+CU-20..23: ABSORBIDOS POR CU-19
 Corte: 13 de septiembre de 2026
 ```
 
-El Ciclo 1 consolidó la arquitectura ejecutable base. El Ciclo 2 cerró colaboración e imagen; el Ciclo 3 cerró CU-12/13/14; el Ciclo 4 cerró CU-15 (OpenAPI/Postman); el Ciclo 5 cerró CU-16 Domain Manifest; el Ciclo 6 cerró CU-17 Angular y el Ciclo 7 cerró CU-18 Flutter/Android.
+El Ciclo 1 consolidó la arquitectura ejecutable base. El Ciclo 2 cerró colaboración e imagen; el Ciclo 3 cerró CU-12/13/14; el Ciclo 4 cerró CU-15 (OpenAPI/Postman); el Ciclo 5 cerró CU-16 Domain Manifest; el Ciclo 6 cerró CU-17 Angular, el Ciclo 7 cerró CU-18 Flutter/Android y el Ciclo 8 cerró CU-19 Assistant de datos, absorbiendo CU-20..23.
 
 ## Fuentes
 
@@ -51,6 +54,7 @@ El Ciclo 1 consolidó la arquitectura ejecutable base. El Ciclo 2 cerró colabor
 - `../evidence/cu16/`: cierre y acceptance de Domain Manifest.
 - `../evidence/cu17/`: cierre y acceptance de Angular generado.
 - `../evidence/cu18/`: cierre y acceptance de Flutter mobile/Android.
+- `../evidence/cu19/`: cierre y acceptance del Assistant generado de chat/voz.
 
 ## Regla de trazabilidad
 
@@ -99,3 +103,6 @@ CU-17 está CERRADO en Ciclo 6: el ZIP generado incluye `frontend/` Angular stan
 
 
 CU-18 está CERRADO en Ciclo 7: `mobile/` Flutter se genera desde Domain Manifest/API canónica, comparte color primario con Angular y valida Android mediante Flutter analyze/test/build APK.
+
+
+CU-19 está CERRADO en Ciclo 8: Spring generado reutiliza Whisper/Qwen locales mediante native tool calling; Angular/Flutter ofrecen chat/voz y las mutaciones requieren preview token + apply. CU-20..23 quedan absorbidos para conservar trazabilidad.

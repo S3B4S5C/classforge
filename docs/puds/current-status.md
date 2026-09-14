@@ -13,19 +13,22 @@ Ciclo 4: CERRADO
 Ciclo 5: CERRADO
 Ciclo 6: CERRADO
 Ciclo 7: CERRADO
+Ciclo 8: CERRADO
 CU-12: CERRADO
 CU-13: CERRADO
 CU-14: CERRADO
-Current increment: C7-cu18-001 CLOSED - frontend mobile Flutter generado y Android aceptado
+Current increment: C8-cu19-001 CLOSED - Assistant de datos generado; CU-20..23 absorbidos
 CU-15: CERRADO
 CU-16: CERRADO
 CU-17: CERRADO
 CU-18: CERRADO
+CU-19: CERRADO
+CU-20..23: ABSORBIDOS POR CU-19
 ```
 
 ## Resumen ejecutivo del corte
 
-Los Ciclos 1–7 están cerrados. El Ciclo 3 completó CU-12, CU-13 y CU-14; el Ciclo 4 cerró CU-15; el Ciclo 5 cerró CU-16; y el Ciclo 6 cerró CU-17 con frontend Angular standalone generado, dashboard, componentes específicos por entidad, Simple/Auth, relaciones, IDs compuestos y color primario seleccionable. El Ciclo 7 cerró CU-18 con Flutter independiente, componentes específicos, Auth seguro y Android aceptado.
+Los Ciclos 1–8 están cerrados. El Ciclo 3 completó CU-12, CU-13 y CU-14; el Ciclo 4 cerró CU-15; el Ciclo 5 cerró CU-16; el Ciclo 6 cerró CU-17 Angular; el Ciclo 7 cerró CU-18 Flutter/Android; y el Ciclo 8 cerró CU-19, Assistant de datos por chat/voz con Whisper/Qwen locales, native tools, grounding Java y preview/apply. CU-20..23 quedan absorbidos por CU-19.
 
 Como antecedente inmediato, el Ciclo 2 se cerró después de resolver sus dos riesgos principales:
 
@@ -58,6 +61,8 @@ CU-09 queda funcionalmente aceptado el 5 de septiembre de 2026. La imagen nunca 
 | CU-16 Generar Domain Manifest | CERRADO | `domain-manifest.json` schema 1.0 determinista, referencialmente validado y coherente con OpenAPI/Postman |
 | CU-17 Generar frontend web Angular | CERRADO | `frontend/` standalone con dashboard, componentes específicos, CRUD/relaciones, Simple/Auth y production-build acceptance |
 | CU-18 Generar frontend mobile Flutter | CERRADO | `mobile/` Flutter con dashboard, páginas específicas, CRUD/relaciones, Simple/Auth, secure JWT y Android debug-build acceptance |
+| CU-19 Interactuar con datos mediante lenguaje natural y voz | CERRADO | Assistant Spring + Angular/Flutter; Whisper/Qwen native tools, grounding Java, reads directos y mutaciones preview/apply |
+| CU-20..23 | ABSORBIDOS POR CU-19 | creación, relaciones, actualización y eliminación pasan a ser intents de CU-19 |
 
 ## CU-09 — estado final
 
@@ -242,10 +247,10 @@ Evidencia: `docs/evidence/cu13/cu13-closure-report.md` y `docs/evidence/cu13/cu1
 2. La generalización estadística de Imagen -> UML sobre múltiples pizarras reales puede reforzarse con un conjunto adicional de fotografías.
 3. XMI/Enterprise Architect no está implementado.
 4. `RelationalModel` no tiene UI ni se persiste. CU-13 está CERRADO: exporta un backend Spring Boot/JPA reproducible, con fallback PK explícito y no persistente, validación estructural previa al ZIP y acceptance que compila los proyectos generados y carga Spring sobre H2.
-5. CU-14 está cerrado con dos modos explícitos. CRUD simple no genera seguridad; Auth exige entidad + atributos STRING de usuario/password, hashea passwords con BCrypt, excluye password de responses, expone bootstrap inicial + login y protege el resto con JWT. CU-17 ya genera el frontend web; el asistente de voz pertenece a casos posteriores.
+5. CU-14 está cerrado con dos modos explícitos. CRUD simple no genera seguridad; Auth exige entidad + atributos STRING de usuario/password, hashea passwords con BCrypt, excluye password de responses, expone bootstrap inicial + login y protege el resto con JWT. CU-17 genera el frontend web y CU-19 ya incorpora el Assistant de chat/voz en los clientes generados, reutilizando Whisper/Qwen locales.
 6. Auditoría histórica completa CU-26 permanece pendiente.
 7. `docs/uml/` conserva el catálogo de diagramas académicos pendientes de elaboración/presentación final.
 
 ## Próximo paso PUDS
 
-Ciclos 3, 4, 5, 6 y 7 están CERRADOS. CU-18 queda cerrado con evidencia en `docs/evidence/cu18/`; el siguiente candidato es CU-19 — consultar datos mediante voz sobre la aplicación generada.
+Ciclos 3, 4, 5, 6, 7 y 8 están CERRADOS. CU-19 queda cerrado con evidencia en `docs/evidence/cu19/` y absorbe CU-20..23. El siguiente candidato funcional es CU-26 — registrar cambios del proyecto; CU-24/25 son infraestructura local ya reutilizada.

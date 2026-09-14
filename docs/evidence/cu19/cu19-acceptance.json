@@ -1,0 +1,17 @@
+{
+  "case": "CU-19",
+  "cycle": 8,
+  "status": "PASS",
+  "acceptanceTask": "generatedAssistantAcceptance",
+  "absorbs": ["CU-20", "CU-21", "CU-22", "CU-23"],
+  "modes": ["SIMPLE_CRUD", "AUTH_INFORMATION_SYSTEM"],
+  "intents": ["QUERY", "COUNT", "GET", "CREATE", "UPDATE", "DELETE", "SET_RELATION", "ADD_RELATION", "REMOVE_RELATION"],
+  "llamaDefault": "http://127.0.0.1:8092",
+  "whisperDefault": "http://127.0.0.1:8093",
+  "nativeToolCalling": true,
+  "javaGrounding": true,
+  "mutationPreviewToken": true,
+  "sensitivePreviewMasked": true,
+  "clients": ["Angular", "Flutter"],
+  "regressions": ["CU-13", "CU-14", "CU-15", "CU-16", "CU-17", "CU-18"]
+}

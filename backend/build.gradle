@@ -362,6 +362,46 @@ tasks.register('generatedFlutterAcceptance', Test) {
     def flutterCommand = project.findProperty('flutterCommand')?.toString() ?: 'flutter'
     systemProperty 'spring.flutter.acceptance.command', flutterCommand
 
+    // Windows CU-19 hardening: keep JUnit @TempDir on the repository volume.
+    // Kotlin incremental caches for Flutter plugins cannot relativize source files
+    // across different drive roots (for example F:\FlutterPubCache vs C:\Temp).
+    def flutterAcceptanceTemp = layout.buildDirectory.dir('tmp/generated-flutter-acceptance').get().asFile
+    doFirst {
+        flutterAcceptanceTemp.mkdirs()
+    }
+    systemProperty 'java.io.tmpdir', flutterAcceptanceTemp.absolutePath
+
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+}
+
+// C8-CU19: validate generated natural-language/voice assistant for Simple and Auth exports.
+tasks.register('generatedAssistantAcceptance', Test) {
+    group = 'verification'
+    description = 'Generates CU-19 SIMPLE_CRUD and AUTH_INFORMATION_SYSTEM assistants, validates privacy/determinism, and builds both exported Spring projects.'
+
+    dependsOn testClasses
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+    useJUnitPlatform()
+    maxParallelForks = 1
+    filter {
+        includeTestsMatching 'com.classforge.generation.spring.acceptance.GeneratedAssistantAcceptanceIntegrationTest'
+    }
+
+    systemProperty 'spring.generated.assistant.acceptance.enabled', 'true'
+    systemProperty 'spring.generated.assistant.acceptance.gradle-user-home', gradle.gradleUserHomeDir.absolutePath
+
+    def generatedJavaHome = providers.gradleProperty('generatedJavaHome')
+    if (generatedJavaHome.isPresent()) {
+        systemProperty 'spring.generated.assistant.acceptance.java-home', generatedJavaHome.get()
+    }
+
     testLogging {
         events 'passed', 'failed', 'skipped'
         showStandardStreams = true

@@ -37,6 +37,7 @@ Ciclo 4: CERRADO
 Ciclo 5: CERRADO
 Ciclo 6: CERRADO
 Ciclo 7: CERRADO
+Ciclo 8: CERRADO
 CU-31: CERRADO
 CU-09: CERRADO
 CU-12: CERRADO
@@ -46,7 +47,9 @@ CU-15: CERRADO
 CU-16: CERRADO
 CU-17: CERRADO
 CU-18: CERRADO
-Incremento actual: C7-cu18-001 CLOSED
+CU-19: CERRADO
+CU-20..23: ABSORBIDOS POR CU-19
+Incremento actual: C8-cu19-001 CLOSED
 Fecha: 13-09-2026
 ```
 
@@ -112,6 +115,11 @@ CU-16 está implementado y aceptado. Sus fuentes principales son:
 5. `puds/iterations/cycle-05/C5-cu16-001-domain-manifest-generation.md` — implementación y acceptance.
 6. `evidence/cu16/` — cierre y evidencia estructurada.
 7. `../openspec/changes/cu16-domain-manifest/` — requisitos y tareas cerradas.
+
+
+## CU-19 — cerrado
+
+CU-19 unifica la interacción de consulta/creación/relaciones/actualización/eliminación mediante chat y voz. Reutiliza Whisper/Qwen locales a través del Spring generado, native tool calling, grounding Java y preview/apply para mutaciones. CU-20..23 quedan absorbidos por CU-19. Fuentes principales: `architecture/generated-assistant-generation.md`, `puds/cycles/cycle-08-generated-assistant.md`, `puds/iterations/cycle-08/C8-cu19-001-generated-assistant.md` y `evidence/cu19/`.
 
 ## Composición prevista del Word
 

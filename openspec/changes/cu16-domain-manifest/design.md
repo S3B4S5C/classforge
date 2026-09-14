@@ -11,4 +11,4 @@ The manifest is planned directly from `SpringGenerationModel`, `SpringApiGenerat
 
 It is an immutable generated projection, not a persisted or manually edited source of truth.
 
-CU-17 Angular generation and CU-19..23 assistant execution are consumers and remain out of scope.
+CU-17 Angular generation and CU-19 (posteriormente fusionó CU-20..23) assistant execution are consumers and remain out of scope.

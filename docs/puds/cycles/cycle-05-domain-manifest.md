@@ -65,7 +65,7 @@ CU-16 sólo podrá cerrarse si:
 
 - generación Angular (CU-17);
 - Flutter mobile (CU-18);
-- ejecución de lenguaje natural/voz (CU-19..23);
+- ejecución de lenguaje natural/voz (CU-19);
 - edición manual del manifest;
 - inferencia LLM de aliases/plurales;
 - nuevas reglas de negocio o roles.

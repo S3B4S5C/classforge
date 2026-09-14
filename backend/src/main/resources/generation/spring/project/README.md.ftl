@@ -37,6 +37,14 @@ flutter run
 ```
 
 Validate it with `flutter analyze`, `flutter test` and `flutter build apk --debug`.
+
+## Assistant: chat and voice
+
+The generated Spring backend exposes `/api/assistant/plan`, `/api/assistant/voice` and `/api/assistant/apply`. Angular and Flutter only call these Spring endpoints. Spring reuses the same local ClassForge-style runtimes by default: llama.cpp/Qwen at `http://127.0.0.1:8092` and whisper.cpp at `http://127.0.0.1:8093`.
+
+Text and Whisper transcripts converge on the same native-tool planner. Read operations execute immediately. CREATE, UPDATE, relation changes and DELETE return a sanitized preview plus an opaque, short-lived token; only `/api/assistant/apply` executes that pending mutation. Sensitive values such as passwords are masked in previews.
+
+Runtime overrides are available through `LLAMA_URL`, `LLAMA_MODEL`, `WHISPER_URL`, `WHISPER_LANGUAGE` and `APP_API_BASE_URL`. `APP_API_BASE_URL` must point to this generated Spring API when it does not run on port 8080.
 </#if><#if api.authEnabled()>## Authentication
 
 Authentication is enabled. `/api/auth/login` accepts `username` and `password`. `/api/auth/bootstrap` is a one-time public bootstrap endpoint that only works while the selected authentication table is empty; it accepts the generated `${api.authEntity().className}Request` body, hashes the selected password field with BCrypt and returns a JWT.

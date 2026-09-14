@@ -27,3 +27,4 @@ La evidencia técnica granular vive en `../iterations/`.
 | `cycle-05-domain-manifest.md` | Construcción | CERRADO | CU-16 Domain Manifest semántico |
 | `cycle-06-angular-frontend.md` | Construcción | CERRADO | CU-17 frontend Angular generado |
 | `cycle-07-flutter-mobile.md` | Construcción | CERRADO | CU-18 frontend Flutter mobile + Android |
+| `cycle-08-generated-assistant.md` | Construcción | CERRADO | CU-19 Assistant de datos chat/voz; CU-20..23 absorbidos |

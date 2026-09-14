@@ -6,6 +6,7 @@ import com.classforge.generation.spring.api.SpringApiGenerationPlanner;
 import com.classforge.generation.spring.api.contract.SpringApiContract;
 import com.classforge.generation.spring.api.contract.SpringApiContractPlanner;
 import com.classforge.generation.spring.domain.DomainManifestPlan;
+import com.classforge.generation.spring.assistant.GeneratedAssistantRenderer;
 import com.classforge.generation.spring.domain.DomainManifestPlanner;
 import com.classforge.generation.spring.application.SpringBootGenerationOptions;
 import com.classforge.generation.spring.generated.GeneratedFile;
@@ -46,6 +47,7 @@ public class SpringProjectRenderer {
     private final DomainManifestRenderer domainManifestRenderer = new DomainManifestRenderer();
     private final AngularFrontendRenderer angularFrontendRenderer = new AngularFrontendRenderer();
     private final FlutterMobileRenderer flutterMobileRenderer = new FlutterMobileRenderer();
+    private final GeneratedAssistantRenderer generatedAssistantRenderer = new GeneratedAssistantRenderer();
 
     public SpringProjectRenderer(SpringFreeMarkerRenderer templates, GeneratedProjectValidator validator) {
         this.templates = templates;
@@ -131,6 +133,7 @@ public class SpringProjectRenderer {
                     model.basePackage(),
                     options.primaryColor()
             ));
+            files.addAll(generatedAssistantRenderer.render(model, manifest));
             staticFile(files, "mobile/android/gradlew", "generation/spring/static/gradlew", GeneratedFileType.TEXT);
             staticFile(files, "mobile/android/gradlew.bat", "generation/spring/static/gradlew.bat", GeneratedFileType.TEXT);
             staticFile(files, "mobile/android/gradle/wrapper/gradle-wrapper.jar", "generation/spring/static/gradle/wrapper/gradle-wrapper.jar", GeneratedFileType.BINARY);

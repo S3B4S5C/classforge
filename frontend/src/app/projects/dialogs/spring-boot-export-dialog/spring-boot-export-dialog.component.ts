@@ -266,8 +266,11 @@ export interface SpringBootExportDialogData {
           services y controllers, ademas de openapi.yaml, una coleccion Postman y
           domain-manifest.json con la semantica del dominio, un frontend Angular web y
           una app Flutter mobile para Android, ambos con dashboard y componentes
-          especificos por entidad. En Auth tambien incluye Security, BCrypt, bootstrap
-          inicial, login, JWT y proteccion de navegacion.
+          especificos por entidad. CU-19 agrega un Assistant de chat y voz en ambas
+          interfaces: el Spring generado reutiliza Whisper y Qwen/llama.cpp locales
+          para planificar consultas y mutaciones con preview/confirmacion. En Auth
+          tambien incluye Security, BCrypt, bootstrap inicial, login, JWT y proteccion
+          de navegacion.
         </p>
       </div>
     </mat-dialog-content>

@@ -37,4 +37,4 @@ Cerrar la generación mobile como proyecto Flutter independiente y Android forma
 
 ## Resultado
 
-CU-18 y Ciclo 7 quedan CERRADOS. El siguiente candidato es CU-19 — consultar datos mediante voz sobre la aplicación generada.
+CU-18 y Ciclo 7 quedan CERRADOS. El siguiente incremento ejecutado fue CU-19 — interacción mediante lenguaje natural y voz, que absorbió CU-20..23.

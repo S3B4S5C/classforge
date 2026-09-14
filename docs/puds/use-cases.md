@@ -35,7 +35,7 @@ Usuario autenticado cuyo `User.id` coincide con `Project.ownerId`. Conserva admi
 Usuario autenticado con `ProjectMembership` EDITOR aceptada. Puede abrir, editar, guardar y validar proyectos compartidos; no administra ownership ni invitaciones.
 
 ### Usuario de aplicación generada
-Actor futuro de CU-19..23. No debe confundirse con el usuario del CASE ClassForge.
+Actor de CU-19. Interactúa con el sistema generado por formulario, chat o voz; no debe confundirse con el usuario del CASE ClassForge.
 
 ### Sistema
 Participa en validación, persistencia, auditoría y generación.
@@ -69,11 +69,11 @@ Participa en validación, persistencia, auditoría y generación.
 | CU-16 | Generar Domain Manifest | CERRADO |
 | CU-17 | Generar frontend web Angular | CERRADO |
 | CU-18 | Generar frontend mobile Flutter | CERRADO |
-| CU-19 | Consultar datos mediante voz | PLANIFICADO |
-| CU-20 | Crear datos mediante voz | PLANIFICADO |
-| CU-21 | Ejecutar operación relacionada mediante voz | PLANIFICADO |
-| CU-22 | Actualizar información mediante voz | PLANIFICADO |
-| CU-23 | Eliminar información mediante voz | PLANIFICADO |
+| CU-19 | Interactuar con datos mediante lenguaje natural y voz | CERRADO |
+| CU-20 | Crear datos mediante voz | ABSORBIDO POR CU-19 |
+| CU-21 | Ejecutar operación relacionada mediante voz | ABSORBIDO POR CU-19 |
+| CU-22 | Actualizar información mediante voz | ABSORBIDO POR CU-19 |
+| CU-23 | Eliminar información mediante voz | ABSORBIDO POR CU-19 |
 | CU-24 | Ejecutar STT local | INFRAESTRUCTURA |
 | CU-25 | Ejecutar IA local | INFRAESTRUCTURA |
 | CU-26 | Registrar cambios del proyecto | PLANIFICADO |
@@ -429,7 +429,7 @@ Flujo:
 **Actor:** Sistema.
 **Disparador:** exportación exitosa de un proyecto con API CU-14.
 
-**Objetivo:** producir `domain-manifest.json` schema `1.0` como proyección semántica determinista para CU-17 y CU-19..23, sin crear una segunda fuente de verdad.
+**Objetivo:** producir `domain-manifest.json` schema `1.0` como proyección semántica determinista para CU-17/CU-18/CU-19, sin crear una segunda fuente de verdad.
 
 **Autoridad:**
 
@@ -491,7 +491,7 @@ En `SIMPLE_CRUD` no se genera Auth. En `AUTH_INFORMATION_SYSTEM` se añaden logi
 
 **Postcondición:** el ZIP contiene `frontend/` y los frontends representativos Simple/Auth pasan `ng build` de producción.
 
-**Fuera de alcance:** Flutter mobile (CU-18), IA/voz (CU-19..23), roles/refresh y dashboards de negocio inferidos.
+**Fuera de alcance:** Flutter mobile (CU-18), IA/voz (CU-19), roles/refresh y dashboards de negocio inferidos.
 
 ### CU-18 — Generar frontend mobile Flutter
 
@@ -505,20 +505,29 @@ En `SIMPLE_CRUD` no se genera Auth. En `AUTH_INFORMATION_SYSTEM` se añaden boot
 
 **Postcondición:** el ZIP contiene `mobile/` y los frontends representativos Simple/Auth pasan `flutter analyze`, `flutter test` y build APK debug.
 
-### CU-19 — Consultar datos mediante voz
-Ejemplo: "Quiero ver los últimos 5 animales".
+### CU-19 — Interactuar con datos mediante lenguaje natural y voz
+
+**Estado: CERRADO.**
+
+**Objetivo:** permitir que el usuario de la aplicación generada consulte y modifique datos mediante chat o voz reutilizando los mismos runtimes locales de ClassForge: whisper.cpp para STT y Qwen/llama.cpp con native tool calling para planificación.
+
+Texto y voz convergen en el mismo planner. El Spring generado es la única capa que contacta `127.0.0.1:8092`/`:8093`; Angular y Flutter consumen `/api/assistant/plan`, `/voice` y `/apply`. Java mantiene la autoridad mediante metadata derivada del Domain Manifest, validación de entidades/campos/tipos/relaciones/capacidades y resolución fail-closed.
+
+Intents soportados: `QUERY`, `COUNT`, `GET`, `CREATE`, `UPDATE`, `DELETE`, `SET_RELATION`, `ADD_RELATION`, `REMOVE_RELATION`. Las consultas se ejecutan inmediatamente. Las mutaciones retornan un resumen sanitizado y un preview token opaco con TTL; únicamente `/apply` ejecuta la operación. Campos sensibles como password se enmascaran y no viajan como comando crudo al cliente.
+
+**Postcondición:** los exports Simple/Auth incluyen Assistant generado en Spring + Angular + Flutter, son deterministas, sus backends compilados pasan tests y las regresiones CU-13..18 permanecen verdes.
 
 ### CU-20 — Crear datos mediante voz
-Ejemplo: "Añade un animal llamado Luna de especie perro".
+**Estado: ABSORBIDO POR CU-19.** El escenario CREATE forma parte del intent `CREATE` con preview y confirmación.
 
 ### CU-21 — Operación relacionada mediante voz
-Ejemplo: "Añade una cita para Luna mañana a las 4".
+**Estado: ABSORBIDO POR CU-19.** Las operaciones de relación se cubren mediante `SET_RELATION`, `ADD_RELATION` y `REMOVE_RELATION`; no se inventan operaciones de negocio no modeladas.
 
 ### CU-22 — Actualizar información mediante voz
-Resolver registro, campo y nuevo valor antes de ejecutar update.
+**Estado: ABSORBIDO POR CU-19.** El intent `UPDATE` exige resolución no ambigua y confirmación.
 
 ### CU-23 — Eliminar información mediante voz
-Requiere confirmación antes de acciones destructivas.
+**Estado: ABSORBIDO POR CU-19.** `DELETE` exige resolución no ambigua, preview sanitizado y confirmación explícita.
 
 ### CU-24 — STT local
 La infraestructura whisper.cpp ya existe para CU-08 y debe reutilizarse en la futura aplicación generada.
@@ -582,10 +591,10 @@ CU01 -> CU02 -> CU03 -> CU04
                                                    |
                                                    +-> CU17/18
                                                         |
-                                                        +-> CU19..23
+                                                        +-> CU19 (absorbe CU20..23)
 ```
 
-CU24/25 son infraestructura reutilizable.
+CU24/25 son infraestructura reutilizable y CU-19 las consume sin duplicar los procesos locales Whisper/Qwen.
 
 ## 8. Definition of Done
 

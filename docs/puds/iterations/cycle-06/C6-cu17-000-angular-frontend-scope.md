@@ -21,4 +21,4 @@ Solo muestra métricas que el contrato realmente garantiza: `count` por entidad.
 
 ## Límite
 
-Flutter mobile/Android corresponde a CU-18; se genera como proyecto independiente del Angular web. Voz/IA de la aplicación generada corresponde a CU-19..23.
+Flutter mobile/Android corresponde a CU-18; se genera como proyecto independiente del Angular web. Voz/IA de la aplicación generada corresponde a CU-19 (posteriormente fusionó CU-20..23).

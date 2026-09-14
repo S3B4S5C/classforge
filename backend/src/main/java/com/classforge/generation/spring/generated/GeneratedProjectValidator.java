@@ -57,7 +57,11 @@ public class GeneratedProjectValidator {
             "Set", "LinkedHashSet", "Serializable", "Object"
     );
     private static final Set<String> ALLOWED_RUNTIME_PLACEHOLDERS = Set.of(
-            "DB_URL", "DB_USERNAME", "DB_PASSWORD", "JWT_SECRET", "app.security.jwt-secret", "app.security.jwt-expiration-seconds"
+            "DB_URL", "DB_USERNAME", "DB_PASSWORD", "JWT_SECRET",
+            "LLAMA_URL", "LLAMA_MODEL", "WHISPER_URL", "WHISPER_LANGUAGE", "APP_API_BASE_URL",
+            "app.security.jwt-secret", "app.security.jwt-expiration-seconds",
+            "app.assistant.llama-url", "app.assistant.llama-model", "app.assistant.whisper-url",
+            "app.assistant.whisper-language", "app.assistant.api-base-url"
     );
 
     public void validate(GeneratedProject project) {
@@ -172,6 +176,7 @@ public class GeneratedProjectValidator {
         validateDomainManifest(textByPath.get("domain-manifest.json"), openApiOperations, diagnostics);
         validateAngularFrontend(textByPath, textByPath.get("domain-manifest.json"), diagnostics);
         validateFlutterMobile(textByPath, textByPath.get("domain-manifest.json"), diagnostics);
+        validateGeneratedAssistant(textByPath, diagnostics);
     }
 
     private void validateAngularFrontend(
@@ -189,7 +194,10 @@ public class GeneratedProjectValidator {
                 "frontend/src/styles.css",
                 "frontend/src/app/app.component.ts",
                 "frontend/src/app/app.routes.ts",
-                "frontend/src/app/dashboard/dashboard.component.ts"
+                "frontend/src/app/dashboard/dashboard.component.ts",
+                "frontend/src/app/assistant/assistant.service.ts",
+                "frontend/src/app/assistant/browser-wav-recorder.service.ts",
+                "frontend/src/app/assistant/assistant.component.ts"
         );
         for (String path : required) {
             if (!textByPath.containsKey(path)) {
@@ -257,6 +265,15 @@ public class GeneratedProjectValidator {
             if (styles == null || !styles.matches("(?s).*--app-primary:\\s*#[0-9A-F]{6};.*")) {
                 throw new IllegalArgumentException("styles.css must contain the selected #RRGGBB primary color.");
             }
+            String assistantComponent = textByPath.get("frontend/src/app/assistant/assistant.component.ts");
+            if (assistantComponent == null || !assistantComponent.contains("previewToken")
+                    || assistantComponent.contains("pending.command") || assistantComponent.contains("command | json")) {
+                throw new IllegalArgumentException("CU-19 Angular preview must use opaque previewToken and must not expose raw command values.");
+            }
+            String recorder = textByPath.get("frontend/src/app/assistant/browser-wav-recorder.service.ts");
+            if (recorder == null || !recorder.contains("16_000") || !recorder.contains("audio/wav")) {
+                throw new IllegalArgumentException("CU-19 Angular voice capture must emit 16 kHz WAV PCM.");
+            }
         } catch (Exception exception) {
             add(diagnostics, GeneratedProjectDiagnosticCode.ANGULAR_FRONTEND_ARTIFACT_INVALID, "frontend",
                     "Generated Angular frontend is structurally invalid: " + exception.getMessage());
@@ -277,6 +294,8 @@ public class GeneratedProjectValidator {
                 "mobile/lib/core/theme/app_theme.dart",
                 "mobile/lib/core/api/api_client.dart",
                 "mobile/lib/dashboard/dashboard_page.dart",
+                "mobile/lib/assistant/assistant_api.dart",
+                "mobile/lib/assistant/assistant_page.dart",
                 "mobile/android/settings.gradle.kts",
                 "mobile/android/build.gradle.kts",
                 "mobile/android/gradle.properties",
@@ -298,8 +317,9 @@ public class GeneratedProjectValidator {
 
         try {
             String pubspec = textByPath.get("mobile/pubspec.yaml");
-            if (pubspec == null || !pubspec.contains("http:")) {
-                throw new IllegalArgumentException("pubspec.yaml must declare Flutter HTTP dependency.");
+            if (pubspec == null || !pubspec.contains("http:") || !pubspec.contains("record: ^7.1.1")
+                    || !pubspec.contains("path_provider:")) {
+                throw new IllegalArgumentException("pubspec.yaml must declare HTTP + CU-19 voice recording dependencies.");
             }
             String theme = textByPath.get("mobile/lib/core/theme/app_theme.dart");
             if (theme == null || !theme.matches("(?s).*Color\\(0xFF[0-9A-F]{6}\\).*")) {
@@ -353,14 +373,68 @@ public class GeneratedProjectValidator {
                 }
             }
             String manifestText = textByPath.get("mobile/android/app/src/main/AndroidManifest.xml");
-            if (manifestText == null || !manifestText.contains("android.permission.INTERNET")) {
-                throw new IllegalArgumentException("Android manifest must permit HTTP API access.");
+            if (manifestText == null || !manifestText.contains("android.permission.INTERNET")
+                    || !manifestText.contains("android.permission.RECORD_AUDIO")) {
+                throw new IllegalArgumentException("Android manifest must permit HTTP API access and CU-19 microphone capture.");
+            }
+            String assistantPage = textByPath.get("mobile/lib/assistant/assistant_page.dart");
+            if (assistantPage == null || !assistantPage.contains("AudioEncoder.wav") || !assistantPage.contains("sampleRate: 16000")) {
+                throw new IllegalArgumentException("CU-19 Flutter voice capture must use WAV at 16 kHz.");
             }
         } catch (Exception exception) {
             add(diagnostics, GeneratedProjectDiagnosticCode.FLUTTER_MOBILE_ARTIFACT_INVALID, "mobile",
                     "Generated Flutter mobile project is structurally invalid: " + exception.getMessage());
         }
     }
+
+    private void validateGeneratedAssistant(
+            Map<String, String> textByPath,
+            List<GeneratedProjectDiagnostic> diagnostics
+    ) {
+        List<String> names = List.of(
+                "GeneratedAssistantTypes.java",
+                "GeneratedAssistantMetadata.java",
+                "GeneratedAssistantLlamaGateway.java",
+                "GeneratedAssistantWhisperGateway.java",
+                "GeneratedAssistantHttpExecutor.java",
+                "GeneratedAssistantService.java",
+                "GeneratedAssistantController.java"
+        );
+        for (String name : names) {
+            boolean exists = textByPath.keySet().stream().anyMatch(path -> path.endsWith("/assistant/" + name));
+            if (!exists) {
+                add(diagnostics, GeneratedProjectDiagnosticCode.GENERATED_ASSISTANT_ARTIFACT_MISSING, name,
+                        "CU-19 generated Spring assistant artifact is missing.");
+            }
+        }
+        if (names.stream().anyMatch(name -> textByPath.keySet().stream().noneMatch(path -> path.endsWith("/assistant/" + name)))) return;
+        try {
+            String controller = textByPath.entrySet().stream()
+                    .filter(entry -> entry.getKey().endsWith("/assistant/GeneratedAssistantController.java"))
+                    .map(Map.Entry::getValue).findFirst().orElseThrow();
+            String service = textByPath.entrySet().stream()
+                    .filter(entry -> entry.getKey().endsWith("/assistant/GeneratedAssistantService.java"))
+                    .map(Map.Entry::getValue).findFirst().orElseThrow();
+            String llama = textByPath.entrySet().stream()
+                    .filter(entry -> entry.getKey().endsWith("/assistant/GeneratedAssistantLlamaGateway.java"))
+                    .map(Map.Entry::getValue).findFirst().orElseThrow();
+            String whisper = textByPath.entrySet().stream()
+                    .filter(entry -> entry.getKey().endsWith("/assistant/GeneratedAssistantWhisperGateway.java"))
+                    .map(Map.Entry::getValue).findFirst().orElseThrow();
+            if (!controller.contains("/api/assistant") || !controller.contains("/plan") || !controller.contains("/voice") || !controller.contains("/apply"))
+                throw new IllegalArgumentException("CU-19 assistant controller must expose plan/voice/apply under /api/assistant.");
+            if (!service.contains("previewToken") || !service.contains("PREVIEW_TTL") || !service.contains("pending.put"))
+                throw new IllegalArgumentException("Mutations must use expiring opaque preview tokens before apply.");
+            if (!llama.contains("/v1/chat/completions") || !llama.contains("tool_choice") || !llama.contains("route_data_request"))
+                throw new IllegalArgumentException("CU-19 must reuse llama.cpp native tool calling.");
+            if (!whisper.contains("/inference") || !whisper.contains("audio/wav"))
+                throw new IllegalArgumentException("CU-19 must reuse whisper-server WAV transcription.");
+        } catch (Exception exception) {
+            add(diagnostics, GeneratedProjectDiagnosticCode.GENERATED_ASSISTANT_ARTIFACT_INVALID, "assistant",
+                    "Generated CU-19 assistant is structurally invalid: " + exception.getMessage());
+        }
+    }
+
 
     private String snake(String value) {
         return value.replaceAll("([a-z0-9])([A-Z])", "$1_$2")

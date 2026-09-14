@@ -48,3 +48,7 @@ Consultar `cycle-06/`. El ciclo está CERRADO con CU-17 aceptado. El scope está
 ## Ciclo 7
 
 Consultar `cycle-07/`. El ciclo está CERRADO con CU-18 aceptado. El cierre técnico está en `cycle-07/C7-cu18-001-flutter-mobile-generation.md`.
+
+## Ciclo 8
+
+Consultar `cycle-08/`. El ciclo está CERRADO con CU-19 aceptado; CU-20..23 quedan absorbidos por CU-19. El cierre técnico está en `cycle-08/C8-cu19-001-generated-assistant.md`.
