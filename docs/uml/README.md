@@ -1,10 +1,8 @@
 # UML académico de ClassForge
 
-Esta carpeta contiene la planificación y, posteriormente, los diagramas UML que se incorporarán a la documentación oficial.
+Esta carpeta contiene el catálogo de diagramas UML que se incorporarán a la documentación formal final.
 
-Al cierre del Ciclo 1 **todavía no se declara ningún diagrama académico como terminado**.
-
-Esto es intencional: los diagramas deben representar el software real y no una arquitectura imaginada.
+**Corte funcional:** 14 de septiembre de 2026. Los Ciclos 1–10 y los CU funcionales declarados en `../puds/current-status.md` están cerrados. Los diagramas listados aquí siguen pendientes únicamente como artefactos de documentación formal: no representan trabajo de implementación pendiente.
 
 Consultar `diagram-catalog.md`.
 
@@ -20,4 +18,8 @@ Cada diagrama final debe indicar:
 - herramienta utilizada;
 - versión UML de referencia cuando aplique.
 
-UML 2.5.1 se utilizará como referencia concreta para la notación académica.
+UML 2.5.1 se utiliza como referencia concreta para la notación académica.
+
+## Fuente de verdad
+
+Los diagramas deben derivarse del software y de la documentación normativa vigente. No deben introducir arquitectura futura ni reinterpretar comportamientos cerrados. Para navegar el código antes de dibujar, consultar `../formal/code-map.md`; para relacionar CU, arquitectura, código, pruebas y evidencia, consultar `../formal/traceability-matrix.md`.

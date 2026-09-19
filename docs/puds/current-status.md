@@ -1,6 +1,6 @@
 # Estado actual PUDS
 
-**Fecha de corte:** 13 de septiembre de 2026 (cierre CU-27).
+**Fecha de corte:** 14 de septiembre de 2026 (cierre funcional CU-27 y baseline de legibilidad para documentación formal).
 
 ```text
 Fase PUDS: Transición
@@ -30,11 +30,12 @@ CU-20..23: ABSORBIDOS POR CU-19
 CU-10: CERRADO
 CU-11: CERRADO
 CU-26: DESCARTADO / FUERA DE ALCANCE
+Refactor de legibilidad: CERRADO / SIN CAMBIO FUNCIONAL
 ```
 
 ## Resumen ejecutivo del corte
 
-Los Ciclos 1–10 están cerrados. El Ciclo 3 completó CU-12, CU-13 y CU-14; el Ciclo 4 cerró CU-15; el Ciclo 5 cerró CU-16; el Ciclo 6 cerró CU-17 Angular; el Ciclo 7 cerró CU-18 Flutter/Android; el Ciclo 8 cerró CU-19 y absorbió CU-20..23; el Ciclo 9 cerró CU-10/CU-11 XMI; y el Ciclo 10 cerró CU-27 con un escenario Veterinaria determinista, scripts de transición y acceptance agregado. CU-26 queda descartado/fuera de alcance por decisión de producto.
+Los Ciclos 1–10 están cerrados. El Ciclo 3 completó CU-12, CU-13 y CU-14; el Ciclo 4 cerró CU-15; el Ciclo 5 cerró CU-16; el Ciclo 6 cerró CU-17 Angular; el Ciclo 7 cerró CU-18 Flutter/Android; el Ciclo 8 cerró CU-19 y absorbió CU-20..23; el Ciclo 9 cerró CU-10/CU-11 XMI; y el Ciclo 10 cerró CU-27 con un escenario Veterinaria determinista, scripts de transición y acceptance agregado. CU-26 queda descartado/fuera de alcance por decisión de producto. El 14 de septiembre se cerró un refactor exclusivamente de legibilidad bajo Functional Freeze; no añade ni modifica casos de uso. Su mapa y evidencia están en `docs/formal/code-map.md`, `docs/formal/traceability-matrix.md` y `docs/formal/refactor-readability-report.md`.
 
 Como antecedente inmediato, el Ciclo 2 se cerró después de resolver sus dos riesgos principales:
 

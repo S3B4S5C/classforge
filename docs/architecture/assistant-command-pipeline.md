@@ -649,7 +649,7 @@ El resultado interno conserva también el UUID de la clase resuelta; el plan act
 
 Las referencias ambiguas no se autocorrigen. Los nombres nuevos de `CREATE_CLASS` tampoco se autocorrigen contra el catálogo existente.
 
-Para medir el efecto real del LLM y del compilador se incorpora `scripts/assistant-reliability.ps1`, que ejecuta N inferencias sin Apply y reporta por separado exactitud raw y exactitud final.
+Para medir el efecto real del LLM y del compilador se incorpora `scripts/assistant-e2e-reliability.ps1`, que ejecuta N inferencias sin Apply y reporta por separado exactitud raw y exactitud final.
 
 <!-- CU08-FIX-014-NATIVE-TOOLS-OFFICIAL -->
 ## Cutover native tools (fix-014)

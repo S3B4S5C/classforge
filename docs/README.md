@@ -158,3 +158,10 @@ CU-18 está CERRADO en Ciclo 7: el ZIP generado incluye `mobile/` Flutter indepe
 
 - `architecture/xmi-enterprise-architect.md`: diseño vigente CU-10/CU-11.
 - `evidence/cu10-cu11/`: acceptance y reporte de cierre XMI 2.1.
+
+## Cierre para documentación formal
+
+- `formal/code-map.md`: mapa de navegación del código para lectura y defensa.
+- `formal/traceability-matrix.md`: trazabilidad final CU -> arquitectura -> código -> pruebas/evidencia.
+- `uml/diagram-catalog.md`: checklist de diagramas pendientes exclusivamente de elaboración formal.
+- `formal/refactor-readability-report.md`: cierre del refactor de legibilidad bajo Functional Freeze y gates finales recomendados.

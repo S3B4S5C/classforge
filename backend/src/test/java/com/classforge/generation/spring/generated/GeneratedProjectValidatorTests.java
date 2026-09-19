@@ -25,7 +25,8 @@ class GeneratedProjectValidatorTests {
                 "C:\\secret",
                 "src\\main\\App.java",
                 "./build.gradle",
-                "src//App.java"
+                "src//App.java",
+                "src/main/"
         )) {
             assertCode(withExtra(validProject(), file(path, "x\n")), GeneratedProjectDiagnosticCode.INVALID_PATH);
         }

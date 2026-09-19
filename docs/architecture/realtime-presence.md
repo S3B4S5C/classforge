@@ -97,7 +97,7 @@ Los cursores son overlays visuales, nunca JointJS cells.
 
 La prueba E2E comprueba que los eventos de presencia no incrementan la revisión.
 
-## Limitación actual
+## Estado final de permisos y alcance
 
 La política central de proyecto ya reconoce OWNER/EDITOR y C2-cu31-002 ya crea memberships mediante invitaciones reales.
 

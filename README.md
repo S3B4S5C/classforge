@@ -177,3 +177,11 @@ La evidencia de cierre está en:
 - CU-19: `docs/evidence/cu19/cu19-closure-report.md` y `docs/evidence/cu19/cu19-acceptance.json`;
 - CU-10/CU-11: `docs/evidence/cu10-cu11/cu10-cu11-closure-report.md` y `docs/evidence/cu10-cu11/cu10-cu11-acceptance.json`;
 - CU-27: `docs/evidence/cu27/cu27-closure-report.md`, `docs/evidence/cu27/cu27-acceptance.json` y `docs/runtime/cu27-demo.md`.
+
+## Baseline para documentación formal
+
+El cierre de legibilidad del 14 de septiembre de 2026 no modifica funcionalidades. Para estudiar y defender el sistema usar primero:
+
+- `docs/formal/code-map.md`: mapa de navegación por responsabilidades;
+- `docs/formal/traceability-matrix.md`: CU -> arquitectura -> código -> pruebas/evidencia;
+- `docs/formal/refactor-readability-report.md`: alcance del refactor, decisiones conservadoras y gates finales.

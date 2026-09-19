@@ -5,12 +5,12 @@ Aquí irán scripts de automatización del monorepo cuando aparezca una necesida
 <!-- ASSISTANT-RELIABILITY-BENCHMARK -->
 ## Assistant reliability benchmark
 
-`scripts/assistant-reliability.ps1` ejecuta repetidamente el planner local sin aplicar cambios al proyecto y compara el plan raw del LLM con el plan final después de resolución semántica.
+`scripts/assistant-e2e-reliability.ps1` ejecuta repetidamente el planner local sin aplicar cambios al proyecto y compara el plan raw del LLM con el plan final después de resolución semántica.
 
 Ejemplo:
 
 ```powershell
-pwsh -NoProfile -File .\scripts\assistant-reliability.ps1 `
+pwsh -NoProfile -File .\scripts\assistant-e2e-reliability.ps1 `
   -Attempts 50 `
   -Prompt "Crea una asociacion entre 4nimal y mascota" `
   -Classes Animal,Mascota `
