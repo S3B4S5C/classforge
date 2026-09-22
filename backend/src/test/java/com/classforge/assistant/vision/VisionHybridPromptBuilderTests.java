@@ -44,7 +44,9 @@ class VisionHybridPromptBuilderTests {
         assertTrue(system.contains("unica tarea es LEER"));
         assertTrue(system.contains("No decidas a que connector pertenece"));
         assertFalse(system.contains("ownership"));
-        assertTrue(system.contains("rawLabel=null"));
+        assertTrue(system.contains("rawLabel=\"NONE\""));
+        assertTrue(system.contains("no uses NONE"));
+        assertFalse(system.contains("rawLabel=null"));
     }
 
     @Test

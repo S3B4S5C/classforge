@@ -24,8 +24,8 @@ class VisionHybridMultiplicityJsonSchemaTests {
         assertTrue(schema.get("required").toString().contains("confidence"));
         assertEquals(1, rawLabel.get("minLength").asInt());
         assertEquals(16, rawLabel.get("maxLength").asInt());
-        assertEquals("string", rawLabel.get("type").get(0).asString());
-        assertEquals("null", rawLabel.get("type").get(1).asString());
+        assertEquals("string", rawLabel.get("type").asString());
+        assertFalse(rawLabel.get("type").isArray());
         assertEquals(0, properties.get("confidence").get("minimum").asInt());
         assertEquals(1, properties.get("confidence").get("maximum").asInt());
         assertFalse(schema.toString().contains("array"));

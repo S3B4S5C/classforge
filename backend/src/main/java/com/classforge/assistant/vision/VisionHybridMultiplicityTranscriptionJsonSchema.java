@@ -18,7 +18,7 @@ public final class VisionHybridMultiplicityTranscriptionJsonSchema {
                   "properties":{
                     "edgeId":{"type":"string","enum":["%s"]},
                     "endpoint":{"type":"string","enum":["%s"]},
-                    "rawLabel":{"type":["string","null"],"minLength":1,"maxLength":16},
+                    "rawLabel":{"type":"string","minLength":1,"maxLength":16},
                     "confidence":{"type":["number","null"],"minimum":0,"maximum":1}
                   }
                 }

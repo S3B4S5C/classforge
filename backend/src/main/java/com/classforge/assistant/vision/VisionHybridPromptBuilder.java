@@ -97,7 +97,9 @@ public class VisionHybridPromptBuilder {
         return """
                 Ves un crop limpio centrado alrededor de un endpoint UML. Tu unica tarea es LEER y transcribir cualquier multiplicidad UML claramente legible proxima al centro.
                 No decidas a que connector pertenece. No infieras por dominio, tipo de relacion o convenciones UML.
-                Los formatos permitidos incluyen 1, *, 0..*, 1..*, 0..1 y N..M. Usa rawLabel=null solo si no hay texto de multiplicidad legible.
+                Los formatos permitidos incluyen 1, *, 0..*, 1..*, 0..1 y N..M.
+                Si NO existe texto de multiplicidad legible devuelve rawLabel="NONE".
+                Si existe texto visible debes transcribirlo literalmente; no uses NONE en ese caso.
                 Devuelve unicamente JSON.
                 """;
     }

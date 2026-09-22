@@ -124,7 +124,7 @@ public class LlamaCppVisionHybridModelGateway implements VisionHybridModelGatewa
                     content, VisionHybridMultiplicityTranscription.class
             );
             validateMultiplicityTranscription(transcription, candidate.edgeId(), endpoint);
-            return transcription;
+            return normalizeMultiplicityTranscription(transcription);
         } catch (VisionModelGatewayException exception) {
             throw exception;
         } catch (Exception exception) {
@@ -180,8 +180,8 @@ public class LlamaCppVisionHybridModelGateway implements VisionHybridModelGatewa
         if (transcription == null || !edgeId.equals(transcription.edgeId()) || endpoint != transcription.endpoint()) {
             throw outputContract("La transcripcion local no corresponde al endpoint solicitado.", null);
         }
-        if (transcription.rawLabel() != null
-                && (transcription.rawLabel().isBlank() || transcription.rawLabel().length() > 16)) {
+        if (transcription.rawLabel() == null
+                || transcription.rawLabel().isBlank() || transcription.rawLabel().length() > 16) {
             throw outputContract("La etiqueta local de multiplicidad excede su contrato.", null);
         }
         if (!validConfidence(transcription.confidence())) {
@@ -205,6 +205,18 @@ public class LlamaCppVisionHybridModelGateway implements VisionHybridModelGatewa
         if (!validConfidence(attribution.confidence())) {
             throw outputContract("La confianza de ownership de multiplicidad no cumple su contrato.", null);
         }
+    }
+
+    private VisionHybridMultiplicityTranscription normalizeMultiplicityTranscription(
+            VisionHybridMultiplicityTranscription transcription
+    ) {
+        String rawLabel = transcription.rawLabel().trim();
+        return new VisionHybridMultiplicityTranscription(
+                transcription.edgeId(),
+                transcription.endpoint(),
+                "NONE".equalsIgnoreCase(rawLabel) ? null : rawLabel,
+                transcription.confidence()
+        );
     }
 
     private boolean validConfidence(Double confidence) {
