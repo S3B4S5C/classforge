@@ -24,7 +24,11 @@ rm -rf /var/www/classforge/*
 cp -a "$BUNDLE_DIR/frontend/." /var/www/classforge/
 chown -R root:root /var/www/classforge
 
-install -m 0644 "$BUNDLE_DIR/nginx/classforge.conf" /etc/nginx/sites-available/classforge
+if [[ ! -f /etc/nginx/sites-available/classforge ]]; then
+  install -m 0644 "$BUNDLE_DIR/nginx/classforge.conf" /etc/nginx/sites-available/classforge
+else
+  echo "Preserving existing /etc/nginx/sites-available/classforge (for example, direct HTTPS/TLS configuration)."
+fi
 ln -sfn /etc/nginx/sites-available/classforge /etc/nginx/sites-enabled/classforge
 rm -f /etc/nginx/sites-enabled/default
 

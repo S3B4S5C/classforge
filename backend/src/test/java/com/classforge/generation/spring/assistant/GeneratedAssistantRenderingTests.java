@@ -36,9 +36,10 @@ class GeneratedAssistantRenderingTests {
                 SpringBootGenerationOptions.authenticated(false, fixture.classId(), fixture.usernameId(), fixture.passwordId(), "#0F766E")
         );
         assertAssistant(auth);
+        String types = assistantText(auth, "GeneratedAssistantTypes.java");
+        assertTrue(types.contains("record RelationValue"));
         String metadata = assistantText(auth, "GeneratedAssistantMetadata.java");
         assertTrue(metadata.contains("field.sensitive() ? \"***\" : value"));
-        assertTrue(metadata.contains("record RelationValue"));
         assertTrue(metadata.contains("preferredSelectorField"));
         assertTrue(metadata.contains("speechPrompt()"));
         assertTrue(metadata.contains("relativeDateTime"));
