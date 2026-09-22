@@ -185,3 +185,7 @@ El cierre de legibilidad del 14 de septiembre de 2026 no modifica funcionalidade
 - `docs/formal/code-map.md`: mapa de navegación por responsabilidades;
 - `docs/formal/traceability-matrix.md`: CU -> arquitectura -> código -> pruebas/evidencia;
 - `docs/formal/refactor-readability-report.md`: alcance del refactor, decisiones conservadoras y gates finales.
+
+## Deployment AWS de demostración
+
+El perfil `aws-demo` mantiene Angular/Spring/Whisper en una EC2 detrás de CloudFront/Nginx y usa Amazon Bedrock para texto/visión mediante los mismos ports del Assistant. Ver `docs/runtime/aws-demo-deployment.md` y `docs/formal/deployment-diagram-spec.md`.

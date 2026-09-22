@@ -224,3 +224,14 @@ npm start
 ```
 
 `demo-stop.ps1` no termina procesos: Spring y Angular se detienen con `Ctrl+C` en sus consolas. `demo-ea-smoke.ps1 -RepositoryPath <repo-desechable>` ejecuta el round-trip XMI real contra la Automation Interface de Enterprise Architect. Ver `GUIA-DEMO-CU27.md` y `docs/runtime/cu27-demo.md`.
+
+
+## AWS demo deployment bundle
+
+Para construir el artefacto reproducible que se instala en EC2:
+
+```powershell
+.\scripts\aws-build-deploy-bundle.ps1
+```
+
+Ejecuta tests backend, characterization tests frontend, `bootJar` y `ng build`, y empaqueta JAR + Angular + Nginx/systemd/IAM/env templates en `classforge-aws-deploy-bundle.zip`. `-SkipTests` existe solo para reconstrucciones posteriores a un gate ya validado. Ver `docs/runtime/aws-demo-deployment.md`.

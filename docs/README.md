@@ -165,3 +165,5 @@ CU-18 está CERRADO en Ciclo 7: el ZIP generado incluye `mobile/` Flutter indepe
 - `formal/traceability-matrix.md`: trazabilidad final CU -> arquitectura -> código -> pruebas/evidencia.
 - `uml/diagram-catalog.md`: checklist de diagramas pendientes exclusivamente de elaboración formal.
 - `formal/refactor-readability-report.md`: cierre del refactor de legibilidad bajo Functional Freeze y gates finales recomendados.
+- `formal/deployment-diagram-spec.md`: autoridad textual para DPL-01 AWS y la comparación AWS/Home/Laptop.
+- `runtime/aws-demo-deployment.md`: runbook reproducible CloudFront + EC2/Nginx + Bedrock + Whisper.

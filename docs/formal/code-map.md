@@ -119,3 +119,25 @@ Leer `docs/architecture/vision-input-pipeline.md` antes del código. Los algorit
 ## 6. Functional freeze
 
 En el refactor de legibilidad se permiten únicamente extracción, movimiento, nombres internos, comentarios y tests de caracterización. Permanecen congelados endpoints, JSON, operationIds, Domain Manifest, XMI, comandos UML, validaciones, generated output, UX, esquema persistente, heurísticas Vision, prompts y parámetros IA.
+
+## 7. Adaptadores de despliegue AWS
+
+El perfil `aws-demo` no cambia el dominio. Sustituye únicamente adapters de infraestructura:
+
+```text
+AssistantToolCallingGateway
+  ├─ LlamaNativeToolCallingGateway      # default/demo local
+  └─ BedrockToolCallingGateway          # aws-demo
+
+VisionModelGateway
+  ├─ LlamaCppVisionModelGateway         # default/demo local
+  └─ BedrockVisionModelGateway          # aws-demo
+
+VisionHybridModelGateway
+  ├─ LlamaCppVisionHybridModelGateway   # default/demo local
+  └─ BedrockVisionHybridModelGateway    # aws-demo
+```
+
+Soporte común Bedrock: `com.classforge.assistant.bedrock` (`BedrockRuntimeConfiguration`, `BedrockConverseSupport`, `BedrockDocumentCodec`). El provider se selecciona por configuración, no mediante bifurcaciones dentro del dominio.
+
+Runbook: `docs/runtime/aws-demo-deployment.md`. Autoridad para el diagrama DPL-01: `docs/formal/deployment-diagram-spec.md`.

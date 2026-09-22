@@ -42,3 +42,7 @@ workspace/generated/
 # OS
 .DS_Store
 Thumbs.db
+
+# AWS demo deployment bundle
+.aws-deploy-bundle/
+classforge-aws-deploy-bundle.zip

@@ -1,0 +1,21 @@
+[Unit]
+Description=ClassForge whisper.cpp speech-to-text runtime
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=classforge
+Group=classforge
+WorkingDirectory=/opt/classforge/whisper
+ExecStart=/opt/classforge/whisper/whisper-server -m /opt/classforge/whisper/models/ggml-base.bin -l es --host 127.0.0.1 --port 8093 -t 2 -nfa -nt
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/opt/classforge/whisper
+
+[Install]
+WantedBy=multi-user.target
