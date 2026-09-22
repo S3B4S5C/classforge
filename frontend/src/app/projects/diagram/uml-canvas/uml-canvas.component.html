@@ -32,7 +32,7 @@
         Nueva clase
       </button>
 
-      @if (!relationshipMode()) {
+      @if (!relationshipMode() && !intermediateClassMode()) {
         <button
           mat-button
           class="cf-button-secondary relationship-button"
@@ -52,7 +52,23 @@
           </span>
           Relacion
         </button>
-      } @else {
+
+        <button
+          mat-button
+          class="cf-button-secondary relationship-button"
+          type="button"
+          [disabled]="!canCreateIntermediateClass()"
+          (click)="startIntermediateClassMode()"
+        >
+          <span
+            class="material-symbols-rounded"
+            aria-hidden="true"
+          >
+            hub
+          </span>
+          Clase de asociacion
+        </button>
+      } @else if (relationshipMode()) {
         <button
           mat-button
           class="cf-button-secondary relationship-button relation-active"
@@ -66,6 +82,21 @@
             close
           </span>
           Cancelar relacion
+        </button>
+      } @else {
+        <button
+          mat-button
+          class="cf-button-secondary relationship-button relation-active"
+          type="button"
+          (click)="cancelIntermediateClassMode()"
+        >
+          <span
+            class="material-symbols-rounded"
+            aria-hidden="true"
+          >
+            close
+          </span>
+          Cancelar clase de asociacion
         </button>
       }
 
@@ -202,7 +233,7 @@
       !document
       || document.umlModel.classes.length === 0
     "
-    [class.is-linking]="relationshipMode()"
+    [class.is-linking]="relationshipMode() || intermediateClassMode()"
     (pointermove)="handlePointerMove($event)"
   >
     <div
@@ -276,6 +307,30 @@
                 ? 'El origen esta marcado en naranja.'
                 : 'Despues seleccionaras la clase destino.'
             }}
+          </span>
+        </div>
+      </div>
+    }
+
+    @if (intermediateClassMode()) {
+      <div
+        class="relationship-guide"
+        aria-live="polite"
+      >
+        <span
+          class="material-symbols-rounded"
+          aria-hidden="true"
+        >
+          hub
+        </span>
+
+        <div>
+          <strong>
+            Selecciona una asociacion
+          </strong>
+
+          <span>
+            La clase de asociacion se unira al centro con una linea discontinua UML.
           </span>
         </div>
       </div>

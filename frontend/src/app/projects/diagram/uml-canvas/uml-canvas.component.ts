@@ -16,6 +16,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { dia } from '@joint/core';
 
 import {
+  associationClassMetadata,
+} from '../../model/association-class';
+import {
   DiagramNodeLayout,
   ProjectDocument,
 } from '../../model/project';
@@ -27,6 +30,7 @@ import {
   createUmlClassCell,
 } from '../uml-class-shape';
 import {
+  createAssociationClassConnectorCell,
   createUmlRelationshipCell,
   resetRelationshipCell,
   selectRelationshipCell,
@@ -45,6 +49,11 @@ export interface UmlCanvasCursorEvent {
 export interface UmlRelationshipEndpoints {
   sourceClassId: string;
   targetClassId: string;
+}
+
+export interface UmlAssociationClassRequest
+  extends UmlRelationshipEndpoints {
+  relationshipId: string;
 }
 
 export type UmlCanvasSelection =
@@ -115,6 +124,10 @@ export class UmlCanvasComponent
     new EventEmitter<UmlRelationshipEndpoints>();
 
   @Output()
+  readonly intermediateClassRequested =
+    new EventEmitter<UmlAssociationClassRequest>();
+
+  @Output()
   readonly selectionChanged =
     new EventEmitter<UmlCanvasSelection>();
 
@@ -136,6 +149,7 @@ export class UmlCanvasComponent
   readonly relationshipMode = signal(false);
   readonly relationshipSourceId =
     signal<string | null>(null);
+  readonly intermediateClassMode = signal(false);
 
   readonly remoteOverlayRevision =
     signal(0);
@@ -402,14 +416,40 @@ export class UmlCanvasComponent
       return;
     }
 
+    this.intermediateClassMode.set(false);
     this.relationshipMode.set(true);
     this.relationshipSourceId.set(null);
     this.clearSelection();
   }
 
+  startIntermediateClassMode(): void {
+    if (!this.canCreateIntermediateClass()) {
+      return;
+    }
+
+    this.relationshipMode.set(false);
+    this.relationshipSourceId.set(null);
+    this.intermediateClassMode.set(true);
+    this.clearSelection();
+  }
+
+  canCreateIntermediateClass(): boolean {
+    return Boolean(
+      this.document?.umlModel.relationships.some(
+        (relationship) =>
+          relationship.type === 'ASSOCIATION',
+      ),
+    );
+  }
+
   cancelRelationshipMode(): void {
     this.relationshipMode.set(false);
     this.relationshipSourceId.set(null);
+    this.clearEndpointHighlights();
+  }
+
+  cancelIntermediateClassMode(): void {
+    this.intermediateClassMode.set(false);
     this.clearEndpointHighlights();
   }
 
@@ -495,6 +535,10 @@ export class UmlCanvasComponent
         const classId =
           String(elementView.model.id);
 
+        if (this.intermediateClassMode()) {
+          return;
+        }
+
         if (this.relationshipMode()) {
           this.handleRelationshipClassClick(
             classId,
@@ -515,7 +559,10 @@ export class UmlCanvasComponent
         elementView: dia.ElementView,
         event: dia.Event,
       ) => {
-        if (this.relationshipMode()) {
+        if (
+          this.relationshipMode()
+          || this.intermediateClassMode()
+        ) {
           return;
         }
 
@@ -541,7 +588,10 @@ export class UmlCanvasComponent
       (
         elementView: dia.ElementView,
       ) => {
-        if (this.relationshipMode()) {
+        if (
+          this.relationshipMode()
+          || this.intermediateClassMode()
+        ) {
           return;
         }
 
@@ -572,11 +622,34 @@ export class UmlCanvasComponent
         linkView: dia.LinkView,
         event: dia.Event,
       ) => {
+        if (this.intermediateClassMode()) {
+          event.stopPropagation();
+          this.handleIntermediateClassLinkClick(
+            linkView.model,
+          );
+          return;
+        }
+
         if (this.relationshipMode()) {
           return;
         }
 
         event.stopPropagation();
+
+        const associationClassId =
+          linkView.model.get(
+            'associationClassId',
+          );
+
+        if (
+          typeof associationClassId === 'string'
+        ) {
+          this.selectCell({
+            kind: 'class',
+            id: associationClassId,
+          });
+          return;
+        }
 
         this.selectCell({
           kind: 'relationship',
@@ -591,12 +664,33 @@ export class UmlCanvasComponent
         linkView: dia.LinkView,
         event: dia.Event,
       ) => {
-        if (this.relationshipMode()) {
+        if (
+          this.relationshipMode()
+          || this.intermediateClassMode()
+        ) {
           return;
         }
 
         event.preventDefault();
         event.stopPropagation();
+
+        const associationClassId =
+          linkView.model.get(
+            'associationClassId',
+          );
+
+        if (
+          typeof associationClassId === 'string'
+        ) {
+          this.selectCell({
+            kind: 'class',
+            id: associationClassId,
+          });
+          this.editClassRequested.emit(
+            associationClassId,
+          );
+          return;
+        }
 
         const relationshipId =
           String(linkView.model.id);
@@ -615,7 +709,10 @@ export class UmlCanvasComponent
     this.paper.on(
       'blank:pointerclick',
       () => {
-        if (!this.relationshipMode()) {
+        if (
+          !this.relationshipMode()
+          && !this.intermediateClassMode()
+        ) {
           this.clearSelection();
         }
       },
@@ -745,6 +842,33 @@ export class UmlCanvasComponent
     );
   }
 
+  private handleIntermediateClassLinkClick(
+    link: dia.Link,
+  ): void {
+    const relationshipId = String(link.id);
+    const relationship =
+      this.document?.umlModel.relationships.find(
+        (candidate) =>
+          candidate.id === relationshipId
+          && candidate.type === 'ASSOCIATION',
+      );
+
+    if (!relationship) {
+      return;
+    }
+
+    this.intermediateClassRequested.emit({
+      relationshipId,
+      sourceClassId:
+        relationship.sourceClassId,
+      targetClassId:
+        relationship.targetClassId,
+    });
+
+    this.intermediateClassMode.set(false);
+    this.clearEndpointHighlights();
+  }
+
   private handleRelationshipClassClick(
     classId: string,
   ): void {
@@ -785,6 +909,69 @@ export class UmlCanvasComponent
       return;
     }
 
+    const associationClasses =
+      document.umlModel.classes.flatMap(
+        (umlClass) => {
+          const metadata =
+            associationClassMetadata(
+              umlClass,
+            );
+
+          if (!metadata) {
+            return [];
+          }
+
+          const sourceSemantic =
+            document.umlModel.relationships.find(
+              (relationship) =>
+                relationship.type === 'ASSOCIATION'
+                && relationship.sourceClassId
+                  === metadata.relationship.sourceClassId
+                && relationship.targetClassId
+                  === umlClass.id,
+            );
+          const targetSemantic =
+            document.umlModel.relationships.find(
+              (relationship) =>
+                relationship.type === 'ASSOCIATION'
+                && relationship.sourceClassId
+                  === metadata.relationship.targetClassId
+                && relationship.targetClassId
+                  === umlClass.id,
+            );
+
+          if (
+            !sourceSemantic
+            || !targetSemantic
+          ) {
+            return [];
+          }
+
+          return [{
+            classId: umlClass.id,
+            relationship:
+              metadata.relationship,
+            semanticRelationshipIds: [
+              sourceSemantic.id,
+              targetSemantic.id,
+            ],
+          }];
+        },
+      );
+    const associationClassIds =
+      new Set(
+        associationClasses.map(
+          (item) => item.classId,
+        ),
+      );
+    const hiddenRelationshipIds =
+      new Set(
+        associationClasses.flatMap(
+          (item) =>
+            item.semanticRelationshipIds,
+        ),
+      );
+
     const elementCells =
       document.umlModel.classes.map(
         (umlClass, index) => {
@@ -799,13 +986,53 @@ export class UmlCanvasComponent
           return createUmlClassCell(
             umlClass,
             layout,
+            associationClassIds.has(
+              umlClass.id,
+            )
+              ? {
+                  stereotype:
+                    'ASSOCIATION CLASS',
+                }
+              : undefined,
           );
         },
       );
 
     const relationshipCells =
-      document.umlModel.relationships.map(
-        createUmlRelationshipCell,
+      document.umlModel.relationships
+        .filter(
+          (relationship) =>
+            !hiddenRelationshipIds.has(
+              relationship.id,
+            ),
+        )
+        .map(createUmlRelationshipCell);
+
+    const associationClassCells =
+      associationClasses.flatMap(
+        (item) => {
+          const association =
+            createUmlRelationshipCell(
+              item.relationship,
+            );
+
+          association.set(
+            'associationClassId',
+            item.classId,
+          );
+          association.set(
+            'presentationOnly',
+            true,
+          );
+
+          return [
+            association,
+            createAssociationClassConnectorCell(
+              item.classId,
+              item.relationship.id,
+            ),
+          ];
+        },
       );
 
     const oldCount =
@@ -817,6 +1044,7 @@ export class UmlCanvasComponent
     this.graph.resetCells([
       ...elementCells,
       ...relationshipCells,
+      ...associationClassCells,
     ]);
 
     this.previousClassCount =

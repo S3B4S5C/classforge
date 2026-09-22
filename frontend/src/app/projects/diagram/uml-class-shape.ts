@@ -129,9 +129,14 @@ export const classForgeCellNamespace = {
   },
 };
 
+export interface UmlClassCellOptions {
+  stereotype?: string;
+}
+
 export function createUmlClassCell(
   umlClass: UmlClass,
   layout: DiagramNodeLayout,
+  options: UmlClassCellOptions = {},
 ): dia.Element {
   const normalized =
     normalizeUmlClassLayout(
@@ -150,6 +155,9 @@ export function createUmlClassCell(
       height: normalized.height,
     },
     attrs: {
+      stereotype: {
+        text: options.stereotype ?? 'CLASS',
+      },
       className: {
         text: umlClass.name,
       },

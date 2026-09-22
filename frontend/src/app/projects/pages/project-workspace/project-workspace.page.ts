@@ -41,6 +41,7 @@ import {
   SpringBootExportDialogComponent,
 } from '../../dialogs/spring-boot-export-dialog/spring-boot-export-dialog.component';
 import {
+  UmlAssociationClassRequest,
   UmlCanvasComponent,
   UmlCanvasCursorEvent,
   UmlCanvasSelection,
@@ -636,6 +637,34 @@ export class ProjectWorkspacePage {
       targetClassId:
         endpoints.targetClassId,
     });
+  }
+
+  createIntermediateClassFromCanvas(
+    request: UmlAssociationClassRequest,
+  ): void {
+    const reservedNames =
+      this.store.classes().map(
+        (umlClass) => umlClass.name,
+      );
+
+    this.dialog
+      .open(ClassDialogComponent, {
+        width: '520px',
+        maxWidth: '94vw',
+        data: {
+          mode: 'create',
+          reservedNames,
+        },
+      })
+      .afterClosed()
+      .subscribe((name) => {
+        if (name) {
+          this.store.addIntermediateClass(
+            name,
+            request.relationshipId,
+          );
+        }
+      });
   }
 
   editRelationshipById(

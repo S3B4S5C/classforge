@@ -45,6 +45,11 @@ import {
   umlClassHeight,
 } from '../diagram/uml-class-geometry';
 import {
+  associationClassMarker,
+  associationClassMetadata,
+  isAssociationClassMarker,
+} from '../model/association-class';
+import {
   BackendValidationError,
   BackendValidationViolation,
   DiagramNodeLayout,
@@ -446,10 +451,41 @@ export class ProjectWorkspaceStore {
   removeClass(
     classId: string,
   ): void {
+    const umlClass =
+      this.classes().find(
+        (candidate) => candidate.id === classId,
+      );
+    const associationClass =
+      umlClass
+        ? associationClassMetadata(umlClass)
+        : null;
+
+    if (!associationClass) {
+      this.dispatch({
+        ...commandMetadata(),
+        type: 'DELETE_CLASS',
+        classId,
+      });
+      return;
+    }
+
     this.dispatch({
       ...commandMetadata(),
-      type: 'DELETE_CLASS',
-      classId,
+      type: 'BATCH',
+      label: `Eliminar clase de asociacion ${umlClass!.name}`,
+      commands: [
+        {
+          ...commandMetadata(),
+          type: 'DELETE_CLASS',
+          classId,
+        },
+        {
+          ...commandMetadata(),
+          type: 'CREATE_RELATIONSHIP',
+          relationship:
+            associationClass.relationship,
+        },
+      ],
     });
   }
 
@@ -473,12 +509,27 @@ export class ProjectWorkspaceStore {
     attributeId: string,
     changes: Omit<UmlAttribute, 'id'>,
   ): void {
+    const currentAttribute =
+      this.classes()
+        .find((umlClass) => umlClass.id === classId)
+        ?.attributes.find(
+          (attribute) => attribute.id === attributeId,
+        );
+    const presentationMarker =
+      isAssociationClassMarker(
+        currentAttribute?.customTypeName,
+      )
+      && changes.dataType !== 'CUSTOM'
+        ? currentAttribute!.customTypeName
+        : changes.customTypeName;
+
     this.dispatch({
       ...commandMetadata(),
       type: 'UPDATE_ATTRIBUTE',
       classId,
       attribute: {
         ...changes,
+        customTypeName: presentationMarker,
         id: attributeId,
       },
     });
@@ -488,11 +539,140 @@ export class ProjectWorkspaceStore {
     classId: string,
     attributeId: string,
   ): void {
+    const currentAttribute =
+      this.classes()
+        .find((umlClass) => umlClass.id === classId)
+        ?.attributes.find(
+          (attribute) => attribute.id === attributeId,
+        );
+
+    if (
+      isAssociationClassMarker(
+        currentAttribute?.customTypeName,
+      )
+    ) {
+      return;
+    }
+
     this.dispatch({
       ...commandMetadata(),
       type: 'DELETE_ATTRIBUTE',
       classId,
       attributeId,
+    });
+  }
+
+  addIntermediateClass(
+    name: string,
+    relationshipId: string,
+  ): void {
+    const document =
+      this.documentDraftState();
+    const relationship =
+      document?.umlModel.relationships.find(
+        (candidate) =>
+          candidate.id === relationshipId,
+      );
+
+    if (
+      !document
+      || !relationship
+      || relationship.type !== 'ASSOCIATION'
+    ) {
+      return;
+    }
+
+    const sourceClassId =
+      relationship.sourceClassId;
+    const targetClassId =
+      relationship.targetClassId;
+    const classId = crypto.randomUUID();
+    const identifierId = crypto.randomUUID();
+    const sourceRelationshipId =
+      crypto.randomUUID();
+    const targetRelationshipId =
+      crypto.randomUUID();
+
+    const layout =
+      this.intermediateLayout(
+        sourceClassId,
+        targetClassId,
+      );
+
+    this.dispatch({
+      ...commandMetadata(),
+      type: 'BATCH',
+      label: `Crear clase de asociacion ${name}`,
+      commands: [
+        {
+          ...commandMetadata(),
+          type: 'DELETE_RELATIONSHIP',
+          relationshipId,
+        },
+        {
+          ...commandMetadata(),
+          type: 'CREATE_CLASS',
+          umlClass: {
+            id: classId,
+            name,
+            attributes: [
+              {
+                id: identifierId,
+                name: 'id',
+                dataType: 'UUID',
+                customTypeName:
+                  associationClassMarker(
+                    relationship,
+                  ),
+                visibility: 'PRIVATE',
+                nullable: false,
+                identifier: true,
+              },
+            ],
+          },
+          layout,
+        },
+        {
+          ...commandMetadata(),
+          type: 'CREATE_RELATIONSHIP',
+          relationship: {
+            id: sourceRelationshipId,
+            sourceClassId,
+            targetClassId: classId,
+            type: 'ASSOCIATION',
+            sourceMultiplicity: {
+              lower: 1,
+              upper: 1,
+            },
+            targetMultiplicity:
+              relationship.targetMultiplicity
+              ?? {
+                lower: 0,
+                upper: null,
+              },
+          },
+        },
+        {
+          ...commandMetadata(),
+          type: 'CREATE_RELATIONSHIP',
+          relationship: {
+            id: targetRelationshipId,
+            sourceClassId: targetClassId,
+            targetClassId: classId,
+            type: 'ASSOCIATION',
+            sourceMultiplicity: {
+              lower: 1,
+              upper: 1,
+            },
+            targetMultiplicity:
+              relationship.sourceMultiplicity
+              ?? {
+                lower: 0,
+                upper: null,
+              },
+          },
+        },
+      ],
     });
   }
 
@@ -1510,6 +1690,74 @@ export class ProjectWorkspaceStore {
     this.validationResult.set(null);
     this.validationRequestError.set(null);
     this.validationCheckedAt.set(null);
+  }
+
+  private intermediateLayout(
+    sourceClassId: string,
+    targetClassId: string,
+  ): DiagramNodeLayout {
+    const document =
+      this.documentDraftState();
+
+    const source =
+      document?.layout.nodes[
+        sourceClassId
+      ];
+
+    const target =
+      document?.layout.nodes[
+        targetClassId
+      ];
+
+    if (!source || !target) {
+      return this.defaultLayoutForIndex(
+        this.classes().length,
+      );
+    }
+
+    const width = UML_CLASS_MIN_WIDTH;
+    const height = umlClassHeight(1);
+
+    const sourceCenterX =
+      source.x + source.width / 2;
+    const sourceCenterY =
+      source.y + source.height / 2;
+    const targetCenterX =
+      target.x + target.width / 2;
+    const targetCenterY =
+      target.y + target.height / 2;
+
+    const midpointX =
+      (sourceCenterX + targetCenterX) / 2;
+    const midpointY =
+      (sourceCenterY + targetCenterY) / 2;
+    const dx = targetCenterX - sourceCenterX;
+    const dy = targetCenterY - sourceCenterY;
+    const length = Math.hypot(dx, dy) || 1;
+    const offset = 190;
+    const perpendicularX = -dy / length;
+    const perpendicularY = dx / length;
+
+    return {
+      x: Math.max(
+        40,
+        Math.round(
+          midpointX
+            + perpendicularX * offset
+            - width / 2,
+        ),
+      ),
+      y: Math.max(
+        40,
+        Math.round(
+          midpointY
+            + perpendicularY * offset
+            - height / 2,
+        ),
+      ),
+      width,
+      height,
+    };
   }
 
   private defaultLayoutForIndex(
