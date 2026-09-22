@@ -43,8 +43,8 @@ class AngularFrontendRenderingTests {
         String tsconfig = text(simple, "frontend/tsconfig.json");
         assertFalse(tsconfig.contains("\"baseUrl\""));
         assertFalse(tsconfig.contains("\"downlevelIteration\""));
-        assertFalse(text(simple, "frontend/src/app/entities/usuario/usuario-list.component.ts")
-                .contains("?? ''"));
+        assertTrue(text(simple, "frontend/src/app/entities/usuario/usuario-list.component.ts")
+                .contains("filters['username'] ?? ''"));
         assertFalse(text(simple, "frontend/src/app/entities/usuario/usuario-form.component.ts")
                 .contains("formControlName=\"id\""));
 
@@ -75,12 +75,52 @@ class AngularFrontendRenderingTests {
         assertTrue(text(auth, "frontend/src/styles.css").contains("--app-primary: #0F766E;"));
     }
 
+    @Test
+    void rendersStateSafeGeneratedControlsAndReferenceData() {
+        List<GeneratedFile> files = new AngularFrontendRenderer().render(
+                GeneratedUiRegressionFixture.manifest(false),
+                "ui-regression",
+                "#0F766E"
+        );
+
+        String main = text(files, "frontend/src/main.ts");
+        assertTrue(main.contains("provideZoneChangeDetection()"));
+
+        String list = text(files, "frontend/src/app/entities/person/person-list.component.ts");
+        assertTrue(list.contains("filters['name'] ?? ''"));
+        assertTrue(list.contains("private listRequest?: Subscription"));
+        assertTrue(list.contains("this.listRequest?.unsubscribe()"));
+
+        String form = text(files, "frontend/src/app/entities/person/person-form.component.ts");
+        assertTrue(form.contains("this.teamOptions = []"));
+        assertTrue(form.contains("readonly teamLabelFields = ['name']"));
+        assertTrue(form.contains("references.withSelected(teamOptions, form.controls.teamId.value, teamIdFields)"));
+        assertTrue(form.contains("references.optionLabel(option, teamIdFields, teamLabelFields)"));
+        assertTrue(form.contains("this.recordRequest?.unsubscribe()"));
+        assertTrue(form.contains("if (!this.editing) this.applyCreateDefaults()"));
+        assertTrue(form.contains("birthDate: local.slice(0, 10)"));
+        assertTrue(form.contains("appointmentAt: local.slice(0, 16)"));
+        assertTrue(form.contains("referencesLoading"));
+
+        String references = text(files, "frontend/src/app/core/api/reference-data.service.ts");
+        assertTrue(references.contains("expand((page) =>"));
+        assertTrue(references.contains("withSelected("));
+        assertTrue(references.contains("for (const field of labelFields)"));
+        assertFalse(references.contains("(${idFields.map"));
+    }
+
     private GeneratedFile file(GeneratedProject project, String path) {
         return project.files().stream().filter(candidate -> candidate.path().equals(path)).findFirst().orElse(null);
     }
 
     private String text(GeneratedProject project, String path) {
         GeneratedFile file = file(project, path);
+        assertNotNull(file, path);
+        return new String(file.content(), StandardCharsets.UTF_8);
+    }
+
+    private String text(List<GeneratedFile> files, String path) {
+        GeneratedFile file = files.stream().filter(candidate -> candidate.path().equals(path)).findFirst().orElse(null);
         assertNotNull(file, path);
         return new String(file.content(), StandardCharsets.UTF_8);
     }

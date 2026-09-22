@@ -113,7 +113,7 @@ final class AngularEntityFilesRenderer {
                     direction?: string;
                     page?: number;
                     size?: number;
-                    filters?: Record<string, string>;
+                    filters?: Partial<Record<string, string>>;
                   } = {}): Observable<PageResponse<%1$sResponse>> {
                     let params = new HttpParams()
                       .set('page', options.page ?? 0)
@@ -122,7 +122,7 @@ final class AngularEntityFilesRenderer {
                     if (options.sort) params = params.set('sort', options.sort);
                     if (options.direction) params = params.set('direction', options.direction);
                     for (const [key, value] of Object.entries(options.filters ?? {})) {
-                      if (value !== '') params = params.set(`filter.${key}`, value);
+                      if (value != null && value !== '') params = params.set(`filter.${key}`, value);
                     }
                     return this.http.get<PageResponse<%1$sResponse>>(this.endpoint, { params });
                   }
@@ -207,7 +207,7 @@ final class AngularEntityFilesRenderer {
                 .map(field -> """
                           <div class="field">
                             <label>%s</label>
-                            <input [value]="filters['%s']" (input)="setFilter('%s', $any($event.target).value)" />
+                            <input [value]="filters['%s'] ?? ''" (input)="setFilter('%s', $any($event.target).value)" />
                           </div>
                         """.formatted(escapeHtml(field.logicalName()), field.apiName(), field.apiName()))
                 .collect(Collectors.joining("\n"));
@@ -216,7 +216,9 @@ final class AngularEntityFilesRenderer {
                 .map(field -> "              <option value=\"%s\">%s</option>".formatted(field.apiName(), escapeHtml(field.logicalName())))
                 .collect(Collectors.joining("\n"));
         return """
-                import { Component, inject, OnInit } from '@angular/core';
+                import { ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
+                import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+                import { Subscription } from 'rxjs';
                 import { FormsModule } from '@angular/forms';
                 import { Router, RouterLink } from '@angular/router';
                 import { %1$sApi } from './%2$s.api';
@@ -238,7 +240,7 @@ final class AngularEntityFilesRenderer {
                       <section class="card toolbar">
                         <div class="field">
                           <label>Buscar</label>
-                          <input [(ngModel)]="q" (keyup.enter)="load(0)" placeholder="Texto libre" />
+                          <input [(ngModel)]="q" (keyup.enter)="applyFilters()" placeholder="Texto libre" />
                         </div>
                 %5$s
                         <div class="field">
@@ -255,10 +257,14 @@ final class AngularEntityFilesRenderer {
                             <option value="desc">Descendente</option>
                           </select>
                         </div>
-                        <button class="btn" type="button" (click)="load(0)">Aplicar</button>
+                        <button class="btn" type="button" (click)="applyFilters()">Aplicar</button>
+                        <button class="btn" type="button" (click)="clearFilters()">Limpiar filtros</button>
                       </section>
 
-                      <div class="table-wrap">
+                      @if (loading) { <p role="status">Cargando registros…</p> }
+                      @if (error) { <div class="error" role="alert">{{ error }} <button class="btn" type="button" (click)="load(page)">Reintentar</button></div> }
+                      @if (notice) { <p role="status">{{ notice }}</p> }
+                      <div class="table-wrap" [attr.aria-busy]="loading">
                         <table>
                           <thead>
                             <tr>
@@ -273,20 +279,20 @@ final class AngularEntityFilesRenderer {
                                 <td class="actions">
                                   <button class="btn" type="button" (click)="view(row)">Ver</button>
                                   <button class="btn" type="button" (click)="edit(row)">Editar</button>
-                                  <button class="btn btn-danger" type="button" (click)="remove(row)">Eliminar</button>
+                                  <button class="btn btn-danger" type="button" [disabled]="deleting !== null" (click)="remove(row)">Eliminar</button>
                                 </td>
                               </tr>
                             } @empty {
-                              <tr><td colspan="%9$d">No hay registros.</td></tr>
+                              <tr><td colspan="%9$d">{{ loading ? 'Cargando…' : error ? 'No se pudieron cargar los registros.' : 'No hay registros.' }}</td></tr>
                             }
                           </tbody>
                         </table>
                       </div>
 
                       <div class="pager">
-                        <button class="btn" type="button" [disabled]="page === 0" (click)="load(page - 1)">Anterior</button>
+                        <button class="btn" type="button" [disabled]="loading || deleting !== null || page === 0" (click)="load(page - 1)">Anterior</button>
                         <span>Pagina {{ page + 1 }} de {{ totalPages || 1 }}</span>
-                        <button class="btn" type="button" [disabled]="page + 1 >= totalPages" (click)="load(page + 1)">Siguiente</button>
+                        <button class="btn" type="button" [disabled]="loading || deleting !== null || page + 1 >= totalPages" (click)="load(page + 1)">Siguiente</button>
                       </div>
                     </main>
                   `,
@@ -294,11 +300,19 @@ final class AngularEntityFilesRenderer {
                 export class %1$sListComponent implements OnInit {
                   private readonly api = inject(%1$sApi);
                   private readonly router = inject(Router);
+                  private readonly changes = inject(ChangeDetectorRef);
+                  private readonly destroyRef = inject(DestroyRef);
                   rows: %1$sResponse[] = [];
                   q = '';
                   sort = '';
                   direction = 'asc';
-                  filters: Record<string, string> = {};
+                  filters: Partial<Record<string, string>> = {};
+                  loading = false;
+                  error = '';
+                  notice = '';
+                  deleting: string | null = null;
+                  private listRequest?: Subscription;
+                  private applied = { q: '', sort: '', direction: 'asc', filters: {} as Partial<Record<string, string>> };
                   page = 0;
                   readonly size = 20;
                   total = 0;
@@ -306,13 +320,41 @@ final class AngularEntityFilesRenderer {
 
                   ngOnInit(): void { this.load(0); }
 
+                  applyFilters(): void {
+                    this.applied = { q: this.q.trim(), sort: this.sort, direction: this.direction, filters: { ...this.filters } };
+                    this.notice = '';
+                    this.load(0);
+                  }
+
+                  clearFilters(): void {
+                    this.q = ''; this.sort = ''; this.direction = 'asc'; this.filters = {};
+                    this.applyFilters();
+                  }
+
                   load(page: number): void {
-                    this.api.list({ q: this.q, sort: this.sort, direction: this.direction, page, size: this.size, filters: this.filters })
-                      .subscribe((result) => {
-                        this.rows = result.content;
-                        this.page = result.page;
-                        this.total = result.totalElements;
-                        this.totalPages = result.totalPages;
+                    this.listRequest?.unsubscribe();
+                    this.loading = true; this.error = ''; this.rows = [];
+                    this.page = Math.max(0, page);
+                    this.changes.markForCheck();
+                    this.listRequest = this.api.list({ ...this.applied, page: this.page, size: this.size })
+                      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                        next: (result) => {
+                          if (!result.content.length && this.page > 0) {
+                            this.load(Math.max(0, result.totalPages - 1));
+                            return;
+                          }
+                          this.rows = result.content;
+                          this.page = result.page;
+                          this.total = result.totalElements;
+                          this.totalPages = result.totalPages;
+                          this.loading = false;
+                          this.changes.markForCheck();
+                        },
+                        error: (failure) => {
+                          this.loading = false;
+                          this.error = failure?.error?.message ?? 'No se pudieron cargar los registros.';
+                          this.changes.markForCheck();
+                        },
                       });
                   }
 
@@ -331,8 +373,16 @@ final class AngularEntityFilesRenderer {
                     this.router.navigate(['/entities/%4$s/edit'], { queryParams: this.api.keyQuery(row) });
                   }
                   remove(row: %1$sResponse): void {
-                    if (!confirm('Eliminar este registro?')) return;
-                    this.api.delete(this.api.keyFromRow(row)).subscribe(() => this.load(this.page));
+                    if (this.deleting !== null || !confirm('Eliminar este registro?')) return;
+                    this.deleting = this.trackRow(row); this.error = ''; this.notice = '';
+                    this.api.delete(this.api.keyFromRow(row)).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                      next: () => { this.deleting = null; this.notice = 'Registro eliminado.'; this.load(this.page); },
+                      error: (failure) => {
+                        this.deleting = null;
+                        this.error = failure?.error?.message ?? 'No se pudo eliminar el registro.';
+                        this.changes.markForCheck();
+                      },
+                    });
                   }
                 }
                 """.formatted(
@@ -362,7 +412,9 @@ final class AngularEntityFilesRenderer {
                         """.formatted(escapeHtml(rel.name()), rel.requestField()))
                 .collect(Collectors.joining("\n"));
         return """
-                import { Component, inject, OnInit } from '@angular/core';
+                import { ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
+                import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+                import { Subscription } from 'rxjs';
                 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
                 import { %1$sApi } from './%2$s.api';
                 import { %1$sResponse } from './%2$s.models';
@@ -375,10 +427,12 @@ final class AngularEntityFilesRenderer {
                       <div class="page-header">
                         <h1>Detalle — %3$s</h1>
                         <div class="actions">
-                          <button class="btn" type="button" (click)="edit()">Editar</button>
+                          <button class="btn" type="button" [disabled]="loading || !record" (click)="edit()">Editar</button>
                           <a class="btn" routerLink="/entities/%4$s">Volver</a>
                         </div>
                       </div>
+                      @if (loading) { <p role="status">Cargando registro…</p> }
+                      @if (error) { <div class="error" role="alert">{{ error }} <button class="btn" type="button" (click)="loadRecord()">Reintentar</button></div> }
                       @if (record) {
                         <section class="card detail-grid">
                 %5$s
@@ -392,15 +446,34 @@ final class AngularEntityFilesRenderer {
                   private readonly api = inject(%1$sApi);
                   private readonly route = inject(ActivatedRoute);
                   private readonly router = inject(Router);
+                  private readonly changes = inject(ChangeDetectorRef);
+                  private readonly destroyRef = inject(DestroyRef);
                   record: %1$sResponse | null = null;
+                  loading = false;
+                  error = '';
+                  private recordRequest?: Subscription;
 
                   ngOnInit(): void {
+                    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.loadRecord());
+                  }
+
+                  loadRecord(): void {
+                    this.recordRequest?.unsubscribe();
+                    this.record = null; this.loading = true; this.error = '';
+                    this.changes.markForCheck();
                     const key = this.api.keyFromQuery(this.route.snapshot.queryParamMap.keys
                       .reduce<Record<string, string | null>>((all, key) => {
                         all[key] = this.route.snapshot.queryParamMap.get(key);
                         return all;
                       }, {}));
-                    this.api.get(key).subscribe((record) => this.record = record);
+                    this.recordRequest = this.api.get(key).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                      next: (record) => { this.record = record; this.loading = false; this.changes.markForCheck(); },
+                      error: (failure) => {
+                        this.loading = false;
+                        this.error = failure?.error?.message ?? 'No se pudo cargar el registro.';
+                        this.changes.markForCheck();
+                      },
+                    });
                   }
 
                   edit(): void {
@@ -427,8 +500,11 @@ final class AngularEntityFilesRenderer {
         String payload = payload(entity);
         String relationSetup = relationSetup(entity, manifest);
         String relationState = relationState(entity, manifest);
+        String createDefaults = createDefaults(entity);
         return """
-                import { Component, inject, OnInit } from '@angular/core';
+                import { ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
+                import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+                import { Subscription } from 'rxjs';
                 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
                 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
                 import { ReferenceDataService } from '../../core/api/reference-data.service';
@@ -444,13 +520,17 @@ final class AngularEntityFilesRenderer {
                         <h1>{{ editing ? 'Editar' : 'Crear' }} — %3$s</h1>
                         <a class="btn" routerLink="/entities/%4$s">Volver</a>
                       </div>
+                      @if (loading) { <p role="status">Cargando registro…</p> }
+                      @if (loadFailed) { <button class="btn" type="button" (click)="loadRecord()">Reintentar</button> }
+                      @if (referencesLoading) { <p role="status">Cargando opciones…</p> }
+                      @if (referenceError) { <div class="error" role="alert">{{ referenceError }} <button class="btn" type="button" (click)="loadReferences()">Reintentar opciones</button></div> }
                       <form class="card" [formGroup]="form" (ngSubmit)="save()">
-                        <div class="form-grid">
+                        <fieldset class="form-grid" [disabled]="saving || loading || loadFailed || referencesLoading > 0 || !!referenceError">
                 %5$s
-                        </div>
+                        </fieldset>
                         @if (error) { <div class="error">{{ error }}</div> }
                         <div class="form-actions">
-                          <button class="btn btn-primary" type="submit" [disabled]="form.invalid || saving">
+                          <button class="btn btn-primary" type="submit" [disabled]="saving || loading || loadFailed || referencesLoading > 0 || !!referenceError">
                             {{ saving ? 'Guardando…' : 'Guardar' }}
                           </button>
                           <a class="btn" routerLink="/entities/%4$s">Cancelar</a>
@@ -464,8 +544,15 @@ final class AngularEntityFilesRenderer {
                   readonly references = inject(ReferenceDataService);
                   private readonly route = inject(ActivatedRoute);
                   private readonly router = inject(Router);
+                  private readonly changes = inject(ChangeDetectorRef);
+                  private readonly destroyRef = inject(DestroyRef);
                   editing = false;
                   saving = false;
+                  loading = false;
+                  loadFailed = false;
+                  referencesLoading = 0;
+                  referenceError = '';
+                  private recordRequest?: Subscription;
                   error = '';
                   private key: %1$sId | null = null;
                   readonly form = new FormGroup({
@@ -474,20 +561,52 @@ final class AngularEntityFilesRenderer {
                 %7$s
 
                   ngOnInit(): void {
+                    this.loadReferences();
+                    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.loadRecord());
+                  }
+
+                  loadReferences(): void {
+                    if (this.referencesLoading) return;
+                    this.referenceError = '';
                 %8$s
-                    const params = this.route.snapshot.queryParamMap;
-                    if (params.keys.length > 0) {
-                      this.editing = true;
+                  }
+
+                  private configureControls(): void {
+                %11$s
+                  }
+
+                  private applyCreateDefaults(): void {
+                %12$s
+                  }
+
+                  loadRecord(): void {
+                    this.recordRequest?.unsubscribe();
+                    this.form.reset(); this.key = null; this.error = ''; this.loadFailed = false;
+                    this.editing = this.route.snapshot.routeConfig?.path?.endsWith('/edit') === true;
+                    this.configureControls();
+                    if (!this.editing) this.applyCreateDefaults();
+                    this.loading = this.editing;
+                    this.changes.markForCheck();
+                    if (this.editing) {
+                      const params = this.route.snapshot.queryParamMap;
                       this.key = this.api.keyFromQuery(params.keys.reduce<Record<string, string | null>>((all, name) => {
-                        all[name] = params.get(name);
-                        return all;
+                        all[name] = params.get(name); return all;
                       }, {}));
-                      this.api.get(this.key).subscribe((record) => this.patch(record));
+                      this.recordRequest = this.api.get(this.key).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                        next: (record) => { this.patch(record); this.loading = false; this.changes.markForCheck(); },
+                        error: (failure) => {
+                          this.loading = false; this.loadFailed = true;
+                          this.error = failure?.error?.message ?? 'No se pudo cargar el registro.';
+                          this.changes.markForCheck();
+                        },
+                      });
                     }
                   }
 
                   save(): void {
+                    if (this.saving || this.loading || this.loadFailed || this.referencesLoading || this.referenceError) return;
                     if (this.form.invalid) {
+                      this.error = 'Revisa los campos requeridos o invalidos.';
                       this.form.markAllAsTouched();
                       return;
                     }
@@ -497,7 +616,7 @@ final class AngularEntityFilesRenderer {
                     const action = this.editing && this.key
                       ? this.api.update(this.key, request)
                       : this.api.create(request);
-                    action.subscribe({
+                    action.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                       next: (saved) => {
                         this.saving = false;
                         this.router.navigate(['/entities/%4$s/view'], { queryParams: this.api.keyQuery(saved) });
@@ -505,6 +624,7 @@ final class AngularEntityFilesRenderer {
                       error: (failure) => {
                         this.saving = false;
                         this.error = failure?.error?.message ?? 'No se pudo guardar el registro.';
+                        this.changes.markForCheck();
                       },
                     });
                   }
@@ -529,7 +649,7 @@ final class AngularEntityFilesRenderer {
                 }
                 """.formatted(
                 cn, kebab, escapeHtml(entity.displayName()), entity.tableName(), indent(templateFields, 16),
-                controls, relationState, relationSetup, patch, payload
+                controls, relationState, relationSetup, patch, payload, configureControls(entity), createDefaults
         );
     }
 
@@ -538,9 +658,7 @@ final class AngularEntityFilesRenderer {
         for (DomainManifestPlan.Attribute a : entity.attributes()) {
             if (!a.createWritable() && !a.updateWritable()) continue;
             String initial = a.type() == DomainManifestPlan.SemanticType.BOOLEAN ? "false" : "null";
-            String validators = a.validation().requiredOnCreate() && !a.writeOnly()
-                    ? ", { validators: [Validators.required] }"
-                    : "";
+            String validators = a.type() == DomainManifestPlan.SemanticType.BOOLEAN ? ", { nonNullable: true }" : "";
             String type = a.type() == DomainManifestPlan.SemanticType.BOOLEAN
                     ? "boolean"
                     : tsType(a.type()) + " | null";
@@ -555,8 +673,19 @@ final class AngularEntityFilesRenderer {
             boolean many = "MANY_TO_MANY".equals(rel.kind());
             String type = many ? "string[]" : "string | null";
             String initial = many ? "[]" : "null";
-            String validators = !many && !Boolean.TRUE.equals(rel.optional()) ? ", { validators: [Validators.required] }" : "";
+            String validators = many ? ", { nonNullable: true }" : !Boolean.TRUE.equals(rel.optional()) ? ", { validators: [Validators.required] }" : "";
             out.add("    %s: new FormControl<%s>(%s%s),".formatted(rel.requestField(), type, initial, validators));
+        }
+        return String.join("\n", out);
+    }
+
+    String configureControls(DomainManifestPlan.Entity entity) {
+        List<String> out = new ArrayList<>();
+        for (DomainManifestPlan.Attribute a : entity.attributes()) {
+            if (!a.createWritable() && !a.updateWritable()) continue;
+            out.add("    this.form.controls.%1$s.setValidators((this.editing ? %2$s : %3$s) ? [Validators.required] : []);".formatted(a.apiName(), a.validation().requiredOnUpdate(), a.validation().requiredOnCreate()));
+            out.add("    if (this.editing ? %2$s : %3$s) this.form.controls.%1$s.enable({ emitEvent: false }); else this.form.controls.%1$s.disable({ emitEvent: false });".formatted(a.apiName(), a.updateWritable(), a.createWritable()));
+            out.add("    this.form.controls.%s.updateValueAndValidity({ emitEvent: false });".formatted(a.apiName()));
         }
         return String.join("\n", out);
     }
@@ -572,6 +701,10 @@ final class AngularEntityFilesRenderer {
                     rel.name(),
                     target.identifier().fields().stream().map(f -> "'" + ts(f.name()) + "'").collect(Collectors.joining(", "))
             ));
+            out.add("  readonly %sLabelFields = [%s];".formatted(
+                    rel.name(),
+                    referenceLabelFields(target).stream().map(field -> "'" + ts(field) + "'").collect(Collectors.joining(", "))
+            ));
         }
         return String.join("\n", out);
     }
@@ -583,8 +716,14 @@ final class AngularEntityFilesRenderer {
         List<String> out = new ArrayList<>();
         for (DomainManifestPlan.Relation rel : entity.relations()) {
             DomainManifestPlan.Entity target = byId.get(rel.targetEntityId());
-            out.add("    this.references.list('%s').subscribe((page) => this.%sOptions = page.content);"
-                    .formatted(target.endpoint(), rel.name()));
+            out.add("""
+                    this.%2$sOptions = [];
+                    this.referencesLoading++;
+                    this.references.list('%1$s').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                      next: (page) => { this.%2$sOptions = page.content; this.referencesLoading--; this.changes.markForCheck(); },
+                      error: () => { this.referencesLoading--; this.referenceError = 'No se pudieron cargar las opciones.'; this.changes.markForCheck(); },
+                    });
+                    """.formatted(target.endpoint(), rel.name()));
         }
         return String.join("\n", out);
     }
@@ -611,7 +750,7 @@ final class AngularEntityFilesRenderer {
                         escapeHtml(a.logicalName()),
                         inputType,
                         a.apiName(),
-                        a.validation().requiredOnCreate() && !a.writeOnly() ? "required" : ""
+                        "[required]=\"editing ? " + a.validation().requiredOnUpdate() + " : " + a.validation().requiredOnCreate() + "\"" + (a.type() == DomainManifestPlan.SemanticType.DECIMAL ? " step=\"any\"" : "")
                 ));
             }
         }
@@ -625,9 +764,9 @@ final class AngularEntityFilesRenderer {
                             <span>%s</span>
                             <select formControlName="%s" %s>
                               %s
-                              @for (option of %sOptions; track references.optionKey(option, %sIdFields)) {
+                              @for (option of references.withSelected(%sOptions, form.controls.%s.value, %sIdFields); track references.optionKey(option, %sIdFields)) {
                                 <option [value]="references.optionKey(option, %sIdFields)">
-                                  {{ references.optionLabel(option, %sIdFields) }}
+                                  {{ references.optionLabel(option, %sIdFields, %sLabelFields) }}
                                 </option>
                               }
                             </select>
@@ -636,8 +775,8 @@ final class AngularEntityFilesRenderer {
                     escapeHtml(rel.name()),
                     rel.requestField(),
                     many ? "multiple" : "",
-                    many ? "" : "<option value=\"\">—</option>",
-                    rel.name(), rel.name(), rel.name(), rel.name()
+                    many ? "" : "<option [ngValue]=\"null\">—</option>",
+                    rel.name(), rel.requestField(), rel.name(), rel.name(), rel.name(), rel.name(), rel.name()
             ));
         }
         return String.join("\n", out);
@@ -652,9 +791,9 @@ final class AngularEntityFilesRenderer {
         for (DomainManifestPlan.Relation rel : entity.relations()) {
             boolean many = "MANY_TO_MANY".equals(rel.kind());
             if (many) {
-                out.add("      %s: (record.%s ?? []).map((value) => JSON.stringify(value)),".formatted(rel.requestField(), rel.requestField()));
+                out.add("      %s: (record.%s ?? []).map((value) => this.references.encodeKey(value, this.%sIdFields)),".formatted(rel.requestField(), rel.requestField(), rel.name()));
             } else {
-                out.add("      %s: record.%s == null ? null : JSON.stringify(record.%s),".formatted(rel.requestField(), rel.requestField(), rel.requestField()));
+                out.add("      %s: record.%s == null ? null : this.references.encodeKey(record.%s, this.%sIdFields),".formatted(rel.requestField(), rel.requestField(), rel.requestField(), rel.name()));
             }
         }
         return String.join("\n", out);
@@ -664,7 +803,9 @@ final class AngularEntityFilesRenderer {
         List<String> out = new ArrayList<>();
         for (DomainManifestPlan.Attribute a : entity.attributes()) {
             if (!a.createWritable() && !a.updateWritable()) continue;
-            out.add("      %s: raw.%s as %s,".formatted(a.apiName(), a.apiName(), tsType(a.type()) + (a.nullable() ? " | null" : "")));
+            String writable = "(this.editing ? " + a.updateWritable() + " : " + a.createWritable() + ")";
+            if (a.writeOnly() && !a.validation().requiredOnUpdate()) writable += " && (!this.editing || (raw." + a.apiName() + " != null && raw." + a.apiName() + " !== ''))";
+            out.add("      ...(%s ? { %s: raw.%s as %s } : {}),".formatted(writable, a.apiName(), a.apiName(), tsType(a.type()) + (a.nullable() ? " | null" : "")));
         }
         for (DomainManifestPlan.Relation rel : entity.relations()) {
             boolean many = "MANY_TO_MANY".equals(rel.kind());
@@ -688,7 +829,6 @@ final class AngularEntityFilesRenderer {
                         "import { AuthService } from '../core/auth/auth.service';\n")
                 .replace("export class " + authEntity.codeName() + "FormComponent", "export class BootstrapComponent")
                 .replace("  private readonly api = inject(" + authEntity.codeName() + "Api);\n", "  private readonly auth = inject(AuthService);\n")
-                .replace("  editing = false;\n", "")
                 .replace("  private key: " + authEntity.codeName() + "Id | null = null;\n", "")
                 .replace("{{ editing ? 'Editar' : 'Crear' }} — " + escapeHtml(authEntity.displayName()), "Primera cuenta")
                 .replace("<a class=\"btn\" routerLink=\"/entities/" + authEntity.tableName() + "\">Volver</a>", "<a class=\"btn\" routerLink=\"/login\">Volver al login</a>")
@@ -698,7 +838,12 @@ final class AngularEntityFilesRenderer {
         if (initStart >= 0 && saveStart > initStart) {
             String before = component.substring(0, initStart);
             String after = component.substring(saveStart);
-            component = before + "  ngOnInit(): void {\n" + indent(relationSetup(authEntity, manifest), 4) + "\n  }\n\n" + after;
+            component = before + "  ngOnInit(): void { this.configureControls(); this.applyCreateDefaults(); this.loadReferences(); }\n"
+                    + "  loadRecord(): void {}\n"
+                    + "  loadReferences(): void {\n    if (this.referencesLoading) return;\n    this.referenceError = '';\n"
+                    + indent(relationSetup(authEntity, manifest), 4) + "\n  }\n"
+                    + "  private configureControls(): void {\n" + configureControls(authEntity) + "\n  }\n"
+                    + "  private applyCreateDefaults(): void {\n" + createDefaults(authEntity) + "\n  }\n\n" + after;
         }
         int patchStart = component.indexOf("  private patch(");
         if (patchStart >= 0) {
@@ -710,17 +855,20 @@ final class AngularEntityFilesRenderer {
         if (saveMethod >= 0 && toRequestMethod > saveMethod) {
             String newSave = """
                   save(): void {
+                    if (this.saving || this.loading || this.loadFailed || this.referencesLoading || this.referenceError) return;
                     if (this.form.invalid) {
+                      this.error = 'Revisa los campos requeridos o invalidos.';
                       this.form.markAllAsTouched();
                       return;
                     }
                     this.saving = true;
                     this.error = '';
-                    this.auth.bootstrap(this.toRequest()).subscribe({
+                    this.auth.bootstrap(this.toRequest()).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                       next: () => this.router.navigateByUrl('/dashboard'),
                       error: (failure) => {
                         this.saving = false;
                         this.error = failure?.error?.message ?? 'No se pudo crear la primera cuenta.';
+                        this.changes.markForCheck();
                       },
                     });
                   }
@@ -743,6 +891,56 @@ final class AngularEntityFilesRenderer {
         component = component.replace("private toRequest(): " + authEntity.codeName() + "Request", "private toRequest(): Record<string, unknown>");
         component = component.replace("} as " + authEntity.codeName() + "Request;", "};");
         return component;
+    }
+
+    String createDefaults(DomainManifestPlan.Entity entity) {
+        List<DomainManifestPlan.Attribute> temporal = entity.attributes().stream()
+                .filter(DomainManifestPlan.Attribute::createWritable)
+                .filter(attribute -> attribute.type() == DomainManifestPlan.SemanticType.DATE
+                        || attribute.type() == DomainManifestPlan.SemanticType.DATETIME)
+                .toList();
+        if (temporal.isEmpty()) return "    // No temporal defaults required.";
+        List<String> out = new ArrayList<>();
+        out.add("    const now = new Date();");
+        out.add("    const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString();");
+        out.add("    this.form.patchValue({");
+        for (DomainManifestPlan.Attribute attribute : temporal) {
+            String value = attribute.type() == DomainManifestPlan.SemanticType.DATE
+                    ? "local.slice(0, 10)"
+                    : "local.slice(0, 16)";
+            out.add("      %s: %s,".formatted(attribute.apiName(), value));
+        }
+        out.add("    });");
+        return String.join("\n", out);
+    }
+
+    List<String> referenceLabelFields(DomainManifestPlan.Entity entity) {
+        return entity.attributes().stream()
+                .filter(DomainManifestPlan.Attribute::readable)
+                .filter(attribute -> !attribute.identifier() && !attribute.sensitive() && !attribute.writeOnly())
+                .filter(attribute -> attribute.type() == DomainManifestPlan.SemanticType.STRING
+                        || attribute.type() == DomainManifestPlan.SemanticType.INTEGER
+                        || attribute.type() == DomainManifestPlan.SemanticType.LONG
+                        || attribute.type() == DomainManifestPlan.SemanticType.DECIMAL)
+                .sorted(Comparator.comparingInt(this::referenceLabelScore).reversed())
+                .map(DomainManifestPlan.Attribute::apiName)
+                .toList();
+    }
+
+    int referenceLabelScore(DomainManifestPlan.Attribute attribute) {
+        String name = attribute.apiName().toLowerCase(Locale.ROOT)
+                .replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
+                .replaceAll("[^a-z0-9]", "");
+        int semantic = attribute.type() == DomainManifestPlan.SemanticType.STRING ? 100 : 0;
+        if (name.equals("nombre") || name.equals("name") || name.contains("nombrecompleto")
+                || name.contains("fullname") || name.contains("displayname") || name.contains("razonsocial")) return 1000 + semantic;
+        if (name.contains("nombre") || name.endsWith("name") || name.contains("firstname") || name.contains("lastname")
+                || name.contains("apellido") || name.contains("surname")) return 900 + semantic;
+        if (name.contains("titulo") || name.contains("title") || name.contains("label") || name.contains("etiqueta")) return 800 + semantic;
+        if (name.contains("codigo") || name.contains("code") || name.contains("username") || name.contains("usuario")
+                || name.contains("email") || name.contains("correo")) return 700 + semantic;
+        if (name.contains("descripcion") || name.contains("description") || name.contains("motivo")) return 600 + semantic;
+        return semantic;
     }
 
     String controlType(DomainManifestPlan.SemanticType type, boolean nullable) {

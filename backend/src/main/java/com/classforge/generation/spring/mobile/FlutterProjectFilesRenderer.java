@@ -142,6 +142,7 @@ final class FlutterProjectFilesRenderer {
                   final int page;
                   final int size;
                   final int total;
+                  int get totalPages => size <= 0 ? 0 : (total / size).ceil();
 
                   factory PageResponse.fromJson(Map<String, dynamic> json, T Function(Map<String, dynamic>) mapper) {
                     final rawItems = (json['items'] ?? json['content'] ?? const <dynamic>[]) as List<dynamic>;
@@ -220,79 +221,129 @@ final class FlutterProjectFilesRenderer {
     String referencePicker() {
         return """
                 import 'dart:convert';
+                import 'package:flutter/foundation.dart';
                 import 'package:flutter/material.dart';
                 import '../api/api_client.dart';
+                import '../api/page_response.dart';
 
                 class ReferencePicker extends StatefulWidget {
-                  const ReferencePicker({super.key, required this.label, required this.endpoint, required this.idFields, required this.multiple, required this.value, required this.onChanged});
+                  const ReferencePicker({super.key, required this.label, required this.endpoint, required this.idFields, required this.multiple, required this.value, required this.onChanged, this.labelFields = const [], this.enabled = true, this.requiredSelection = false, this.client});
                   final String label;
                   final String endpoint;
                   final List<String> idFields;
+                  final List<String> labelFields;
                   final bool multiple;
                   final Object? value;
                   final ValueChanged<Object?> onChanged;
+                  final bool enabled;
+                  final bool requiredSelection;
+                  final ApiClient? client;
 
-                  @override
-                  State<ReferencePicker> createState() => _ReferencePickerState();
+                  @override State<ReferencePicker> createState() => _ReferencePickerState();
                 }
 
                 class _ReferencePickerState extends State<ReferencePicker> {
-                  final ApiClient api = ApiClient();
+                  late final ApiClient api = widget.client ?? ApiClient();
                   List<Map<String, dynamic>> options = const [];
                   bool loading = true;
+                  String error = '';
+                  int requestVersion = 0;
 
-                  @override
-                  void initState() { super.initState(); _load(); }
+                  @override void initState() { super.initState(); _load(); }
+                  @override void dispose() { requestVersion++; super.dispose(); }
+                  @override void didUpdateWidget(covariant ReferencePicker oldWidget) {
+                    super.didUpdateWidget(oldWidget);
+                    if (oldWidget.endpoint != widget.endpoint || !listEquals(oldWidget.idFields, widget.idFields) || !listEquals(oldWidget.labelFields, widget.labelFields) || oldWidget.multiple != widget.multiple) _load();
+                  }
 
                   Future<void> _load() async {
+                    final version = ++requestVersion;
+                    final endpoint = widget.endpoint;
+                    setState(() { options = []; loading = true; error = ''; });
                     try {
-                      final raw = await api.request('GET', widget.endpoint, query: const {'page': '0', 'size': '100'});
-                      final list = raw is Map ? (raw['items'] ?? raw['content'] ?? const []) : raw;
-                      if (mounted) setState(() => options = (list as List).map((e) => Map<String, dynamic>.from(e as Map)).toList());
-                    } finally {
-                      if (mounted) setState(() => loading = false);
-                    }
+                      final all = <Map<String, dynamic>>[];
+                      int page = 0, totalPages = 1;
+                      do {
+                        final raw = await api.request('GET', endpoint, query: {'page': '$page', 'size': '100'});
+                        if (!mounted || version != requestVersion) return;
+                        final result = PageResponse<Map<String, dynamic>>.fromJson(Map<String, dynamic>.from(raw as Map), (item) => item);
+                        all.addAll(result.items); totalPages = result.totalPages; page++;
+                      } while (page < totalPages);
+                      setState(() => options = all);
+                    } catch (e) { if (mounted && version == requestVersion) setState(() => error = e.toString()); }
+                    finally { if (mounted && version == requestVersion) setState(() => loading = false); }
                   }
 
                   Object _id(Map<String, dynamic> item) {
                     if (widget.idFields.length == 1) return item[widget.idFields.first] as Object;
                     return {for (final field in widget.idFields) field: item[field]};
                   }
-                  String _encoded(Object value) => jsonEncode(value);
-                  String _label(Map<String, dynamic> item) => item.entries.take(3).map((e) => '${e.key}=${e.value}').join(', ');
+                  String _encoded(Object value) => jsonEncode(widget.idFields.length == 1 ? value : {for (final field in widget.idFields) field: (value as Map)[field]});
+                  String _label(Map<String, dynamic> item) {
+                    for (final field in widget.labelFields) {
+                      final value = item[field];
+                      if (value is String && value.trim().isNotEmpty) return value.trim();
+                      if (value is num) return value.toString();
+                    }
+                    return widget.idFields.map((field) => item[field]?.toString() ?? '').where((value) => value.isNotEmpty).join(' / ');
+                  }
+                  String? _validate(bool empty) {
+                    if (loading) return 'Espera a que se carguen las opciones';
+                    if (error.isNotEmpty) return 'Reintenta cargar las opciones';
+                    return widget.requiredSelection && empty ? 'Campo requerido' : null;
+                  }
 
                   @override
                   Widget build(BuildContext context) {
-                    if (loading) return const LinearProgressIndicator();
-                    if (!widget.multiple) {
-                      final selected = widget.value == null ? null : _encoded(widget.value as Object);
-                      return DropdownButtonFormField<String>(
-                        decoration: InputDecoration(labelText: widget.label),
-                        value: selected,
-                        items: options.map((item) { final id = _id(item); return DropdownMenuItem(value: _encoded(id), child: Text(_label(item))); }).toList(),
-                        onChanged: (value) => widget.onChanged(value == null ? null : jsonDecode(value)),
-                      );
+                    final choices = <String, Map<String, dynamic>>{
+                      for (final item in options)
+                        if (widget.idFields.every((field) => item[field] != null)) _encoded(_id(item)): item,
+                    };
+                    final values = widget.multiple ? (widget.value as List? ?? []) : (widget.value == null ? [] : [widget.value]);
+                    final selected = values.whereType<Object>().map(_encoded).toSet();
+                    for (final value in values.whereType<Object>()) {
+                      choices.putIfAbsent(_encoded(value), () => widget.idFields.length == 1 ? {widget.idFields.first: value} : Map<String, dynamic>.from(value as Map));
                     }
-                    final selected = (widget.value as List?)?.map((e) => _encoded(e as Object)).toSet() ?? <String>{};
-                    return InputDecorator(
-                      decoration: InputDecoration(labelText: widget.label),
-                      child: Wrap(
-                        spacing: 8,
-                        children: options.map((item) {
-                          final id = _id(item);
-                          final encoded = _encoded(id);
-                          return FilterChip(
-                            label: Text(_label(item)),
-                            selected: selected.contains(encoded),
-                            onSelected: (yes) {
-                              final next = {...selected};
-                              yes ? next.add(encoded) : next.remove(encoded);
-                              widget.onChanged(next.map(jsonDecode).toList());
-                            },
-                          );
-                        }).toList(),
-                      ),
-                    );
+                    final enabled = widget.enabled && !loading && error.isEmpty;
+                    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      if (loading) const LinearProgressIndicator(),
+                      if (error.isNotEmpty) Row(children: [
+                        Expanded(child: Text(error, style: TextStyle(color: Theme.of(context).colorScheme.error))),
+                        TextButton(onPressed: widget.enabled ? _load : null, child: const Text('Reintentar')),
+                      ]),
+                      if (!widget.multiple)
+                        DropdownButtonFormField<String>(
+                          key: ValueKey('${widget.endpoint}:${widget.idFields.join(',')}:${selected.join(',')}'),
+                          initialValue: selected.isEmpty ? '' : selected.first,
+                          isExpanded: true,
+                          decoration: InputDecoration(labelText: widget.label),
+                          items: [
+                            const DropdownMenuItem(value: '', child: Text('Sin seleccion')),
+                            for (final entry in choices.entries) DropdownMenuItem(value: entry.key, child: Text(_label(entry.value), overflow: TextOverflow.ellipsis)),
+                          ],
+                          validator: (value) => _validate(value == null || value.isEmpty),
+                          onChanged: enabled ? (value) => widget.onChanged(value == null || value.isEmpty ? null : jsonDecode(value)) : null,
+                        )
+                      else
+                        FormField<Object>(
+                          validator: (_) => _validate(selected.isEmpty),
+                          builder: (field) => InputDecorator(
+                            decoration: InputDecoration(labelText: widget.label, errorText: field.errorText),
+                            child: Wrap(spacing: 8, children: [
+                              for (final entry in choices.entries) FilterChip(
+                                label: Text(_label(entry.value)), selected: selected.contains(entry.key),
+                                onSelected: enabled ? (yes) {
+                                  final next = {...selected};
+                                  yes ? next.add(entry.key) : next.remove(entry.key);
+                                  final value = next.map(jsonDecode).toList();
+                                  field.didChange(value); widget.onChanged(value);
+                                } : null,
+                              ),
+                              if (choices.isEmpty && !loading && error.isEmpty) const Text('Sin opciones disponibles'),
+                            ]),
+                          ),
+                        ),
+                    ]);
                   }
                 }
                 """;

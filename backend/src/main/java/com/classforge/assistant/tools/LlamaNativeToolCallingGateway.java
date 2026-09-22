@@ -3,6 +3,7 @@ package com.classforge.assistant.tools;
 import com.classforge.assistant.AssistantPlanningException;
 import com.classforge.project.domain.document.ProjectDocument;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
+@ConditionalOnProperty(name = "classforge.assistant.text.provider", havingValue = "llama-cpp", matchIfMissing = true)
 public class LlamaNativeToolCallingGateway implements AssistantToolCallingGateway {
 
     static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(90);

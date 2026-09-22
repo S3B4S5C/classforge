@@ -18,6 +18,7 @@ final class GeneratedAssistantGatewayRenderer {
                 import java.net.http.HttpResponse;
                 import java.time.Duration;
                 import java.time.Instant;
+                import java.time.LocalDateTime;
                 import java.util.ArrayList;
                 import java.util.LinkedHashMap;
                 import java.util.List;
@@ -45,51 +46,84 @@ final class GeneratedAssistantGatewayRenderer {
                         this.model = model;
                     }
 
-                    public Intent route(String text) {
-                        Map<String, Object> parameters = objectSchema(Map.of(
-                                "intent", Map.of("type", "string", "enum", List.of(
-                                        "QUERY", "COUNT", "GET", "CREATE", "UPDATE", "DELETE",
-                                        "SET_RELATION", "ADD_RELATION", "REMOVE_RELATION"))
-                        ), List.of("intent"));
-                        JsonNode args = call("route_data_request", "Clasifica la intencion de datos sin ejecutarla.", parameters,
+                    public RouteDecision route(String text) {
+                        Map<String, Object> props = new LinkedHashMap<>();
+                        props.put("intent", Map.of("type", "string", "enum", List.of(
+                                "QUERY", "COUNT", "GET", "CREATE", "UPDATE", "DELETE",
+                                "SET_RELATION", "ADD_RELATION", "REMOVE_RELATION")));
+                        props.put("entity", Map.of("type", "string", "enum", GeneratedAssistantMetadata.entityCodes()));
+                        JsonNode args = call("route_data_request", "Clasifica la intencion y la entidad principal sin ejecutar nada.",
+                                objectSchema(props, List.of("intent", "entity")),
                                 "Eres el router local de la aplicacion generada. Usa una sola tool_call. "
+                                        + "Elige tambien la entidad principal mencionada por el usuario. "
                                         + "QUERY=listar/buscar; COUNT=contar; GET=un registro; CREATE=crear; UPDATE=modificar; DELETE=eliminar; "
                                         + "SET_RELATION=asignar relacion to-one; ADD_RELATION/REMOVE_RELATION=relacion many-to-many.", text);
-                        try { return Intent.valueOf(args.path("intent").asString()); }
-                        catch (RuntimeException exception) { throw new IllegalArgumentException("llama.cpp devolvio una intencion desconocida.", exception); }
+                        try {
+                            Intent intent = Intent.valueOf(args.path("intent").asString());
+                            String entity = args.path("entity").asString();
+                            GeneratedAssistantMetadata.entityByCode(entity);
+                            return new RouteDecision(intent, entity);
+                        } catch (RuntimeException exception) {
+                            throw new IllegalArgumentException("llama.cpp devolvio una ruta de datos desconocida.", exception);
+                        }
                     }
 
-                    public RawCommand command(String text, Intent intent) {
+                    public RawCommand command(String text, RouteDecision route) {
+                        return command(text, route, null);
+                    }
+
+                    public RawCommand command(String text, RouteDecision route, String correction) {
+                        Intent intent = route.intent();
+                        String entity = route.entity();
                         String tool = switch (intent) {
                             case QUERY -> "query_records"; case COUNT -> "count_records"; case GET -> "get_record";
                             case CREATE -> "create_record"; case UPDATE -> "update_record"; case DELETE -> "delete_record";
                             case SET_RELATION -> "set_relation"; case ADD_RELATION -> "add_relation"; case REMOVE_RELATION -> "remove_relation";
                         };
+                        boolean queryIntent = intent == Intent.QUERY || intent == Intent.COUNT;
+                        boolean selectorIntent = intent == Intent.GET || intent == Intent.UPDATE || intent == Intent.DELETE
+                                || intent == Intent.SET_RELATION || intent == Intent.ADD_RELATION || intent == Intent.REMOVE_RELATION;
+                        boolean relationIntent = intent == Intent.SET_RELATION || intent == Intent.ADD_RELATION || intent == Intent.REMOVE_RELATION;
                         Map<String, Object> props = new LinkedHashMap<>();
-                        props.put("entity", Map.of("type", "string", "enum", GeneratedAssistantMetadata.entityCodes()));
+                        props.put("entity", Map.of("type", "string", "enum", List.of(entity)));
                         props.put("query", Map.of("type", "string"));
-                        props.put("filters", entriesSchema(GeneratedAssistantMetadata.fieldNames()));
-                        props.put("selector", entriesSchema(GeneratedAssistantMetadata.fieldNames()));
-                        props.put("values", entriesSchema(GeneratedAssistantMetadata.fieldNames()));
-                        List<String> relations = GeneratedAssistantMetadata.relationNames();
+                        props.put("filters", entriesSchema(queryIntent ? GeneratedAssistantMetadata.filterFieldNames(entity) : List.of()));
+                        props.put("selector", entriesSchema(selectorIntent ? GeneratedAssistantMetadata.selectorFieldNames(entity) : List.of()));
+                        props.put("values", entriesSchema(GeneratedAssistantMetadata.valueFieldNames(entity, intent)));
+                        List<String> relations = relationIntent ? GeneratedAssistantMetadata.relationNames(entity) : List.of();
                         props.put("relation", relations.isEmpty() ? Map.of("type", "string") : Map.of("type", "string", "enum", relations));
-                        props.put("targetSelector", entriesSchema(GeneratedAssistantMetadata.fieldNames()));
-                        JsonNode args = call(tool, "Prepara un comando grounded para la operacion " + intent,
-                                objectSchema(props, List.of("entity")), commandPrompt(intent), text);
-                        return parseRaw(args);
+                        props.put("targetSelector", entriesSchema(relationIntent ? GeneratedAssistantMetadata.targetSelectorFieldNames(entity) : List.of()));
+                        JsonNode args = call(tool, "Prepara un comando grounded para " + intent + " sobre " + entity,
+                                objectSchema(props, List.of("entity")), commandPrompt(route, correction), text);
+                        return parseRaw(args, entity);
                     }
 
-                    private String commandPrompt(Intent intent) {
+                    private String commandPrompt(RouteDecision route, String correction) {
+                        String repair = correction == null || correction.isBlank() ? ""
+                                : " El intento anterior fue rechazado por esta razon: " + correction
+                                        + " Corrige solo ese problema y vuelve a emitir la tool_call.";
+                        String clock = LocalDateTime.now().withNano(0).toString();
                         return "Eres el planificador local de datos de una aplicacion generada por ClassForge. "
-                                + "Responde exclusivamente con una tool_call. No inventes entidades/campos/relaciones. "
-                                + "Usa selector para identificar registros existentes; values solo para datos a escribir; "
-                                + "targetSelector identifica el destino de una relacion. Para null escribe literalmente null. "
-                                + "Para IDs compuestos usa cada campo del ID como entrada separada. Intent=" + intent + ". Catalogo:"
-                                + GeneratedAssistantMetadata.catalogPrompt();
+                                + "Responde exclusivamente con una tool_call y trabaja SOLO con la entidad " + route.entity() + ". "
+                                + "No inventes entidades, campos ni relaciones. Usa selector solo para identificar el registro principal existente; "
+                                + "values solo para datos que se escriben. Si el usuario menciona una relacion to-one por un nombre humano, "
+                                + "por ejemplo 'propietario Hola', coloca en values el nombre de la relacion ('propietario') y el valor humano ('Hola'); "
+                                + "NO inventes campos tecnicos como propietarioId ni intentes convertir nombres humanos a UUID. "
+                                + "REGLA ESTRICTA DE FECHAS: el reloj local actual del servidor es " + clock + ". "
+                                + "Si el usuario dice hoy, ahora, ayer, manana, pasado manana, anteayer, hace N dias/semanas/meses/anos/horas/minutos "
+                                + "o dentro de N dias/semanas/meses/anos/horas/minutos, NO calcules una fecha absoluta. "
+                                + "Copia esa expresion temporal como value del campo DATE/DATETIME; puedes convertir 'un/una' a '1', pero nada mas. "
+                                + "Ejemplos: 'creado hoy' -> value='hoy'; 'nacido hace un ano' -> value='hace 1 ano'. "
+                                + "Si el usuario da una fecha absoluta sin hora para un DATETIME, conserva YYYY-MM-DD; el backend completara una hora valida. "
+                                + "targetSelector se usa solo con SET_RELATION/ADD_RELATION/REMOVE_RELATION. Para null escribe literalmente null. "
+                                + "Para IDs compuestos usa campo=valor separado por comas cuando el valor sea un identificador directo. Intent="
+                                + route.intent() + ". Catalogo acotado:" + GeneratedAssistantMetadata.catalogPrompt(route.entity(), route.intent()) + repair;
                     }
 
-                    private RawCommand parseRaw(JsonNode node) {
-                        return new RawCommand(text(node, "entity"), text(node, "query"), filters(node.get("filters")),
+                    private RawCommand parseRaw(JsonNode node, String entityFallback) {
+                        String entity = text(node, "entity");
+                        if (entity == null || entity.isBlank()) entity = entityFallback;
+                        return new RawCommand(entity, text(node, "query"), filters(node.get("filters")),
                                 values(node.get("selector")), values(node.get("values")), text(node, "relation"), values(node.get("targetSelector")));
                     }
                     private List<FilterInput> filters(JsonNode node) {
@@ -111,7 +145,11 @@ final class GeneratedAssistantGatewayRenderer {
                         Map<String, Object> itemProps = new LinkedHashMap<>();
                         itemProps.put("field", fields.isEmpty() ? Map.of("type", "string") : Map.of("type", "string", "enum", fields));
                         itemProps.put("value", Map.of("type", "string"));
-                        return Map.of("type", "array", "items", objectSchema(itemProps, List.of("field", "value")));
+                        Map<String, Object> schema = new LinkedHashMap<>();
+                        schema.put("type", "array");
+                        schema.put("items", objectSchema(itemProps, List.of("field", "value")));
+                        if (fields.isEmpty()) schema.put("maxItems", 0);
+                        return schema;
                     }
                     private Map<String, Object> objectSchema(Map<String, Object> props, List<String> required) {
                         Map<String, Object> schema = new LinkedHashMap<>();
@@ -211,7 +249,7 @@ final class GeneratedAssistantGatewayRenderer {
                             if (response.statusCode() < 200 || response.statusCode() >= 300)
                                 throw new IllegalStateException("whisper.cpp respondio HTTP " + response.statusCode());
                             JsonNode root = json.readTree(response.body());
-                            String transcript = root.path("text").asString().replaceAll("\\s+", " ").trim();
+                            String transcript = root.path("text").asString().replaceAll("\\\\s+", " ").trim();
                             if (transcript.isBlank()) throw new IllegalArgumentException("Whisper no detecto voz suficiente.");
                             if (transcript.length() > 1000) throw new IllegalArgumentException("La transcripcion supera 1000 caracteres.");
                             return transcript;
@@ -228,10 +266,23 @@ final class GeneratedAssistantGatewayRenderer {
                     private byte[] multipart(String boundary, byte[] wav, String filename) throws Exception {
                         String safe = filename == null || filename.isBlank() ? "voice.wav" : filename.replaceAll("[^A-Za-z0-9._-]", "_");
                         ByteArrayOutputStream out = new ByteArrayOutputStream();
-                        write(out, "--" + boundary + "\\r\\nContent-Disposition: form-data; name=\\\"file\\\"; filename=\\\"" + safe + "\\\"\\r\\nContent-Type: audio/wav\\r\\n\\r\\n");
-                        out.write(wav); write(out, "\\r\\n--" + boundary + "\\r\\nContent-Disposition: form-data; name=\\\"language\\\"\\r\\n\\r\\n" + language + "\\r\\n");
+                        writeField(out, boundary, "temperature", "0.0");
+                        writeField(out, boundary, "temperature_inc", "0.2");
+                        writeField(out, boundary, "language", language);
+                        writeField(out, boundary, "response_format", "json");
+                        writeField(out, boundary, "prompt", GeneratedAssistantMetadata.speechPrompt());
+                        writeFile(out, boundary, wav, safe);
                         write(out, "--" + boundary + "--\\r\\n");
                         return out.toByteArray();
+                    }
+                    private void writeField(ByteArrayOutputStream out, String boundary, String name, String value) throws Exception {
+                        write(out, "--" + boundary + "\\r\\nContent-Disposition: form-data; name=\\\"" + name + "\\\"\\r\\n\\r\\n" + value + "\\r\\n");
+                    }
+                    private void writeFile(ByteArrayOutputStream out, String boundary, byte[] wav, String filename) throws Exception {
+                        write(out, "--" + boundary + "\\r\\nContent-Disposition: form-data; name=\\\"file\\\"; filename=\\\"" + filename
+                                + "\\\"\\r\\nContent-Type: audio/wav\\r\\n\\r\\n");
+                        out.write(wav);
+                        write(out, "\\r\\n");
                     }
                     private void write(ByteArrayOutputStream out, String value) throws Exception { out.write(value.getBytes(java.nio.charset.StandardCharsets.UTF_8)); }
                 }

@@ -126,7 +126,8 @@ final class AngularAssistantFilesRenderer {
 
     String assistantComponent() {
         return """
-                import { Component, inject } from '@angular/core';
+                import { ChangeDetectorRef, Component, DestroyRef, inject, OnDestroy } from '@angular/core';
+                import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
                 import { FormsModule } from '@angular/forms';
                 import { AssistantPlanResponse, AssistantService } from './assistant.service';
                 import { BrowserWavRecorderService } from './browser-wav-recorder.service';
@@ -159,7 +160,9 @@ final class AngularAssistantFilesRenderer {
                     </main>
                   `,
                 })
-                export class AssistantComponent {
+                export class AssistantComponent implements OnDestroy {
+                  private readonly changes = inject(ChangeDetectorRef);
+                  private readonly destroyRef = inject(DestroyRef);
                   private readonly assistant = inject(AssistantService);
                   private readonly recorder = inject(BrowserWavRecorderService);
                   text = '';
@@ -169,34 +172,49 @@ final class AngularAssistantFilesRenderer {
                   pending: AssistantPlanResponse | null = null;
                   readonly messages: AssistantMessage[] = [];
 
+                  ngOnDestroy(): void { void this.recorder.cancel(); }
+
                   send(): void {
+                    if (this.busy || this.recording) return;
+                    this.pending = null;
                     const value = this.text.trim(); if (!value) return;
                     this.messages.push({ role: 'user', text: value }); this.text = ''; this.busy = true; this.error = '';
-                    this.assistant.plan(value).subscribe({ next: (result) => this.accept(result), error: (error) => this.fail(error) });
+                    this.assistant.plan(value).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: (result) => this.accept(result), error: (error) => this.fail(error) });
                   }
                   async startVoice(): Promise<void> {
-                    this.error = '';
-                    try { await this.recorder.start(); this.recording = true; } catch (error) { this.error = this.message(error); }
+                    if (this.busy || this.recording) return;
+                    this.error = ''; this.busy = true; this.pending = null;
+                    try {
+                      await this.recorder.start();
+                      if (this.destroyRef.destroyed) { await this.recorder.cancel(); return; }
+                      this.recording = true;
+                    } catch (error) { this.error = this.message(error); }
+                    finally { this.busy = false; if (!this.destroyRef.destroyed) this.changes.markForCheck(); }
                   }
                   async stopVoice(): Promise<void> {
+                    if (this.busy || !this.recording) return;
                     this.busy = true; this.error = '';
                     try {
                       const blob = await this.recorder.stop(); this.recording = false;
-                      this.assistant.voice(blob).subscribe({ next: (result) => { this.messages.push({ role: 'user', text: result.transcript }); this.accept(result); }, error: (error) => this.fail(error) });
-                    } catch (error) { this.recording = false; this.busy = false; this.error = this.message(error); }
+                      if (this.destroyRef.destroyed) return;
+                      this.changes.markForCheck();
+                      this.assistant.voice(blob).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: (result) => { this.messages.push({ role: 'user', text: result.transcript }); this.accept(result); }, error: (error) => this.fail(error) });
+                    } catch (error) { this.recording = false; this.fail(error); }
                   }
                   apply(): void {
+                    if (this.busy || this.recording) return;
                     const token = this.pending?.previewToken; if (!token) return;
                     this.busy = true; this.error = '';
-                    this.assistant.apply(token).subscribe({ next: (result) => { this.pending = null; this.accept(result); }, error: (error) => this.fail(error) });
+                    this.assistant.apply(token).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: (result) => { this.pending = null; this.accept(result); }, error: (error) => this.fail(error) });
                   }
                   private accept(result: AssistantPlanResponse): void {
                     this.busy = false;
+                    this.changes.markForCheck();
                     if (result.requiresConfirmation) { this.pending = result; this.messages.push({ role: 'assistant', text: result.summary }); return; }
                     this.pending = null;
                     this.messages.push({ role: 'assistant', text: result.summary, detail: result.result == null ? undefined : JSON.stringify(result.result, null, 2) });
                   }
-                  private fail(error: unknown): void { this.busy = false; this.error = this.message(error); }
+                  private fail(error: unknown): void { this.busy = false; this.error = this.message(error); if (!this.destroyRef.destroyed) this.changes.markForCheck(); }
                   private message(error: unknown): string {
                     if (typeof error === 'object' && error !== null && 'error' in error) {
                       const body = (error as { error?: { message?: string } }).error; if (body?.message) return body.message;

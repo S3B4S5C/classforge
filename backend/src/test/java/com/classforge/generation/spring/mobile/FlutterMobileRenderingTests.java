@@ -6,6 +6,7 @@ import com.classforge.generation.spring.application.SpringBootGenerationOptions;
 import com.classforge.generation.spring.generated.GeneratedFile;
 import com.classforge.generation.spring.generated.GeneratedProject;
 import com.classforge.generation.spring.generated.GeneratedProjectValidator;
+import com.classforge.generation.spring.frontend.GeneratedUiRegressionFixture;
 import com.classforge.generation.spring.model.*;
 import com.classforge.generation.spring.rendering.SpringFreeMarkerRenderer;
 import com.classforge.generation.spring.rendering.SpringProjectRenderer;
@@ -69,6 +70,38 @@ class FlutterMobileRenderingTests {
         assertTrue(text(auth, "mobile/lib/core/theme/app_theme.dart").contains("Color(0xFF0F766E)"));
     }
 
+    @Test
+    void rendersStateSafeMobileListsAndReferencePickers() {
+        List<GeneratedFile> files = new FlutterMobileRenderer().render(
+                GeneratedUiRegressionFixture.manifest(false),
+                "ui-regression",
+                "com.example.regression",
+                "#0F766E"
+        );
+
+        String list = text(files, "mobile/lib/entities/person/person_list_page.dart");
+        assertTrue(list.contains("requestVersion"));
+        assertTrue(list.contains("appliedSearch"));
+        assertTrue(list.contains("Pagina ${pageIndex + 1}"));
+        assertEquals(1, occurrences(list, "Pagina ${pageIndex + 1}"));
+
+        String form = text(files, "mobile/lib/entities/person/person_form_page.dart");
+        assertTrue(form.contains("teamIdValue = widget.existing?.data['teamId']"));
+        assertTrue(form.contains("key: const ValueKey('teamId')"));
+        assertTrue(form.contains("labelFields: const ['name']"));
+        assertTrue(form.contains("birthDateController.text = widget.existing == null ? DateTime.now().toIso8601String().substring(0, 10)"));
+        assertTrue(form.contains("appointmentAtController.text = widget.existing == null ? DateTime.now().toIso8601String().substring(0, 16)"));
+        assertTrue(form.contains("enabled: !saving"));
+
+        String picker = text(files, "mobile/lib/core/widgets/reference_picker.dart");
+        assertTrue(picker.contains("requestVersion"));
+        assertTrue(picker.contains("final List<String> labelFields"));
+        assertTrue(picker.contains("for (final field in widget.labelFields)"));
+        assertTrue(picker.contains("setState(() { options = []; loading = true; error = ''; })"));
+        assertTrue(picker.contains("PageResponse<Map<String, dynamic>>.fromJson"));
+        assertTrue(picker.contains("choices.putIfAbsent"));
+    }
+
     private GeneratedFile file(GeneratedProject project, String path) {
         return project.files().stream().filter(candidate -> candidate.path().equals(path)).findFirst().orElse(null);
     }
@@ -77,6 +110,18 @@ class FlutterMobileRenderingTests {
         GeneratedFile file = file(project, path);
         assertNotNull(file, path);
         return new String(file.content(), StandardCharsets.UTF_8);
+    }
+
+    private String text(List<GeneratedFile> files, String path) {
+        GeneratedFile file = files.stream().filter(candidate -> candidate.path().equals(path)).findFirst().orElse(null);
+        assertNotNull(file, path);
+        return new String(file.content(), StandardCharsets.UTF_8);
+    }
+
+    private int occurrences(String text, String token) {
+        int count = 0;
+        for (int index = text.indexOf(token); index >= 0; index = text.indexOf(token, index + token.length())) count++;
+        return count;
     }
 
     private Fixture fixture() {

@@ -31,6 +31,13 @@ final class GeneratedAssistantMetadataRenderer {
 
                     public record FilterInput(String field, String value) { }
                     public record FieldValue(String field, String value) { }
+                    public record RouteDecision(Intent intent, String entity) { }
+                    public record RelationValue(String relation, Map<String, Object> selector, String spokenValue) {
+                        public RelationValue {
+                            selector = Map.copyOf(selector == null ? Map.of() : selector);
+                            spokenValue = spokenValue == null ? "" : spokenValue;
+                        }
+                    }
 
                     public record RawCommand(
                             String entity,
@@ -56,6 +63,7 @@ final class GeneratedAssistantMetadataRenderer {
                             Map<String, String> filters,
                             Map<String, Object> selector,
                             Map<String, Object> values,
+                            Map<String, RelationValue> relationValues,
                             String relation,
                             Map<String, Object> targetSelector
                     ) { }
@@ -123,8 +131,12 @@ final class GeneratedAssistantMetadataRenderer {
 
                 import java.math.BigDecimal;
                 import java.text.Normalizer;
+                import java.time.Instant;
                 import java.time.LocalDate;
                 import java.time.LocalDateTime;
+                import java.time.OffsetDateTime;
+                import java.time.ZoneId;
+                import java.time.format.DateTimeFormatter;
                 import java.util.ArrayList;
                 import java.util.LinkedHashMap;
                 import java.util.LinkedHashSet;
@@ -227,7 +239,9 @@ final class GeneratedAssistantMetadataRenderer {
                         }
 
                         Map<String, Object> selector = selector(entity, raw.selector());
-                        Map<String, Object> values = values(entity, raw.values(), intent);
+                        ResolvedValues resolvedValues = values(entity, raw.values(), intent);
+                        Map<String, Object> values = resolvedValues.scalars();
+                        Map<String, RelationValue> relationValues = resolvedValues.relations();
                         RelationMeta relation = null;
                         Map<String, Object> targetSelector = Map.of();
                         if (intent == Intent.SET_RELATION || intent == Intent.ADD_RELATION || intent == Intent.REMOVE_RELATION) {
@@ -246,13 +260,13 @@ final class GeneratedAssistantMetadataRenderer {
                                 && selector.isEmpty()) {
                             throw new IllegalArgumentException("La operacion necesita un selector de registro.");
                         }
-                        if ((intent == Intent.CREATE || intent == Intent.UPDATE) && values.isEmpty()) {
+                        if ((intent == Intent.CREATE || intent == Intent.UPDATE) && values.isEmpty() && relationValues.isEmpty()) {
                             throw new IllegalArgumentException("La operacion necesita valores a escribir.");
                         }
-                        if (intent == Intent.CREATE) validateCreateRequired(entity, values);
+                        if (intent == Intent.CREATE) validateCreateRequired(entity, values, relationValues);
 
                         return new Command(intent, entity.codeName(), trim(raw.query()), copy(filters), copy(selector),
-                                copy(values), relation == null ? null : relation.name(), copy(targetSelector));
+                                copy(values), copy(relationValues), relation == null ? null : relation.name(), copy(targetSelector));
                     }
 
                     private static Map<String, Object> selector(EntityMeta entity, List<FieldValue> inputs) {
@@ -265,14 +279,17 @@ final class GeneratedAssistantMetadataRenderer {
                         return result;
                     }
 
-                    private static Map<String, Object> values(EntityMeta entity, List<FieldValue> inputs, Intent intent) {
-                        Map<String, Object> result = new LinkedHashMap<>();
+                    private record ResolvedValues(Map<String, Object> scalars, Map<String, RelationValue> relations) { }
+
+                    private static ResolvedValues values(EntityMeta entity, List<FieldValue> inputs, Intent intent) {
+                        Map<String, Object> scalars = new LinkedHashMap<>();
+                        Map<String, RelationValue> relations = new LinkedHashMap<>();
                         for (FieldValue input : inputs == null ? List.<FieldValue>of() : inputs) {
                             FieldMeta scalar = findField(entity, input.field());
                             if (scalar != null) {
                                 boolean writable = intent == Intent.CREATE ? scalar.createWritable() : scalar.updateWritable();
                                 if (!writable) throw new IllegalArgumentException("El campo " + scalar.apiName() + " no es escribible para " + intent + ".");
-                                result.put(scalar.apiName(), parse(scalar.type(), input.value(), scalar.nullable()));
+                                scalars.put(scalar.apiName(), parse(scalar.type(), input.value(), scalar.nullable()));
                                 continue;
                             }
                             RelationMeta relation = findRelation(entity, input.field());
@@ -280,9 +297,65 @@ final class GeneratedAssistantMetadataRenderer {
                             if (relation.many()) {
                                 throw new IllegalArgumentException("Las relaciones many-to-many se modifican con ADD_RELATION/REMOVE_RELATION.");
                             }
-                            result.put(relation.requestField(), parseRelationId(relation.targetIdentifier(), input.value(), relation.optional()));
+                            if (isNull(input.value())) {
+                                if (!relation.optional()) throw new IllegalArgumentException("La relacion " + relation.name() + " es obligatoria y no admite null.");
+                                scalars.put(relation.requestField(), null);
+                                continue;
+                            }
+                            EntityMeta target = entityByCode(relation.targetEntity());
+                            FieldMeta humanField = preferredSelectorField(target);
+                            if (shouldUseDirectIdentifier(relation.targetIdentifier(), input.value(), humanField == null)) {
+                                scalars.put(relation.requestField(), parseRelationId(relation.targetIdentifier(), input.value(), relation.optional()));
+                                continue;
+                            }
+                            if (humanField == null) {
+                                throw new IllegalArgumentException("La relacion " + relation.name()
+                                        + " necesita el identificador de " + target.logicalName() + ".");
+                            }
+                            Object parsed = parse(humanField.type(), input.value(), false);
+                            relations.put(relation.requestField(), new RelationValue(
+                                    relation.name(), Map.of(humanField.apiName(), parsed), trim(input.value())));
                         }
-                        return result;
+                        return new ResolvedValues(scalars, relations);
+                    }
+
+                    private static boolean shouldUseDirectIdentifier(List<IdField> fields, String raw, boolean noHumanField) {
+                        if (fields.size() > 1) return raw != null && raw.contains("=");
+                        if (fields.isEmpty()) return false;
+                        String type = fields.getFirst().type();
+                        if ("STRING".equals(type)) return noHumanField;
+                        String value = raw == null ? "" : raw.trim();
+                        return switch (type) {
+                            case "UUID" -> {
+                                try { UUID.fromString(value); yield true; }
+                                catch (RuntimeException ignored) { yield false; }
+                            }
+                            case "INTEGER", "LONG" -> value.matches("[-+]?\\\\d+");
+                            case "DECIMAL" -> value.matches("[-+]?(?:\\\\d+(?:\\\\.\\\\d*)?|\\\\.\\\\d+)");
+                            default -> noHumanField;
+                        };
+                    }
+
+                    private static FieldMeta preferredSelectorField(EntityMeta entity) {
+                        return entity.fields().stream()
+                                .filter(field -> !field.sensitive() && !field.identifier() && field.filterable())
+                                .sorted(java.util.Comparator.comparingInt(GeneratedAssistantMetadata::selectorPriority)
+                                        .thenComparing(FieldMeta::apiName))
+                                .findFirst().orElse(null);
+                    }
+
+                    private static int selectorPriority(FieldMeta field) {
+                        String name = normalize(field.logicalName() + " " + field.apiName());
+                        if (name.contains("nombrecompleto") || name.contains("fullname")) return 0;
+                        if (name.equals("nombre") || name.equals("name") || name.endsWith("nombre") || name.endsWith("name")) return 1;
+                        if (name.contains("titulo") || name.contains("title")) return 2;
+                        if (name.contains("razonsocial") || name.contains("displayname")) return 3;
+                        if (name.contains("codigo") || name.contains("code")) return 4;
+                        if (name.contains("username") || name.contains("usuario")) return 5;
+                        if (name.contains("email") || name.contains("correo")) return 6;
+                        if (name.contains("descripcion") || name.contains("description")) return 7;
+                        if ("STRING".equals(field.type())) return 20;
+                        return 50;
                     }
 
                     private static Object parseRelationId(List<IdField> fields, String raw, boolean nullable) {
@@ -304,14 +377,15 @@ final class GeneratedAssistantMetadataRenderer {
                         return id;
                     }
 
-                    private static void validateCreateRequired(EntityMeta entity, Map<String, Object> values) {
+                    private static void validateCreateRequired(EntityMeta entity, Map<String, Object> values, Map<String, RelationValue> relationValues) {
                         for (FieldMeta field : entity.fields()) {
                             if (field.requiredOnCreate() && field.createWritable() && !values.containsKey(field.apiName())) {
                                 throw new IllegalArgumentException("Falta el campo obligatorio " + field.apiName() + " para crear " + entity.logicalName() + ".");
                             }
                         }
                         for (RelationMeta relation : entity.relations()) {
-                            if (!relation.many() && !relation.optional() && !values.containsKey(relation.requestField())) {
+                            if (!relation.many() && !relation.optional()
+                                    && !values.containsKey(relation.requestField()) && !relationValues.containsKey(relation.requestField())) {
                                 throw new IllegalArgumentException("Falta la relacion obligatoria " + relation.name() + ".");
                             }
                         }
@@ -348,6 +422,14 @@ final class GeneratedAssistantMetadataRenderer {
                             });
                             text.append(" | valores: ").append(safe);
                         }
+                        if (!command.relationValues().isEmpty()) {
+                            Map<String, String> human = new LinkedHashMap<>();
+                            command.relationValues().forEach((key, value) -> {
+                                RelationMeta relationValue = findRelation(entity, key);
+                                human.put(relationValue == null ? key : relationValue.name(), value.spokenValue());
+                            });
+                            text.append(" | relaciones: ").append(human);
+                        }
                         if (command.relation() != null) text.append(" | relacion: ").append(command.relation());
                         return text.toString();
                     }
@@ -367,6 +449,101 @@ final class GeneratedAssistantMetadataRenderer {
                             }
                         }
                         return out.toString();
+                    }
+
+                    public static String catalogPrompt(String entityCode, Intent intent) {
+                        EntityMeta entity = entityByCode(entityCode);
+                        StringBuilder out = new StringBuilder();
+                        out.append("\\n- ").append(entity.logicalName()).append(" [code=").append(entity.codeName()).append("] capacidades=").append(entity.capabilities());
+                        out.append("\\n  campos escalares: ");
+                        for (FieldMeta field : entity.fields()) {
+                            if (field.sensitive()) continue;
+                            boolean writable = intent == Intent.CREATE ? field.createWritable() : intent == Intent.UPDATE && field.updateWritable();
+                            out.append(field.apiName()).append('(').append(field.type());
+                            if (writable) out.append(",writable");
+                            if (field.filterable()) out.append(",filterable");
+                            if ("DATE".equals(field.type()) || "DATETIME".equals(field.type())) out.append(",acepta-expresion-temporal");
+                            out.append("), ");
+                        }
+                        if (!entity.relations().isEmpty()) {
+                            out.append("\\n  relaciones: ");
+                            for (RelationMeta relation : entity.relations()) {
+                                EntityMeta target = entityByCode(relation.targetEntity());
+                                FieldMeta preferred = preferredSelectorField(target);
+                                out.append(relation.name()).append(" [requestField=").append(relation.requestField())
+                                        .append(", ").append(relation.kind()).append(" -> ").append(target.logicalName());
+                                if (preferred != null) out.append(", referencia humana por ").append(preferred.apiName());
+                                out.append("], ");
+                            }
+                        }
+                        return out.toString();
+                    }
+
+                    public static List<String> filterFieldNames(String entityCode) {
+                        return entityByCode(entityCode).fields().stream()
+                                .filter(field -> !field.sensitive() && (field.filterable() || field.searchable()))
+                                .map(FieldMeta::apiName).distinct().toList();
+                    }
+
+                    public static List<String> selectorFieldNames(String entityCode) {
+                        return entityByCode(entityCode).fields().stream()
+                                .filter(field -> !field.sensitive() && (field.filterable() || field.identifier()))
+                                .map(FieldMeta::apiName).distinct().toList();
+                    }
+
+                    public static List<String> valueFieldNames(String entityCode, Intent intent) {
+                        if (intent != Intent.CREATE && intent != Intent.UPDATE) return List.of();
+                        EntityMeta entity = entityByCode(entityCode);
+                        Set<String> names = new LinkedHashSet<>();
+                        entity.fields().stream()
+                                .filter(field -> !field.sensitive())
+                                .filter(field -> intent == Intent.CREATE ? field.createWritable() : field.updateWritable())
+                                .map(FieldMeta::apiName).forEach(names::add);
+                        entity.relations().stream().filter(relation -> !relation.many())
+                                .map(RelationMeta::name).forEach(names::add);
+                        return List.copyOf(names);
+                    }
+
+                    public static List<String> relationNames(String entityCode) {
+                        return entityByCode(entityCode).relations().stream().map(RelationMeta::name).distinct().toList();
+                    }
+
+                    public static List<String> targetSelectorFieldNames(String entityCode) {
+                        Set<String> names = new LinkedHashSet<>();
+                        for (RelationMeta relation : entityByCode(entityCode).relations()) {
+                            for (FieldMeta field : entityByCode(relation.targetEntity()).fields()) {
+                                if (!field.sensitive() && (field.filterable() || field.identifier())) names.add(field.apiName());
+                            }
+                        }
+                        return List.copyOf(names);
+                    }
+
+                    public static String speechPrompt() {
+                        LinkedHashSet<String> terms = new LinkedHashSet<>(List.of(
+                                "crear", "crea", "listar", "buscar", "ver", "contar", "actualizar", "editar", "eliminar",
+                                "relacion", "asignar", "agregar", "quitar", "nombre", "codigo", "fecha", "hora",
+                                "hoy", "ahora", "ayer", "manana", "anteayer", "pasado manana", "hace", "dentro de",
+                                "dia", "dias", "semana", "semanas", "mes", "meses", "ano", "anos", "nacido", "nacida", "creado", "creada"));
+                        for (EntityMeta entity : ENTITIES) {
+                            terms.add(entity.logicalName());
+                            terms.add(entity.codeName());
+                            entity.aliases().forEach(terms::add);
+                            entity.fields().stream().filter(field -> !field.sensitive()).forEach(field -> {
+                                terms.add(field.logicalName());
+                                terms.add(field.apiName());
+                            });
+                            entity.relations().forEach(relation -> terms.add(relation.name()));
+                        }
+                        StringBuilder prompt = new StringBuilder();
+                        for (String term : terms) {
+                            if (term == null || term.isBlank()) continue;
+                            String next = term.trim();
+                            int extra = (prompt.isEmpty() ? 0 : 2) + next.length();
+                            if (prompt.length() + extra > 800) break;
+                            if (!prompt.isEmpty()) prompt.append(", ");
+                            prompt.append(next);
+                        }
+                        return prompt.toString();
                     }
 
                     public static List<String> entityCodes() { return ENTITIES.stream().map(EntityMeta::codeName).toList(); }
@@ -411,8 +588,8 @@ final class GeneratedAssistantMetadataRenderer {
                                         throw new IllegalArgumentException("Booleano invalido: " + value);
                                     yield Boolean.valueOf(value);
                                 }
-                                case "DATE" -> LocalDate.parse(value).toString();
-                                case "DATETIME" -> LocalDateTime.parse(value).toString();
+                                case "DATE" -> parseDate(value).toString();
+                                case "DATETIME" -> parseDateTime(value).withNano(0).toString();
                                 case "UUID" -> UUID.fromString(value).toString();
                                 default -> throw new IllegalArgumentException("Tipo no soportado: " + type);
                             };
@@ -420,6 +597,131 @@ final class GeneratedAssistantMetadataRenderer {
                             if (exception instanceof IllegalArgumentException && exception.getMessage() != null && exception.getMessage().startsWith("Booleano")) throw exception;
                             throw new IllegalArgumentException("Valor invalido para " + type + ": " + value, exception);
                         }
+                    }
+
+                    private static LocalDate parseDate(String value) {
+                        LocalDateTime now = LocalDateTime.now().withNano(0);
+                        LocalDateTime relative = relativeDateTime(value, now);
+                        if (relative != null) return relative.toLocalDate();
+                        LocalDate absolute = absoluteDate(value);
+                        if (absolute != null) return absolute;
+                        LocalDateTime dateTime = absoluteDateTime(value);
+                        if (dateTime != null) return dateTime.toLocalDate();
+                        throw new IllegalArgumentException("Fecha invalida: " + value);
+                    }
+
+                    private static LocalDateTime parseDateTime(String value) {
+                        LocalDateTime now = LocalDateTime.now().withNano(0);
+                        LocalDateTime relative = relativeDateTime(value, now);
+                        if (relative != null) return relative;
+                        LocalDateTime absolute = absoluteDateTime(value);
+                        if (absolute != null) return absolute;
+                        LocalDate date = absoluteDate(value);
+                        if (date != null) return date.equals(now.toLocalDate()) ? now : date.atStartOfDay();
+                        throw new IllegalArgumentException("Fecha/hora invalida: " + value);
+                    }
+
+                    private static LocalDate absoluteDate(String value) {
+                        for (DateTimeFormatter formatter : List.of(
+                                DateTimeFormatter.ISO_LOCAL_DATE,
+                                DateTimeFormatter.ofPattern("d/M/uuuu"),
+                                DateTimeFormatter.ofPattern("d-M-uuuu"))) {
+                            try { return LocalDate.parse(value, formatter); }
+                            catch (RuntimeException ignored) { }
+                        }
+                        return null;
+                    }
+
+                    private static LocalDateTime absoluteDateTime(String value) {
+                        for (DateTimeFormatter formatter : List.of(
+                                DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+                                DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm"),
+                                DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss"),
+                                DateTimeFormatter.ofPattern("d/M/uuuu H:mm"),
+                                DateTimeFormatter.ofPattern("d/M/uuuu H:mm:ss"),
+                                DateTimeFormatter.ofPattern("d-M-uuuu H:mm"),
+                                DateTimeFormatter.ofPattern("d-M-uuuu H:mm:ss"))) {
+                            try { return LocalDateTime.parse(value, formatter); }
+                            catch (RuntimeException ignored) { }
+                        }
+                        try { return OffsetDateTime.parse(value).toLocalDateTime(); }
+                        catch (RuntimeException ignored) { }
+                        try { return LocalDateTime.ofInstant(Instant.parse(value), ZoneId.systemDefault()); }
+                        catch (RuntimeException ignored) { }
+                        return null;
+                    }
+
+                    private static LocalDateTime relativeDateTime(String raw, LocalDateTime now) {
+                        String phrase = temporalText(raw);
+                        if (phrase.isBlank()) return null;
+                        if (phrase.equals("ahora") || phrase.equals("now") || phrase.equals("hoy") || phrase.equals("today")
+                                || phrase.contains("fecha de hoy") || phrase.contains("dia de hoy")) return now;
+                        if (phrase.equals("anteayer") || phrase.equals("antes de ayer")) return now.minusDays(2);
+                        if (phrase.equals("ayer") || phrase.equals("yesterday")) return now.minusDays(1);
+                        if (phrase.equals("pasado manana") || phrase.equals("day after tomorrow")) return now.plusDays(2);
+                        if (phrase.equals("manana") || phrase.equals("tomorrow")) return now.plusDays(1);
+
+                        int ago = phrase.indexOf("hace ");
+                        if (ago >= 0) {
+                            LocalDateTime shifted = shiftRelative(now, phrase.substring(ago + 5), -1);
+                            if (shifted != null) return shifted;
+                        }
+                        int future = phrase.indexOf("dentro de ");
+                        if (future >= 0) {
+                            LocalDateTime shifted = shiftRelative(now, phrase.substring(future + 9), 1);
+                            if (shifted != null) return shifted;
+                        }
+                        if (phrase.startsWith("en ")) {
+                            LocalDateTime shifted = shiftRelative(now, phrase.substring(3), 1);
+                            if (shifted != null) return shifted;
+                        }
+                        if (phrase.endsWith(" atras")) {
+                            LocalDateTime shifted = shiftRelative(now, phrase.substring(0, phrase.length() - 6), -1);
+                            if (shifted != null) return shifted;
+                        }
+                        return null;
+                    }
+
+                    private static LocalDateTime shiftRelative(LocalDateTime now, String expression, int direction) {
+                        String[] parts = temporalText(expression).split(" ");
+                        if (parts.length < 2) return null;
+                        Integer amount = temporalAmount(parts[0]);
+                        if (amount == null) return null;
+                        long signed = (long) amount * direction;
+                        String unit = parts[1];
+                        if (unit.startsWith("ano") || unit.startsWith("year")) return now.plusYears(signed);
+                        if (unit.startsWith("mes") || unit.startsWith("month")) return now.plusMonths(signed);
+                        if (unit.startsWith("semana") || unit.startsWith("week")) return now.plusWeeks(signed);
+                        if (unit.startsWith("dia") || unit.startsWith("day")) return now.plusDays(signed);
+                        if (unit.startsWith("hora") || unit.startsWith("hour")) return now.plusHours(signed);
+                        if (unit.startsWith("minuto") || unit.startsWith("minute")) return now.plusMinutes(signed);
+                        return null;
+                    }
+
+                    private static Integer temporalAmount(String value) {
+                        try { return Integer.valueOf(value); }
+                        catch (RuntimeException ignored) { }
+                        return switch (value) {
+                            case "un", "una", "uno", "one" -> 1;
+                            case "dos", "two" -> 2;
+                            case "tres", "three" -> 3;
+                            case "cuatro", "four" -> 4;
+                            case "cinco", "five" -> 5;
+                            case "seis", "six" -> 6;
+                            case "siete", "seven" -> 7;
+                            case "ocho", "eight" -> 8;
+                            case "nueve", "nine" -> 9;
+                            case "diez", "ten" -> 10;
+                            case "once", "eleven" -> 11;
+                            case "doce", "twelve" -> 12;
+                            default -> null;
+                        };
+                    }
+
+                    private static String temporalText(String value) {
+                        if (value == null) return "";
+                        String ascii = Normalizer.normalize(value, Normalizer.Form.NFD).replaceAll("\\\\p{M}+", "");
+                        return ascii.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", " ").trim().replaceAll("\\\\s+", " ");
                     }
                     private static boolean isNull(String raw) {
                         if (raw == null) return true;

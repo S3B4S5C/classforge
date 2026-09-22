@@ -2,6 +2,7 @@ package com.classforge.collaboration.config;
 
 import com.classforge.collaboration.security.ProjectStompAuthorizationInterceptor;
 import com.classforge.collaboration.security.StompJwtAuthenticationInterceptor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -20,15 +21,24 @@ public class CollaborationWebSocketConfig
     private final ProjectStompAuthorizationInterceptor
             authorizationInterceptor;
 
+    private final String[] allowedOriginPatterns;
+
     public CollaborationWebSocketConfig(
             StompJwtAuthenticationInterceptor authenticationInterceptor,
-            ProjectStompAuthorizationInterceptor authorizationInterceptor
+            ProjectStompAuthorizationInterceptor authorizationInterceptor,
+            @Value("${classforge.security.websocket.allowed-origin-patterns:*}")
+            String[] allowedOriginPatterns
     ) {
         this.authenticationInterceptor =
                 authenticationInterceptor;
 
         this.authorizationInterceptor =
                 authorizationInterceptor;
+
+        this.allowedOriginPatterns =
+                allowedOriginPatterns == null || allowedOriginPatterns.length == 0
+                        ? new String[]{"*"}
+                        : allowedOriginPatterns;
     }
 
     @Override
@@ -43,7 +53,7 @@ public class CollaborationWebSocketConfig
                  * Para despliegue publico se restringira mediante
                  * configuracion de entorno.
                  */
-                .setAllowedOriginPatterns("*");
+                .setAllowedOriginPatterns(allowedOriginPatterns);
     }
 
     @Override

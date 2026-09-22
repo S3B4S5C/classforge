@@ -95,7 +95,8 @@ final class AngularAuthFilesRenderer {
 
     String loginComponent() {
         return """
-                import { Component, inject } from '@angular/core';
+                import { ChangeDetectorRef, Component, DestroyRef, inject } from '@angular/core';
+                import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
                 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
                 import { Router, RouterLink } from '@angular/router';
                 import { AuthService } from '../core/auth/auth.service';
@@ -128,6 +129,8 @@ final class AngularAuthFilesRenderer {
                   `,
                 })
                 export class LoginComponent {
+                  private readonly changes = inject(ChangeDetectorRef);
+                  private readonly destroyRef = inject(DestroyRef);
                   private readonly auth = inject(AuthService);
                   private readonly router = inject(Router);
                   loading = false;
@@ -138,12 +141,12 @@ final class AngularAuthFilesRenderer {
                   });
 
                   submit(): void {
-                    if (this.form.invalid) return;
+                    if (this.loading || this.form.invalid) return;
                     this.loading = true;
                     this.error = '';
-                    this.auth.login(this.form.controls.username.value, this.form.controls.password.value).subscribe({
+                    this.auth.login(this.form.controls.username.value, this.form.controls.password.value).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                       next: () => this.router.navigateByUrl('/dashboard'),
-                      error: (failure) => { this.loading = false; this.error = failure?.error?.message ?? 'No se pudo iniciar sesion.'; },
+                      error: (failure) => { this.loading = false; this.error = failure?.error?.message ?? 'No se pudo iniciar sesion.'; this.changes.markForCheck(); },
                     });
                   }
                 }

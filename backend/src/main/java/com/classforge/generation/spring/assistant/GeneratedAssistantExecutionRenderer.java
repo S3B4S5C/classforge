@@ -46,7 +46,7 @@ final class GeneratedAssistantExecutionRenderer {
                             case QUERY -> query(entity, command, authorization);
                             case COUNT -> count(entity, command, authorization);
                             case GET -> resolveOne(entity, command.selector(), authorization);
-                            case CREATE -> request("POST", entity.endpoint(), Map.of(), command.values(), authorization);
+                            case CREATE -> request("POST", entity.endpoint(), Map.of(), materializeValues(entity, command, authorization), authorization);
                             case UPDATE -> update(entity, command, authorization);
                             case DELETE -> delete(entity, command, authorization);
                             case SET_RELATION, ADD_RELATION, REMOVE_RELATION -> relation(entity, command, authorization);
@@ -74,7 +74,7 @@ final class GeneratedAssistantExecutionRenderer {
                     private JsonNode update(GeneratedAssistantMetadata.EntityMeta entity, Command command, String auth) {
                         JsonNode current = resolveOne(entity, command.selector(), auth);
                         Map<String, Object> body = requestBody(entity, current);
-                        body.putAll(command.values());
+                        body.putAll(materializeValues(entity, command, auth));
                         return request("PUT", itemPath(entity, current), Map.of(), body, auth);
                     }
                     private JsonNode delete(GeneratedAssistantMetadata.EntityMeta entity, Command command, String auth) {
@@ -101,6 +101,18 @@ final class GeneratedAssistantExecutionRenderer {
                             body.put(relation.requestField(), ids);
                         }
                         return request("PUT", itemPath(entity, current), Map.of(), body, auth);
+                    }
+
+                    private Map<String, Object> materializeValues(GeneratedAssistantMetadata.EntityMeta entity, Command command, String auth) {
+                        Map<String, Object> values = new LinkedHashMap<>(command.values());
+                        for (var entry : command.relationValues().entrySet()) {
+                            RelationValue pending = entry.getValue();
+                            var relation = GeneratedAssistantMetadata.requireRelation(entity, pending.relation());
+                            var targetEntity = GeneratedAssistantMetadata.entityByCode(relation.targetEntity());
+                            JsonNode target = resolveOne(targetEntity, pending.selector(), auth);
+                            values.put(relation.requestField(), idValue(targetEntity, target));
+                        }
+                        return values;
                     }
 
                     private JsonNode resolveOne(GeneratedAssistantMetadata.EntityMeta entity, Map<String, Object> selector, String auth) {

@@ -180,6 +180,7 @@ final class AngularProjectFilesRenderer {
                 ? "import { provideHttpClient, withInterceptors } from '@angular/common/http';"
                 : "import { provideHttpClient } from '@angular/common/http';";
         return """
+                import { provideZoneChangeDetection } from '@angular/core';
                 import { bootstrapApplication } from '@angular/platform-browser';
                 %s
                 import { provideRouter } from '@angular/router';
@@ -189,6 +190,7 @@ final class AngularProjectFilesRenderer {
 
                 bootstrapApplication(AppComponent, {
                   providers: [
+                    provideZoneChangeDetection(),
                     provideRouter(routes),
                     %s,
                   ],
@@ -237,6 +239,11 @@ final class AngularProjectFilesRenderer {
                   background: var(--app-surface); border: 1px solid var(--app-border);
                   border-radius: .85rem; padding: 1rem; box-shadow: 0 1px 2px rgba(16,24,40,.04);
                 }
+                fieldset.form-grid { border: 0; padding: 0; margin: 0; min-width: 0; }
+                button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity: .65; }
+                :focus-visible { outline: 2px solid var(--app-primary); outline-offset: 2px; }
+                .ng-invalid.ng-touched { border-color: #b91c1c; }
+                select[multiple] { min-height: 8rem; }
                 .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(210px,1fr)); gap: 1rem; }
                 .metric { font-size: 2rem; font-weight: 800; color: var(--app-primary); }
                 .muted { color: var(--app-muted); }
@@ -400,7 +407,7 @@ final class AngularProjectFilesRenderer {
         return """
                 import { HttpClient, HttpParams } from '@angular/common/http';
                 import { inject, Injectable } from '@angular/core';
-                import { Observable } from 'rxjs';
+                import { EMPTY, Observable, expand, reduce } from 'rxjs';
                 import { PageResponse } from './page-response';
 
                 @Injectable({ providedIn: 'root' })
@@ -408,25 +415,43 @@ final class AngularProjectFilesRenderer {
                   private readonly http = inject(HttpClient);
 
                   list(endpoint: string): Observable<PageResponse<Record<string, unknown>>> {
-                    const params = new HttpParams().set('page', 0).set('size', 200);
-                    return this.http.get<PageResponse<Record<string, unknown>>>(endpoint, { params });
+                    const fetch = (page: number) => this.http.get<PageResponse<Record<string, unknown>>>(endpoint, {
+                      params: new HttpParams().set('page', page).set('size', 200),
+                    });
+                    return fetch(0).pipe(
+                      expand((page) => page.page + 1 < page.totalPages ? fetch(page.page + 1) : EMPTY),
+                      reduce((all, page) => ({ ...page, content: [...all.content, ...page.content] }),
+                        { content: [], page: 0, size: 200, totalElements: 0, totalPages: 0 } as PageResponse<Record<string, unknown>>),
+                    );
+                  }
+
+                  encodeKey(value: unknown, fields: string[]): string {
+                    if (fields.length === 1) return JSON.stringify(value ?? null);
+                    const source = (value ?? {}) as Record<string, unknown>;
+                    return JSON.stringify(Object.fromEntries(fields.map((field) => [field, source[field] ?? null])));
                   }
 
                   optionKey(row: Record<string, unknown>, fields: string[]): string {
-                    if (fields.length === 1) return JSON.stringify(row[fields[0]]);
-                    const key: Record<string, unknown> = {};
-                    for (const field of fields) key[field] = row[field];
-                    return JSON.stringify(key);
+                    return this.encodeKey(fields.length === 1 ? row[fields[0]] : row, fields);
                   }
 
-                  optionLabel(row: Record<string, unknown>, idFields: string[]): string {
-                    const preferred = Object.entries(row).find(([key, value]) =>
-                      !idFields.includes(key)
-                      && typeof value === 'string'
-                      && value.trim().length > 0
-                    );
-                    if (preferred) return preferred[1] as string;
-                    return idFields.map((field) => String(row[field] ?? '')).join(' / ');
+                  withSelected(rows: Record<string, unknown>[], value: string | string[] | null, fields: string[]): Record<string, unknown>[] {
+                    const choices = new Map(rows.map((row) => [this.optionKey(row, fields), row]));
+                    for (const encoded of Array.isArray(value) ? value : value ? [value] : []) {
+                      if (choices.has(encoded)) continue;
+                      const key = JSON.parse(encoded);
+                      choices.set(encoded, fields.length === 1 ? { [fields[0]]: key } : key);
+                    }
+                    return [...choices.values()];
+                  }
+
+                  optionLabel(row: Record<string, unknown>, idFields: string[], labelFields: string[] = []): string {
+                    for (const field of labelFields) {
+                      const value = row[field];
+                      if (typeof value === 'string' && value.trim().length > 0) return value.trim();
+                      if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+                    }
+                    return idFields.map((field) => String(row[field] ?? '')).filter(Boolean).join(' / ');
                   }
                 }
                 """;
@@ -434,12 +459,13 @@ final class AngularProjectFilesRenderer {
 
     String dashboard(DomainManifestPlan manifest) {
         String entities = manifest.entities().stream()
-                .map(entity -> "    { name: '%s', endpoint: '%s', route: '/entities/%s', count: 0, loading: true },"
+                .map(entity -> "    { name: '%s', endpoint: '%s', route: '/entities/%s', count: 0, loading: true, error: false },"
                         .formatted(ts(entity.displayName()), entity.endpoint(), entity.tableName()))
                 .collect(Collectors.joining("\n"));
         return """
                 import { HttpClient } from '@angular/common/http';
-                import { Component, inject, OnInit } from '@angular/core';
+                import { ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
+                import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
                 import { RouterLink } from '@angular/router';
 
                 interface DashboardEntity {
@@ -448,6 +474,7 @@ final class AngularProjectFilesRenderer {
                   route: string;
                   count: number;
                   loading: boolean;
+                  error: boolean;
                 }
 
                 @Component({
@@ -465,7 +492,8 @@ final class AngularProjectFilesRenderer {
                         @for (entity of entities; track entity.endpoint) {
                           <article class="card">
                             <div class="muted">{{ entity.name }}</div>
-                            <div class="metric">{{ entity.loading ? '…' : entity.count }}</div>
+                            <div class="metric">{{ entity.loading ? '…' : entity.error ? '—' : entity.count }}</div>
+                            @if (entity.error) { <p class="error">No se pudo cargar el total.</p> }
                             <a class="btn" [routerLink]="entity.route">Abrir registros</a>
                           </article>
                         }
@@ -474,6 +502,8 @@ final class AngularProjectFilesRenderer {
                   `,
                 })
                 export class DashboardComponent implements OnInit {
+                  private readonly changes = inject(ChangeDetectorRef);
+                  private readonly destroyRef = inject(DestroyRef);
                   private readonly http = inject(HttpClient);
                   readonly entities: DashboardEntity[] = [
                 %s
@@ -481,9 +511,9 @@ final class AngularProjectFilesRenderer {
 
                   ngOnInit(): void {
                     for (const entity of this.entities) {
-                      this.http.get<{ count: number }>(`${entity.endpoint}/count`).subscribe({
-                        next: (result) => { entity.count = result.count; entity.loading = false; },
-                        error: () => { entity.loading = false; },
+                      this.http.get<{ count: number }>(`${entity.endpoint}/count`).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+                        next: (result) => { entity.count = result.count; entity.loading = false; this.changes.markForCheck(); },
+                        error: () => { entity.loading = false; entity.error = true; this.changes.markForCheck(); },
                       });
                     }
                   }

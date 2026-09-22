@@ -37,7 +37,12 @@ final class GeneratedAssistantApplicationRenderer {
                     public PlanResponse plan(String text, String authorization) { return planText(text, authorization, "TEXT"); }
                     public PlanResponse voice(MultipartFile audio, String authorization) {
                         String transcript = whisper.transcribe(audio);
-                        return planText(transcript, authorization, "VOICE");
+                        try {
+                            return planText(transcript, authorization, "VOICE");
+                        } catch (IllegalArgumentException exception) {
+                            throw new IllegalArgumentException("Whisper entendio: \\\"" + abbreviate(transcript, 220) + "\\\". "
+                                    + (exception.getMessage() == null ? "No se pudo planificar la instruccion." : exception.getMessage()), exception);
+                        }
                     }
 
                     private PlanResponse planText(String text, String authorization, String source) {
@@ -45,16 +50,31 @@ final class GeneratedAssistantApplicationRenderer {
                         if (input.isBlank()) throw new IllegalArgumentException("Escribe o dicta una instruccion.");
                         if (input.length() > 1000) throw new IllegalArgumentException("La instruccion supera 1000 caracteres.");
                         cleanup();
-                        Intent intent = llama.route(input);
-                        Command command = GeneratedAssistantMetadata.resolve(intent, llama.command(input, intent));
+                        RouteDecision route = llama.route(input);
+                        Command command = resolveCommand(input, route);
                         String summary = GeneratedAssistantMetadata.summary(command);
-                        if (!intent.mutating()) {
+                        if (!route.intent().mutating()) {
                             JsonNode result = executor.execute(command, authorization);
-                            return new PlanResponse(source, input, intent.name(), summary, false, null, result);
+                            return new PlanResponse(source, input, route.intent().name(), summary, false, null, result);
                         }
                         String token = UUID.randomUUID().toString();
                         pending.put(token, new Pending(command, binding(authorization), Instant.now().plus(PREVIEW_TTL)));
-                        return new PlanResponse(source, input, intent.name(), summary, true, token, null);
+                        return new PlanResponse(source, input, route.intent().name(), summary, true, token, null);
+                    }
+
+                    private Command resolveCommand(String input, RouteDecision route) {
+                        RawCommand first = llama.command(input, route);
+                        try {
+                            return GeneratedAssistantMetadata.resolve(route.intent(), first);
+                        } catch (IllegalArgumentException firstFailure) {
+                            RawCommand repaired = llama.command(input, route, safeMessage(firstFailure));
+                            try {
+                                return GeneratedAssistantMetadata.resolve(route.intent(), repaired);
+                            } catch (IllegalArgumentException secondFailure) {
+                                secondFailure.addSuppressed(firstFailure);
+                                throw secondFailure;
+                            }
+                        }
                     }
 
                     public PlanResponse apply(String previewToken, String authorization) {
@@ -69,6 +89,14 @@ final class GeneratedAssistantApplicationRenderer {
 
                     private void cleanup() { Instant now = Instant.now(); pending.entrySet().removeIf(e -> e.getValue().expiresAt().isBefore(now)); }
                     private String binding(String authorization) { return authorization == null ? "" : authorization; }
+                    private String safeMessage(RuntimeException exception) {
+                        String message = exception.getMessage();
+                        return message == null || message.isBlank() ? "El comando no cumple el contrato de datos." : abbreviate(message, 300);
+                    }
+                    private String abbreviate(String value, int max) {
+                        if (value == null) return "";
+                        return value.length() <= max ? value : value.substring(0, max) + "...";
+                    }
                     private record Pending(Command command, String authorizationBinding, Instant expiresAt) { }
                 }
                 """, pkg);

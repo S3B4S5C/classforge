@@ -38,9 +38,18 @@ class GeneratedAssistantRenderingTests {
         assertAssistant(auth);
         String metadata = assistantText(auth, "GeneratedAssistantMetadata.java");
         assertTrue(metadata.contains("field.sensitive() ? \"***\" : value"));
+        assertTrue(metadata.contains("record RelationValue"));
+        assertTrue(metadata.contains("preferredSelectorField"));
+        assertTrue(metadata.contains("speechPrompt()"));
+        assertTrue(metadata.contains("relativeDateTime"));
+        assertTrue(metadata.contains("parseDateTime"));
+        assertTrue(metadata.contains("date.equals(now.toLocalDate()) ? now : date.atStartOfDay()"));
+        assertTrue(metadata.contains("acepta-expresion-temporal"));
         String service = assistantText(auth, "GeneratedAssistantService.java");
         assertTrue(service.contains("pending.put(token"));
         assertTrue(service.contains("PREVIEW_TTL"));
+        assertTrue(service.contains("llama.command(input, route, safeMessage(firstFailure))"));
+        assertTrue(service.contains("Whisper entendio:"));
         assertFalse(service.contains("new PlanResponse(source, input, intent.name(), summary, true, token, json"));
         String mobileApi = text(auth, "mobile/lib/assistant/assistant_api.dart");
         assertTrue(mobileApi.contains("TokenStore"));
@@ -68,9 +77,22 @@ class GeneratedAssistantRenderingTests {
         assertTrue(llama.contains("route_data_request"));
         assertTrue(llama.contains("/v1/chat/completions"));
         assertTrue(llama.contains("tool_choice"));
+        assertTrue(llama.contains("filterFieldNames(entity)"));
+        assertTrue(llama.contains("valueFieldNames(entity, intent)"));
+        assertTrue(llama.contains("NO inventes campos tecnicos como propietarioId"));
+        assertTrue(llama.contains("REGLA ESTRICTA DE FECHAS"));
+        assertTrue(llama.contains("NO calcules una fecha absoluta"));
+        assertTrue(llama.contains("LocalDateTime.now().withNano(0)"));
+        assertTrue(llama.contains("maxItems"));
         String whisper = assistantText(project, "GeneratedAssistantWhisperGateway.java");
         assertTrue(whisper.contains("/inference"));
         assertTrue(whisper.contains("audio/wav"));
+        assertTrue(whisper.contains("temperature_inc"));
+        assertTrue(whisper.contains("response_format"));
+        assertTrue(whisper.contains("GeneratedAssistantMetadata.speechPrompt()"));
+        String executor = assistantText(project, "GeneratedAssistantHttpExecutor.java");
+        assertTrue(executor.contains("materializeValues"));
+        assertTrue(executor.contains("pending.selector()"));
     }
 
     private GeneratedFile assistantFile(GeneratedProject project, String name) {

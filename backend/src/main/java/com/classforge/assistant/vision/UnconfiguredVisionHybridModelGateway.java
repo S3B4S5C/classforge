@@ -1,12 +1,16 @@
 package com.classforge.assistant.vision;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Component
-@ConditionalOnMissingBean(LlamaCppVisionHybridModelGateway.class)
+@ConditionalOnProperty(
+        name = "classforge.assistant.vision.provider",
+        havingValue = "unconfigured",
+        matchIfMissing = true
+)
 public class UnconfiguredVisionHybridModelGateway implements VisionHybridModelGateway {
 
     private VisionModelGatewayException unavailable() {

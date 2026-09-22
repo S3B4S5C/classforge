@@ -1,0 +1,45 @@
+spring:
+  datasource:
+    url: jdbc:h2:file:/opt/classforge/data/classforge-aws
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create
+    open-in-view: false
+  h2:
+    console:
+      enabled: false
+
+server:
+  address: 127.0.0.1
+  port: 8082
+  forward-headers-strategy: framework
+
+classforge:
+  assistant:
+    text:
+      provider: bedrock
+    bedrock:
+      enabled: true
+      region: ${AWS_REGION:us-east-1}
+      request-timeout-seconds: ${CLASSFORGE_BEDROCK_TIMEOUT_SECONDS:300}
+      text-model: ${CLASSFORGE_BEDROCK_TEXT_MODEL:us.amazon.nova-2-lite-v1:0}
+      vision-model: ${CLASSFORGE_BEDROCK_VISION_MODEL:us.amazon.nova-2-lite-v1:0}
+      text-max-completion-tokens: ${CLASSFORGE_BEDROCK_TEXT_MAX_TOKENS:1024}
+    whisper-url: ${CLASSFORGE_ASSISTANT_WHISPER_URL:http://127.0.0.1:8093}
+    vision:
+      provider: bedrock
+      dense-two-pass-enabled: ${CLASSFORGE_ASSISTANT_VISION_TWO_PASS:false}
+      dense-hybrid:
+        enabled: ${CLASSFORGE_ASSISTANT_VISION_HYBRID:true}
+        min-classes: ${CLASSFORGE_ASSISTANT_VISION_HYBRID_MIN_CLASSES:4}
+        fallback-to-semantic: ${CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK:false}
+
+  security:
+    jwt:
+      secret: ${CLASSFORGE_JWT_SECRET}
+      expiration-minutes: 480
+    websocket:
+      allowed-origin-patterns: ${CLASSFORGE_WEBSOCKET_ALLOWED_ORIGINS:https://*.cloudfront.net}

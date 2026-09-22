@@ -117,13 +117,15 @@ class HybridVisionModelGatewayTests {
         ObjectProvider<LlamaCppVisionModelGateway> llamaProvider = mock(ObjectProvider.class);
         when(llamaProvider.getIfAvailable()).thenReturn(llama);
         @SuppressWarnings("unchecked")
+        ObjectProvider<BedrockVisionModelGateway> bedrockProvider = mock(ObjectProvider.class);
+        @SuppressWarnings("unchecked")
         ObjectProvider<UnconfiguredVisionModelGateway> unconfiguredProvider = mock(ObjectProvider.class);
         UmlClassRegionDetector detector = (image, expectedClassCount) -> {
             detectorCalls.incrementAndGet();
             throw failure;
         };
         return new HybridVisionModelGateway(
-                llamaProvider, unconfiguredProvider, null, detector, null, null, null, null, null,
+                llamaProvider, bedrockProvider, unconfiguredProvider, null, detector, null, null, null, null, null,
                 enabled, minClasses, fallbackToSemantic
         );
     }

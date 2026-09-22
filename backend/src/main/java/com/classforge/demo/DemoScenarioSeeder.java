@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.time.Instant;
 
 @Component
-@Profile("demo")
+@Profile({"demo", "aws-demo"})
 public class DemoScenarioSeeder implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DemoScenarioSeeder.class);

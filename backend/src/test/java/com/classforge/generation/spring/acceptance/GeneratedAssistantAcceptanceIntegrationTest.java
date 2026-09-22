@@ -78,11 +78,15 @@ class GeneratedAssistantAcceptanceIntegrationTest {
         assertTrue(llama.contains("/v1/chat/completions"));
         assertTrue(llama.contains("route_data_request"));
         assertTrue(llama.contains("tool_choice"));
+        assertTrue(llama.contains("filterFieldNames(entity)"));
+        assertTrue(llama.contains("valueFieldNames(entity, intent)"));
         String whisper = text(first, base + "GeneratedAssistantWhisperGateway.java");
         assertTrue(whisper.contains("/inference"));
         assertTrue(whisper.contains("validateWav(bytes)"));
         assertTrue(whisper.contains("bytes[0] != 'R'"));
         assertTrue(whisper.contains("bytes[8] != 'W'"));
+        assertTrue(whisper.contains("temperature_inc"));
+        assertTrue(whisper.contains("GeneratedAssistantMetadata.speechPrompt()"));
         String recorder = text(first, "frontend/src/app/assistant/browser-wav-recorder.service.ts");
         assertTrue(recorder.contains("'RIFF'"));
         assertTrue(recorder.contains("'WAVE'"));
@@ -90,6 +94,7 @@ class GeneratedAssistantAcceptanceIntegrationTest {
         String service = text(first, base + "GeneratedAssistantService.java");
         assertTrue(service.contains("previewToken"));
         assertTrue(service.contains("PREVIEW_TTL"));
+        assertTrue(service.contains("llama.command(input, route, safeMessage(firstFailure))"));
         String angular = text(first, "frontend/src/app/assistant/assistant.component.ts");
         assertFalse(angular.contains("pending.command"));
         assertFalse(angular.contains("command | json"));

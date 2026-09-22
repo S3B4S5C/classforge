@@ -27,6 +27,18 @@ server:
   port: 8082
 classforge:
   assistant:
+    text:
+      provider: ${CLASSFORGE_ASSISTANT_TEXT_PROVIDER:llama-cpp}
+    llama-url: ${CLASSFORGE_ASSISTANT_LLAMA_URL:http://127.0.0.1:8092}
+    llama-model: ${CLASSFORGE_ASSISTANT_LLAMA_MODEL:local-model}
+    whisper-url: ${CLASSFORGE_ASSISTANT_WHISPER_URL:http://127.0.0.1:8093}
+    bedrock:
+      enabled: ${CLASSFORGE_BEDROCK_ENABLED:false}
+      region: ${AWS_REGION:us-east-1}
+      request-timeout-seconds: ${CLASSFORGE_BEDROCK_TIMEOUT_SECONDS:300}
+      text-model: ${CLASSFORGE_BEDROCK_TEXT_MODEL:us.amazon.nova-2-lite-v1:0}
+      vision-model: ${CLASSFORGE_BEDROCK_VISION_MODEL:us.amazon.nova-2-lite-v1:0}
+      text-max-completion-tokens: ${CLASSFORGE_BEDROCK_TEXT_MAX_TOKENS:1024}
     vision:
       provider: ${CLASSFORGE_ASSISTANT_VISION_PROVIDER:llama-cpp}
       url: ${CLASSFORGE_ASSISTANT_VISION_URL:http://127.0.0.1:8094}
@@ -53,3 +65,5 @@ classforge:
     jwt:
       secret: ${CLASSFORGE_JWT_SECRET:classforge-development-secret-change-before-production-2026}
       expiration-minutes: 480
+    websocket:
+      allowed-origin-patterns: ${CLASSFORGE_WEBSOCKET_ALLOWED_ORIGINS:*}

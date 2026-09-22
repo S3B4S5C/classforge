@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 public class HybridVisionModelGateway implements VisionModelGateway {
 
     private final ObjectProvider<LlamaCppVisionModelGateway> llamaGateway;
+    private final ObjectProvider<BedrockVisionModelGateway> bedrockGateway;
     private final ObjectProvider<UnconfiguredVisionModelGateway> unconfiguredGateway;
     private final VisionHybridModelGateway hybridGateway;
     private final UmlClassRegionDetector classRegionDetector;
@@ -24,6 +25,7 @@ public class HybridVisionModelGateway implements VisionModelGateway {
 
     public HybridVisionModelGateway(
             ObjectProvider<LlamaCppVisionModelGateway> llamaGateway,
+            ObjectProvider<BedrockVisionModelGateway> bedrockGateway,
             ObjectProvider<UnconfiguredVisionModelGateway> unconfiguredGateway,
             VisionHybridModelGateway hybridGateway,
             UmlClassRegionDetector classRegionDetector,
@@ -37,6 +39,7 @@ public class HybridVisionModelGateway implements VisionModelGateway {
             @Value("${classforge.assistant.vision.dense-hybrid.fallback-to-semantic:false}") boolean fallbackToSemantic
     ) {
         this.llamaGateway = llamaGateway;
+        this.bedrockGateway = bedrockGateway;
         this.unconfiguredGateway = unconfiguredGateway;
         this.hybridGateway = hybridGateway;
         this.classRegionDetector = classRegionDetector;
@@ -52,7 +55,10 @@ public class HybridVisionModelGateway implements VisionModelGateway {
 
     @Override
     public VisionUmlProposal analyze(VisionNormalizedImage image, VisionProjectContext context) {
-        VisionModelGateway semantic = llamaGateway.getIfAvailable();
+        VisionModelGateway semantic = bedrockGateway.getIfAvailable();
+        if (semantic == null) {
+            semantic = llamaGateway.getIfAvailable();
+        }
         if (semantic == null) {
             semantic = unconfiguredGateway.getIfAvailable();
         }
