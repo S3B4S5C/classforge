@@ -55,6 +55,69 @@ class VisionHybridProposalAssemblerTests {
         assertThrows(RuntimeException.class, () -> assembler.assemble(semantic, geometry, inventedEdge));
     }
 
+
+    @Test
+    void associationClassHybridMergeKeepsUnderlyingRelationshipAndDropsDashedConnectorArtifact() {
+        VisionRelationshipProposal semanticUnderlying = new VisionRelationshipProposal(
+                "pedido", "producto", "COMPOSITION",
+                new VisionMultiplicityProposal(1, null, true),
+                new VisionMultiplicityProposal(1, null, true),
+                new VisionEvidence("Pedido Producto", 0.9, null, null, null, null)
+        );
+        VisionUmlProposal semantic = new VisionUmlProposal(
+                "association class",
+                List.of(
+                        klass("pedido", "Pedido"),
+                        klass("producto", "Producto"),
+                        klass("detalle", "DetallePedido")
+                ),
+                List.of(semanticUnderlying),
+                List.of(new VisionAssociationClassProposal(
+                        "detalle", "pedido", "producto",
+                        new VisionEvidence("dashed", 0.9, null, null, null, null)
+                )),
+                List.of(),
+                0.9
+        );
+        UmlDiagramGeometry geometry = new UmlDiagramGeometry(
+                List.of(),
+                List.of(
+                        new VisionGeometryEdgeCandidate(
+                                "E1", "B1", "B2", "pedido", "producto", 0.9,
+                                0, 0, 300, 100, 100, 50, 200, 50
+                        ),
+                        new VisionGeometryEdgeCandidate(
+                                "E2", "B3", "B1", "detalle", "pedido", 0.7,
+                                0, 0, 150, 200, 100, 150, 100, 50
+                        )
+                ),
+                new byte[0], new byte[0], new byte[0]
+        );
+        VisionHybridRelationshipAnnotationProposal annotation = new VisionHybridRelationshipAnnotationProposal(
+                List.of(
+                        new VisionHybridEdgeAnnotation(
+                                "E1", "COMPOSITION", "A",
+                                new VisionMultiplicityProposal(1, null, true),
+                                new VisionMultiplicityProposal(1, null, true),
+                                "Pedido Producto", 0.9
+                        ),
+                        new VisionHybridEdgeAnnotation(
+                                "E2", "ASSOCIATION", "NONE",
+                                null, null, "dashed artifact", 0.5
+                        )
+                ),
+                List.of(), 0.8
+        );
+
+        VisionUmlProposal result = assembler.assemble(semantic, geometry, annotation);
+
+        assertEquals(1, result.safeAssociationClasses().size());
+        assertEquals(1, result.safeRelationships().size());
+        assertEquals("pedido", result.safeRelationships().getFirst().sourceRef());
+        assertEquals("producto", result.safeRelationships().getFirst().targetRef());
+        assertEquals("COMPOSITION", result.safeRelationships().getFirst().type());
+    }
+
     private VisionClassProposal klass(String ref, String name) {
         return new VisionClassProposal(ref, name, List.of(), new VisionEvidence(name, 1.0, null, null, null, null));
     }

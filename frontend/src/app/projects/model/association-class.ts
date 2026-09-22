@@ -2,10 +2,13 @@ import type {
   Multiplicity,
   UmlClass,
   UmlRelationship,
+  UmlRelationshipType,
 } from './project';
 
-const ASSOCIATION_CLASS_MARKER =
+const ASSOCIATION_CLASS_MARKER_V1 =
   '__classforge_association_class_v1__';
+const ASSOCIATION_CLASS_MARKER_V2 =
+  '__classforge_association_class_v2__';
 
 export interface AssociationClassMetadata {
   markerAttributeId: string;
@@ -16,10 +19,11 @@ export function associationClassMarker(
   relationship: UmlRelationship,
 ): string {
   return [
-    ASSOCIATION_CLASS_MARKER,
+    ASSOCIATION_CLASS_MARKER_V2,
     relationship.id,
     relationship.sourceClassId,
     relationship.targetClassId,
+    relationship.type,
     encodeMultiplicity(
       relationship.sourceMultiplicity,
     ),
@@ -40,15 +44,26 @@ export function associationClassMetadata(
     }
 
     const parts = value.split('|');
+    const v1 = parts[0] === ASSOCIATION_CLASS_MARKER_V1;
+    const v2 = parts[0] === ASSOCIATION_CLASS_MARKER_V2;
 
-    if (parts.length !== 6) {
+    if ((v1 && parts.length !== 6)
+      || (v2 && parts.length !== 7)) {
       continue;
     }
 
+    const parsedType = v1
+      ? 'ASSOCIATION'
+      : parseRelationshipType(parts[4]);
+    if (!parsedType || parsedType === 'GENERALIZATION') {
+      continue;
+    }
+    const type: UmlRelationshipType = parsedType;
+
     const sourceMultiplicity =
-      decodeMultiplicity(parts[4]);
+      decodeMultiplicity(parts[v1 ? 4 : 5]);
     const targetMultiplicity =
-      decodeMultiplicity(parts[5]);
+      decodeMultiplicity(parts[v1 ? 5 : 6]);
 
     if (
       sourceMultiplicity === undefined
@@ -63,7 +78,7 @@ export function associationClassMetadata(
         id: parts[1],
         sourceClassId: parts[2],
         targetClassId: parts[3],
-        type: 'ASSOCIATION',
+        type,
         sourceMultiplicity,
         targetMultiplicity,
       },
@@ -77,10 +92,23 @@ export function isAssociationClassMarker(
   value: string | null | undefined,
 ): value is string {
   return Boolean(
-    value?.startsWith(
-      `${ASSOCIATION_CLASS_MARKER}|`,
-    ),
+    value?.startsWith(`${ASSOCIATION_CLASS_MARKER_V1}|`)
+    || value?.startsWith(`${ASSOCIATION_CLASS_MARKER_V2}|`),
   );
+}
+
+function parseRelationshipType(
+  value: string,
+): UmlRelationshipType | null {
+  switch (value) {
+    case 'ASSOCIATION':
+    case 'AGGREGATION':
+    case 'COMPOSITION':
+    case 'GENERALIZATION':
+      return value;
+    default:
+      return null;
+  }
 }
 
 function encodeMultiplicity(

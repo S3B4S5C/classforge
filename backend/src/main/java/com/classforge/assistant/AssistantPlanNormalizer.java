@@ -56,6 +56,7 @@ public class AssistantPlanNormalizer {
         List<AssistantAttributePlan> attributes =
                 switch (action.type()) {
                     case CREATE_CLASS,
+                         CREATE_ASSOCIATION_CLASS,
                          ADD_ATTRIBUTES ->
                             action.safeAttributes()
                                     .stream()
@@ -128,7 +129,8 @@ public class AssistantPlanNormalizer {
                 action.sourceLower(),
                 action.sourceUpper(),
                 action.targetLower(),
-                action.targetUpper()
+                action.targetUpper(),
+                action.relationshipId()
         );
     }
 

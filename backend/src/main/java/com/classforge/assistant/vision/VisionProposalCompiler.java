@@ -6,6 +6,7 @@ import com.classforge.assistant.AssistantPlanAction;
 import com.classforge.assistant.AssistantPlanningException;
 import com.classforge.assistant.AssistantSemanticPlan;
 import com.classforge.assistant.AssistantTypeSource;
+import com.classforge.project.domain.document.AssociationClassSupport;
 import com.classforge.project.domain.document.Multiplicity;
 import com.classforge.project.domain.document.ProjectDocument;
 import com.classforge.project.domain.document.UmlAttribute;
@@ -49,10 +50,18 @@ public class VisionProposalCompiler {
         Map<String, String> referenceToClassName = new LinkedHashMap<>();
         Set<String> seenRefs = new HashSet<>();
         Set<String> seenClassNames = new HashSet<>();
+        Map<String, VisionClassProposal> proposedClassesByRef = new LinkedHashMap<>();
+        Set<String> associationClassRefs = new HashSet<>();
+        Set<String> associationEndpointPairs = new HashSet<>();
+        for (VisionAssociationClassProposal associationClass : proposal.safeAssociationClasses()) {
+            associationClassRefs.add(normalize(required(associationClass.classRef(), "associationClass.classRef")));
+            associationEndpointPairs.add(pairKey(associationClass.sourceRef(), associationClass.targetRef()));
+        }
 
         for (VisionClassProposal proposedClass : proposal.safeClasses()) {
             String ref = required(proposedClass.ref(), "class.ref");
             String rawName = required(proposedClass.name(), "class.name");
+            proposedClassesByRef.put(normalize(ref), proposedClass);
             if (!seenRefs.add(normalize(ref))) {
                 throw new AssistantPlanningException("La propuesta visual repite el ref '" + ref + "'.");
             }
@@ -73,6 +82,10 @@ public class VisionProposalCompiler {
                     existingClass,
                     warnings
             );
+
+            if (associationClassRefs.contains(normalize(ref))) {
+                continue;
+            }
 
             if (existingClass == null) {
                 actions.add(action(
@@ -121,7 +134,101 @@ public class VisionProposalCompiler {
             }
         }
 
+        for (VisionAssociationClassProposal associationClass : proposal.safeAssociationClasses()) {
+            String classRef = normalize(required(associationClass.classRef(), "associationClass.classRef"));
+            VisionClassProposal classProposal = proposedClassesByRef.get(classRef);
+            if (classProposal == null) {
+                throw new AssistantPlanningException(
+                        "associationClasses.classRef debe apuntar a una clase declarada en classes: "
+                                + associationClass.classRef()
+                );
+            }
+
+            String associationClassName = referenceToClassName.get(classRef);
+            String source = resolveClassReference(
+                    associationClass.sourceRef(), referenceToClassName, document
+            );
+            String target = resolveClassReference(
+                    associationClass.targetRef(), referenceToClassName, document
+            );
+            if (source.equals(target)
+                    || associationClassName.equals(source)
+                    || associationClassName.equals(target)) {
+                throw new AssistantPlanningException(
+                        "La clase de asociacion requiere una clase intermedia distinta y dos extremos distintos."
+                );
+            }
+
+            VisionRelationshipProposal underlying = underlyingRelationship(
+                    associationClass, proposal.safeRelationships()
+            );
+            if (underlying == null) {
+                throw new AssistantPlanningException(
+                        "Una AssociationClass visual debe referenciar una relacion subyacente declarada en relationships."
+                );
+            }
+            UmlRelationshipType relationshipType = parseRelationshipType(underlying.type());
+            if (relationshipType == UmlRelationshipType.GENERALIZATION) {
+                throw new AssistantPlanningException(
+                        "Una generalizacion visual no puede tener AssociationClass."
+                );
+            }
+
+            VisionMultiplicityProposal sourceMultiplicity =
+                    orientedSourceMultiplicity(associationClass, underlying);
+            VisionMultiplicityProposal targetMultiplicity =
+                    orientedTargetMultiplicity(associationClass, underlying);
+            UmlClass existingAssociationClass = exactClass(document, associationClassName);
+            List<AssistantAttributePlan> attributes = compileAttributes(
+                    classProposal.safeAttributes(), existingAssociationClass, warnings
+            );
+            if (existingAssociationClass != null) {
+                var existingMetadata = AssociationClassSupport.metadata(existingAssociationClass);
+                if (existingMetadata.isEmpty()) {
+                    throw new AssistantPlanningException(
+                            "La clase visual '" + associationClassName
+                                    + "' ya existe pero no es una AssociationClass."
+                    );
+                }
+                if (!attributes.isEmpty()) {
+                    actions.add(action(
+                            AssistantActionType.ADD_ATTRIBUTES,
+                            existingAssociationClass.name(), null, attributes,
+                            null, null, null, null, null, null, null,
+                            null, null, null, null, null, null, null
+                    ));
+                } else {
+                    warnings.add("La AssociationClass '" + associationClassName
+                            + "' ya existe y no aporta cambios automaticos.");
+                }
+                continue;
+            }
+
+            UmlRelationship existingUnderlying = existingRelationship(
+                    document, source, target, relationshipType
+            );
+
+            actions.add(new AssistantPlanAction(
+                    AssistantActionType.CREATE_ASSOCIATION_CLASS,
+                    associationClassName,
+                    null,
+                    attributes,
+                    null, null, null, null, null, null, null,
+                    source,
+                    target,
+                    relationshipType,
+                    lower(sourceMultiplicity),
+                    upper(sourceMultiplicity),
+                    lower(targetMultiplicity),
+                    upper(targetMultiplicity),
+                    existingUnderlying == null ? null : existingUnderlying.id()
+            ));
+        }
+
         for (VisionRelationshipProposal relationship : proposal.safeRelationships()) {
+            if (associationEndpointPairs.contains(pairKey(relationship.sourceRef(), relationship.targetRef()))) {
+                continue;
+            }
             String source = resolveClassReference(
                     relationship.sourceRef(), referenceToClassName, document
             );
@@ -180,6 +287,41 @@ public class VisionProposalCompiler {
                 List.copyOf(warnings),
                 confidence
         );
+    }
+
+    private VisionRelationshipProposal underlyingRelationship(
+            VisionAssociationClassProposal associationClass,
+            List<VisionRelationshipProposal> relationships
+    ) {
+        String pair = pairKey(associationClass.sourceRef(), associationClass.targetRef());
+        return relationships.stream()
+                .filter(item -> pair.equals(pairKey(item.sourceRef(), item.targetRef())))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private VisionMultiplicityProposal orientedSourceMultiplicity(
+            VisionAssociationClassProposal associationClass,
+            VisionRelationshipProposal relationship
+    ) {
+        return normalize(associationClass.sourceRef()).equals(normalize(relationship.sourceRef()))
+                ? relationship.sourceMultiplicity()
+                : relationship.targetMultiplicity();
+    }
+
+    private VisionMultiplicityProposal orientedTargetMultiplicity(
+            VisionAssociationClassProposal associationClass,
+            VisionRelationshipProposal relationship
+    ) {
+        return normalize(associationClass.targetRef()).equals(normalize(relationship.targetRef()))
+                ? relationship.targetMultiplicity()
+                : relationship.sourceMultiplicity();
+    }
+
+    private String pairKey(String first, String second) {
+        String left = normalize(required(first, "association endpoint"));
+        String right = normalize(required(second, "association endpoint"));
+        return left.compareTo(right) <= 0 ? left + "|" + right : right + "|" + left;
     }
 
     private List<AssistantAttributePlan> compileAttributes(

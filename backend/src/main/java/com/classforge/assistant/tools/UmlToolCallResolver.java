@@ -97,6 +97,7 @@ public class UmlToolCallResolver {
         return switch (invocation.name()) {
             case ROUTE_REQUEST -> throw new AssistantPlanningException("route_uml_request es control de routing y no produce una accion UML.");
             case CREATE_CLASS -> createClass(userText, args);
+            case CREATE_ASSOCIATION_CLASS -> createAssociationClass(userText, args, catalog, document);
             case RENAME_CLASS -> renameClass(userText, args, catalog, document);
             case DELETE_CLASS -> deleteClass(userText, args, catalog, document);
             case ADD_ATTRIBUTES -> addAttributes(userText, args, catalog, document);
@@ -144,6 +145,52 @@ public class UmlToolCallResolver {
         );
 
         return new ResolvedAction(action, List.of(), "Crear clase " + newName);
+    }
+
+    private ResolvedAction createAssociationClass(
+            String userText,
+            JsonNode args,
+            AssistantToolCatalog catalog,
+            ProjectDocument document
+    ) {
+        ExistingRelationship selected = existingRelationship(
+                requiredText(args, "existing_relationship_ref"), catalog
+        );
+        ExistingRelationship existing = bindRelationshipReference(
+                userText, selected, catalog, document
+        );
+        String newName = literalBinder.bindNewIdentifier(
+                userText, requiredText(args, "name")
+        );
+        List<AssistantAttributePlan> attributes = attributes(args.get("attributes"));
+
+        AssistantPlanAction action = new AssistantPlanAction(
+                AssistantToolName.CREATE_ASSOCIATION_CLASS.actionType(),
+                newName,
+                null,
+                attributes,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                existing.sourceClassName(),
+                existing.targetClassName(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                existing.id()
+        );
+        return new ResolvedAction(
+                action,
+                List.of(existing.reference()),
+                "Crear clase de asociacion " + newName + " sobre "
+                        + existing.sourceClassName() + " - " + existing.targetClassName()
+        );
     }
 
     private ResolvedAction renameClass(

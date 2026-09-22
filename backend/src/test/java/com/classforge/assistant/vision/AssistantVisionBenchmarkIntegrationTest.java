@@ -726,6 +726,22 @@ class AssistantVisionBenchmarkIntegrationTest {
                                     + "|" + String.join(",", attributes)
                     );
                 }
+                case CREATE_ASSOCIATION_CLASS -> {
+                    List<String> attributes = action.safeAttributes().stream()
+                            .map(attribute -> attribute.name() + ":" + attribute.dataType().name())
+                            .sorted()
+                            .toList();
+                    result.add(
+                            "CREATE_ASSOCIATION_CLASS|"
+                                    + action.className()
+                                    + "|" + action.sourceClassName()
+                                    + "|" + action.targetClassName()
+                                    + "|" + action.relationshipType().name()
+                                    + "|" + multiplicity(action.sourceLower(), action.sourceUpper())
+                                    + "|" + multiplicity(action.targetLower(), action.targetUpper())
+                                    + "|" + String.join(",", attributes)
+                    );
+                }
                 case CREATE_RELATIONSHIP -> result.add(
                         "CREATE_RELATIONSHIP|"
                                 + action.sourceClassName()

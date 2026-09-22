@@ -74,6 +74,21 @@ class VisionBenchmarkSemanticComparatorTests {
         assertEquals(4, comparison.multiplicities().expected());
     }
 
+
+    @Test
+    void associationClassContributesClassAttributesTopologyAndMultiplicities() {
+        var comparison = VisionBenchmarkSemanticComparator.compare(
+                Set.of("CREATE_ASSOCIATION_CLASS|DetallePedido|Pedido|Producto|COMPOSITION|1:*|1:*|precioUnitario:DECIMAL,cantidad:INTEGER"),
+                Set.of("CREATE_ASSOCIATION_CLASS|DetallePedido|Pedido|Producto|COMPOSITION|1:*|1:*|cantidad:INTEGER,precioUnitario:DECIMAL")
+        );
+
+        assertTrue(comparison.classes().exact());
+        assertTrue(comparison.attributes().exact());
+        assertTrue(comparison.relationships().exact());
+        assertTrue(comparison.multiplicities().exact());
+        assertTrue(comparison.semanticExact());
+    }
+
     @Test
     void libraryWhiteboardRealisticOracleContainsOnlyDrawnPhysicalPairs() throws Exception {
         JsonNode fixture;
@@ -149,6 +164,16 @@ class VisionBenchmarkSemanticComparatorTests {
         if ("CREATE_RELATIONSHIP".equals(parts[0])) {
             assertCodeName(parts[1]);
             assertCodeName(parts[2]);
+        }
+        if ("CREATE_ASSOCIATION_CLASS".equals(parts[0])) {
+            assertCodeName(parts[1]);
+            assertCodeName(parts[2]);
+            assertCodeName(parts[3]);
+            if (!parts[7].isBlank()) {
+                for (String attribute : parts[7].split(",")) {
+                    assertCodeName(attribute.substring(0, attribute.lastIndexOf(':')));
+                }
+            }
         }
     }
 

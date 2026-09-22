@@ -25,6 +25,11 @@ public class AssistantCompoundRequestDetector {
         String text = normalize(userText);
         Set<AssistantActionType> required = new LinkedHashSet<>();
 
+        if (isAssociationClassCreationRequest(text)) {
+            required.add(AssistantActionType.CREATE_ASSOCIATION_CLASS);
+            return Set.copyOf(required);
+        }
+
         boolean classCreation =
                 containsAny(text, "crea clase", "crear clase", "nueva clase", "clase llamada", "necesito una clase")
                         || createsNamedClass(text);
@@ -34,7 +39,8 @@ public class AssistantCompoundRequestDetector {
         if (requestsAttributeAddition(text, classCreation)) {
             required.add(AssistantActionType.ADD_ATTRIBUTES);
         }
-        if (containsAny(text, "relacion", "relaciona", "relacional", "conecta", "asocia", "asocial", "hereda", "agrupa", "compuesta")) {
+        String relationshipIntentText = withoutAssociationClassPhrases(text);
+        if (containsAny(relationshipIntentText, "relacion", "relaciona", "relacional", "conecta", "asocia", "asocial", "hereda", "agrupa", "compuesta")) {
             required.add(AssistantActionType.CREATE_RELATIONSHIP);
         }
         if (containsAny(text, "renombra", "cambia el nombre", "ahora se llama")) {
@@ -54,6 +60,32 @@ public class AssistantCompoundRequestDetector {
         return actual.containsAll(required);
     }
 
+
+    private boolean isAssociationClassCreationRequest(String text) {
+        String associationClass =
+                "(?:clase de asociacion|clase asociativa|clase intermedia|association class|associationclass)";
+        if (!Pattern.compile("\\b" + associationClass + "\\b").matcher(text).find()) {
+            return false;
+        }
+        return Pattern.compile(
+                "(?:"
+                        + "\\b(?:convierte|convertir|transforma|transformar)\\b.*\\b(?:en|como)\\b.*\\b" + associationClass + "\\b"
+                        + "|\\b(?:crea|crear|agrega|anade)\\s+(?:una\\s+)?(?:nueva\\s+)?" + associationClass + "\\b"
+                        + "|\\bcrea\\b.*\\bcomo\\s+(?:una\\s+)?" + associationClass + "\\b"
+                        + "|\\b(?:haz|hacer)\\s+que\\b.*\\b(?:sea|como)\\b.*\\b" + associationClass + "\\b"
+                        + "|\\bvuelve\\b.*\\b" + associationClass + "\\b"
+                        + ")"
+        ).matcher(text).find();
+    }
+
+    private String withoutAssociationClassPhrases(String text) {
+        return text
+                .replace("clase de asociacion", " ")
+                .replace("clase asociativa", " ")
+                .replace("clase intermedia", " ")
+                .replace("association class", " ")
+                .replace("associationclass", " ");
+    }
 
     private boolean requestsAttributeAddition(String text, boolean classCreation) {
         if (containsAny(text, "atributo", "campo", "agregale", "anadele", "ponle")) {
@@ -92,7 +124,11 @@ public class AssistantCompoundRequestDetector {
         var matcher = CREATE_NAMED.matcher(text);
         while (matcher.find()) {
             String candidate = matcher.group(1);
-            if (!Set.of("asociacion", "relacion", "agregacion", "composicion", "generalizacion", "vinculo").contains(candidate)) {
+            if (!Set.of(
+                    "el", "la", "los", "las", "un", "una",
+                    "atributo", "campo",
+                    "asociacion", "relacion", "agregacion", "composicion", "generalizacion", "vinculo"
+            ).contains(candidate)) {
                 return true;
             }
         }

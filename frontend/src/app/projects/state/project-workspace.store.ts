@@ -515,13 +515,10 @@ export class ProjectWorkspaceStore {
         ?.attributes.find(
           (attribute) => attribute.id === attributeId,
         );
-    const presentationMarker =
+    const associationClassMarkerAttribute =
       isAssociationClassMarker(
         currentAttribute?.customTypeName,
-      )
-      && changes.dataType !== 'CUSTOM'
-        ? currentAttribute!.customTypeName
-        : changes.customTypeName;
+      );
 
     this.dispatch({
       ...commandMetadata(),
@@ -529,7 +526,20 @@ export class ProjectWorkspaceStore {
       classId,
       attribute: {
         ...changes,
-        customTypeName: presentationMarker,
+        // The marker-bearing identifier is infrastructure for the persisted
+        // AssociationClass. Keep its key/type semantics stable even when the
+        // generic attribute editor is used, otherwise a harmless UI edit could
+        // silently declassify the AssociationClass or leak the marker as a
+        // CUSTOM datatype.
+        dataType: associationClassMarkerAttribute
+          ? currentAttribute!.dataType
+          : changes.dataType,
+        customTypeName: associationClassMarkerAttribute
+          ? currentAttribute!.customTypeName
+          : changes.customTypeName,
+        identifier: associationClassMarkerAttribute
+          ? currentAttribute!.identifier
+          : changes.identifier,
         id: attributeId,
       },
     });
@@ -577,7 +587,7 @@ export class ProjectWorkspaceStore {
     if (
       !document
       || !relationship
-      || relationship.type !== 'ASSOCIATION'
+      || relationship.type === 'GENERALIZATION'
     ) {
       return;
     }

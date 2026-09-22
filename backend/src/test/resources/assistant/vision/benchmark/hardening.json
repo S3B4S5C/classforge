@@ -93,6 +93,23 @@
       ]
     },
     {
+      "id": "pedido-producto-association-class",
+      "image": "/assistant/vision/benchmark/hardening/pedido-producto-association-class.png",
+      "expectedOutcome": "PLAN",
+      "existingClasses": [],
+      "expectedSignatures": [
+        "CREATE_CLASS|Categoria|descripcion:STRING,idCategoria:INTEGER,nombre:STRING",
+        "CREATE_CLASS|Cliente|email:STRING,idCliente:INTEGER,nombre:STRING,telefono:STRING",
+        "CREATE_CLASS|Direccion|calle:STRING,ciudad:STRING,codigoPostal:STRING,idDireccion:INTEGER,tipo:STRING",
+        "CREATE_CLASS|Pedido|estado:STRING,fecha:DATE,idPedido:INTEGER,total:DECIMAL",
+        "CREATE_CLASS|Producto|idProducto:INTEGER,nombre:STRING,precio:DECIMAL,stock:INTEGER",
+        "CREATE_ASSOCIATION_CLASS|DetallePedido|Pedido|Producto|COMPOSITION|1:*|1:*|cantidad:INTEGER,precioUnitario:DECIMAL",
+        "CREATE_RELATIONSHIP|Categoria|Producto|GENERALIZATION|null:null|null:null",
+        "CREATE_RELATIONSHIP|Cliente|Direccion|ASSOCIATION|1:1|0:*",
+        "CREATE_RELATIONSHIP|Cliente|Pedido|ASSOCIATION|1:1|0:*"
+      ]
+    },
+    {
       "id": "invalid-whiteboard-notes",
       "image": "/assistant/vision/benchmark/hardening/invalid-whiteboard-notes.png",
       "expectedOutcome": "REJECT",

@@ -29,14 +29,20 @@ final class VisionProposalOutcomeNormalizer {
             warnings.add(warning);
         }
 
-        if (proposal.safeClasses().isEmpty() && proposal.safeRelationships().isEmpty()) {
+        if (proposal.safeClasses().isEmpty()
+                && proposal.safeRelationships().isEmpty()
+                && proposal.safeAssociationClasses().isEmpty()) {
             warnings.add(NO_ACTIONABLE_WARNING);
         }
+
+        List<VisionRelationshipProposal> relationships =
+                VisionAssociationClassTopology.reconcile(proposal, proposal.safeRelationships());
 
         return new VisionUmlProposal(
                 proposal.summary(),
                 proposal.safeClasses(),
-                proposal.safeRelationships(),
+                relationships,
+                proposal.safeAssociationClasses(),
                 List.copyOf(new LinkedHashSet<>(warnings)),
                 proposal.confidence()
         );

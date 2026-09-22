@@ -103,6 +103,35 @@ class AssistantToolRouteAdjudicatorTests {
         );
     }
 
+
+    @Test
+    void associationClassLanguageRoutesToDedicatedTool() {
+        assertRoute(
+                "Convierte la relacion Propietario Mascota en una clase intermedia Tenencia",
+                AssistantToolName.CREATE_ASSOCIATION_CLASS,
+                List.of(
+                        AssistantToolName.CREATE_CLASS,
+                        AssistantToolName.CREATE_ASSOCIATION,
+                        AssistantToolName.CREATE_ASSOCIATION_CLASS
+                )
+        );
+        assertRoute(
+                "Crea una clase de asociacion Tenencia para Propietario y Mascota",
+                AssistantToolName.CREATE_ASSOCIATION_CLASS,
+                List.of(AssistantToolName.CREATE_ASSOCIATION_CLASS, AssistantToolName.CREATE_CLASS)
+        );
+        assertRoute(
+                "Agrega un atributo descuento Decimal a la clase intermedia Mascota",
+                AssistantToolName.ADD_ATTRIBUTES,
+                List.of(AssistantToolName.CREATE_ASSOCIATION_CLASS, AssistantToolName.ADD_ATTRIBUTES)
+        );
+        assertRoute(
+                "Crea el atributo observacion String en la clase de asociacion Mascota",
+                AssistantToolName.ADD_ATTRIBUTES,
+                List.of(AssistantToolName.CREATE_ASSOCIATION_CLASS, AssistantToolName.ADD_ATTRIBUTES)
+        );
+    }
+
     @Test
     void compoundRequestUsesDependencyOrderedCanonicalRoute() {
         List<AssistantToolName> route = adjudicator.adjudicate(

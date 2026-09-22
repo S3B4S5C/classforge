@@ -1,5 +1,6 @@
 package com.classforge.integration.xmi;
 
+import com.classforge.project.domain.document.AssociationClassSupport;
 import com.classforge.project.domain.document.Multiplicity;
 import com.classforge.project.domain.document.ProjectDocument;
 import com.classforge.project.domain.document.UmlAttribute;
@@ -15,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Component
@@ -27,6 +29,11 @@ public class EnterpriseArchitectXmiExporter {
 
         List<UmlClass> classes = document.umlModel().classes();
         List<UmlRelationship> relationships = document.umlModel().relationships();
+        Map<UUID, AssociationClassSupport.Descriptor> associationClasses = new LinkedHashMap<>();
+        for (AssociationClassSupport.Descriptor descriptor : AssociationClassSupport.descriptors(document)) {
+            associationClasses.put(descriptor.umlClass().id(), descriptor);
+        }
+        Set<UUID> associationAuxiliaryIds = AssociationClassSupport.auxiliaryRelationshipIds(document);
 
         Map<String, String> customTypes = customTypes(classes);
         StringBuilder xml = new StringBuilder(16_384);
@@ -54,43 +61,105 @@ public class EnterpriseArchitectXmiExporter {
         }
 
         for (UmlClass umlClass : classes) {
-            line(xml, 3, "<packagedElement xmi:type=\"uml:Class\" xmi:id=\"" + xmiId("EAID", umlClass.id()) + "\" name=\"" + escape(umlClass.name()) + "\" visibility=\"public\">");
-            for (UmlAttribute attribute : umlClass.attributes()) {
-                String typeId = attribute.dataType() == UmlDataType.CUSTOM
-                        ? customTypes.get(attribute.customTypeName())
-                        : primitiveTypeId(attribute.dataType());
-                String isId = attribute.identifier() ? " isID=\"true\"" : "";
-                line(xml, 4, "<ownedAttribute xmi:type=\"uml:Property\" xmi:id=\"" + xmiId("EAID", attribute.id()) + "\" name=\"" + escape(attribute.name()) + "\" visibility=\"" + visibility(attribute.visibility().name()) + "\" type=\"" + typeId + "\"" + isId + ">");
-                multiplicity(xml, 5, attribute.nullable() ? new Multiplicity(0, 1) : Multiplicity.one(), attribute.id(), "attribute");
-                line(xml, 4, "</ownedAttribute>");
+            AssociationClassSupport.Descriptor associationClass = associationClasses.get(umlClass.id());
+            if (associationClass == null) {
+                emitClass(xml, umlClass, generalizationsBySource.getOrDefault(umlClass.id(), List.of()), customTypes);
+            } else {
+                emitAssociationClass(
+                        xml,
+                        umlClass,
+                        associationClass.relationship(),
+                        generalizationsBySource.getOrDefault(umlClass.id(), List.of()),
+                        customTypes
+                );
             }
-            for (UmlRelationship relationship : generalizationsBySource.getOrDefault(umlClass.id(), List.of())) {
-                line(xml, 4, "<generalization xmi:type=\"uml:Generalization\" xmi:id=\"" + xmiId("EAID", relationship.id()) + "\" general=\"" + xmiId("EAID", relationship.targetClassId()) + "\"/>");
-            }
-            line(xml, 3, "</packagedElement>");
         }
 
         for (UmlRelationship relationship : relationships) {
-            if (relationship.type() == UmlRelationshipType.GENERALIZATION) {
+            if (relationship.type() == UmlRelationshipType.GENERALIZATION
+                    || associationAuxiliaryIds.contains(relationship.id())) {
                 continue;
             }
-            String relationshipId = xmiId("EAID", relationship.id());
-            String sourceEndId = derivedId("EAID", "association-source:" + relationship.id());
-            String targetEndId = derivedId("EAID", "association-target:" + relationship.id());
-            line(xml, 3, "<packagedElement xmi:type=\"uml:Association\" xmi:id=\"" + relationshipId + "\" visibility=\"public\" memberEnd=\"" + sourceEndId + " " + targetEndId + "\">");
-            line(xml, 4, "<ownedEnd xmi:type=\"uml:Property\" xmi:id=\"" + sourceEndId + "\" type=\"" + xmiId("EAID", relationship.sourceClassId()) + "\" association=\"" + relationshipId + "\" aggregation=\"" + aggregation(relationship.type()) + "\">");
-            multiplicity(xml, 5, normalizeMultiplicity(relationship.sourceMultiplicity()), relationship.id(), "source");
-            line(xml, 4, "</ownedEnd>");
-            line(xml, 4, "<ownedEnd xmi:type=\"uml:Property\" xmi:id=\"" + targetEndId + "\" type=\"" + xmiId("EAID", relationship.targetClassId()) + "\" association=\"" + relationshipId + "\" aggregation=\"none\">");
-            multiplicity(xml, 5, normalizeMultiplicity(relationship.targetMultiplicity()), relationship.id(), "target");
-            line(xml, 4, "</ownedEnd>");
-            line(xml, 3, "</packagedElement>");
+            emitAssociation(xml, relationship);
         }
 
         line(xml, 2, "</packagedElement>");
         line(xml, 1, "</uml:Model>");
         line(xml, 0, "</xmi:XMI>");
         return xml.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private void emitClass(
+            StringBuilder xml,
+            UmlClass umlClass,
+            List<UmlRelationship> generalizations,
+            Map<String, String> customTypes
+    ) {
+        line(xml, 3, "<packagedElement xmi:type=\"uml:Class\" xmi:id=\"" + xmiId("EAID", umlClass.id()) + "\" name=\"" + escape(umlClass.name()) + "\" visibility=\"public\">");
+        emitAttributes(xml, umlClass, customTypes);
+        emitGeneralizations(xml, generalizations);
+        line(xml, 3, "</packagedElement>");
+    }
+
+    private void emitAssociationClass(
+            StringBuilder xml,
+            UmlClass umlClass,
+            UmlRelationship relationship,
+            List<UmlRelationship> generalizations,
+            Map<String, String> customTypes
+    ) {
+        String associationClassId = xmiId("EAID", umlClass.id());
+        String sourceEndId = derivedId("EAID", "association-class-source:" + umlClass.id());
+        String targetEndId = derivedId("EAID", "association-class-target:" + umlClass.id());
+        line(xml, 3, "<packagedElement xmi:type=\"uml:AssociationClass\" xmi:id=\"" + associationClassId
+                + "\" name=\"" + escape(umlClass.name()) + "\" visibility=\"public\" memberEnd=\""
+                + sourceEndId + " " + targetEndId + "\">");
+        emitAttributes(xml, umlClass, customTypes);
+        emitGeneralizations(xml, generalizations);
+        line(xml, 4, "<ownedEnd xmi:type=\"uml:Property\" xmi:id=\"" + sourceEndId
+                + "\" type=\"" + xmiId("EAID", relationship.sourceClassId())
+                + "\" association=\"" + associationClassId + "\" aggregation=\""
+                + aggregation(relationship.type()) + "\">");
+        multiplicity(xml, 5, normalizeMultiplicity(relationship.sourceMultiplicity()), umlClass.id(), "association-class-source");
+        line(xml, 4, "</ownedEnd>");
+        line(xml, 4, "<ownedEnd xmi:type=\"uml:Property\" xmi:id=\"" + targetEndId
+                + "\" type=\"" + xmiId("EAID", relationship.targetClassId())
+                + "\" association=\"" + associationClassId + "\" aggregation=\"none\">");
+        multiplicity(xml, 5, normalizeMultiplicity(relationship.targetMultiplicity()), umlClass.id(), "association-class-target");
+        line(xml, 4, "</ownedEnd>");
+        line(xml, 3, "</packagedElement>");
+    }
+
+    private void emitAttributes(StringBuilder xml, UmlClass umlClass, Map<String, String> customTypes) {
+        for (UmlAttribute attribute : umlClass.attributes()) {
+            String typeId = attribute.dataType() == UmlDataType.CUSTOM
+                    ? customTypes.get(attribute.customTypeName())
+                    : primitiveTypeId(attribute.dataType());
+            String isId = attribute.identifier() ? " isID=\"true\"" : "";
+            line(xml, 4, "<ownedAttribute xmi:type=\"uml:Property\" xmi:id=\"" + xmiId("EAID", attribute.id()) + "\" name=\"" + escape(attribute.name()) + "\" visibility=\"" + visibility(attribute.visibility().name()) + "\" type=\"" + typeId + "\"" + isId + ">");
+            multiplicity(xml, 5, attribute.nullable() ? new Multiplicity(0, 1) : Multiplicity.one(), attribute.id(), "attribute");
+            line(xml, 4, "</ownedAttribute>");
+        }
+    }
+
+    private void emitGeneralizations(StringBuilder xml, List<UmlRelationship> generalizations) {
+        for (UmlRelationship relationship : generalizations) {
+            line(xml, 4, "<generalization xmi:type=\"uml:Generalization\" xmi:id=\"" + xmiId("EAID", relationship.id()) + "\" general=\"" + xmiId("EAID", relationship.targetClassId()) + "\"/>");
+        }
+    }
+
+    private void emitAssociation(StringBuilder xml, UmlRelationship relationship) {
+        String relationshipId = xmiId("EAID", relationship.id());
+        String sourceEndId = derivedId("EAID", "association-source:" + relationship.id());
+        String targetEndId = derivedId("EAID", "association-target:" + relationship.id());
+        line(xml, 3, "<packagedElement xmi:type=\"uml:Association\" xmi:id=\"" + relationshipId + "\" visibility=\"public\" memberEnd=\"" + sourceEndId + " " + targetEndId + "\">");
+        line(xml, 4, "<ownedEnd xmi:type=\"uml:Property\" xmi:id=\"" + sourceEndId + "\" type=\"" + xmiId("EAID", relationship.sourceClassId()) + "\" association=\"" + relationshipId + "\" aggregation=\"" + aggregation(relationship.type()) + "\">");
+        multiplicity(xml, 5, normalizeMultiplicity(relationship.sourceMultiplicity()), relationship.id(), "source");
+        line(xml, 4, "</ownedEnd>");
+        line(xml, 4, "<ownedEnd xmi:type=\"uml:Property\" xmi:id=\"" + targetEndId + "\" type=\"" + xmiId("EAID", relationship.targetClassId()) + "\" association=\"" + relationshipId + "\" aggregation=\"none\">");
+        multiplicity(xml, 5, normalizeMultiplicity(relationship.targetMultiplicity()), relationship.id(), "target");
+        line(xml, 4, "</ownedEnd>");
+        line(xml, 3, "</packagedElement>");
     }
 
     private Map<String, String> customTypes(List<UmlClass> classes) {

@@ -1,5 +1,6 @@
 package com.classforge.integration.xmi;
 
+import com.classforge.project.domain.document.AssociationClassSupport;
 import com.classforge.project.domain.document.DiagramLayout;
 import com.classforge.project.domain.document.DiagramNodeLayout;
 import com.classforge.project.domain.document.Multiplicity;
@@ -80,8 +81,9 @@ public class EnterpriseArchitectXmiImporter {
         indexClasses(context);
         indexProperties(context);
 
-        List<UmlClass> classes = importClasses(context);
-        List<UmlRelationship> relationships = importRelationships(context);
+        List<UmlClass> classes = new ArrayList<>(importClasses(context));
+        List<UmlRelationship> relationships = new ArrayList<>(importRelationships(context));
+        relationships.addAll(importAssociationClasses(context, classes));
         relationships.addAll(importGeneralizations(context));
 
         Map<UUID, DiagramNodeLayout> nodes = new LinkedHashMap<>();
@@ -172,6 +174,9 @@ public class EnterpriseArchitectXmiImporter {
             if (type.endsWith("Package") || is(child, "nestedPackage")) {
                 context.packageCount++;
                 collectPackagedElements(child, context);
+            } else if (type.endsWith("AssociationClass")) {
+                context.classElements.add(child);
+                context.associationClassElements.add(child);
             } else if (type.endsWith("Class")) {
                 context.classElements.add(child);
             } else if (type.endsWith("Association")) {
@@ -208,7 +213,7 @@ public class EnterpriseArchitectXmiImporter {
     private void indexProperties(ImportContext context) {
         for (Element classElement : context.classElements) {
             for (Element child : childElements(classElement)) {
-                if (is(child, "ownedAttribute")) {
+                if (is(child, "ownedAttribute") || is(child, "ownedEnd")) {
                     String propertyId = xmiAttr(child, "id");
                     if (!propertyId.isBlank()) {
                         context.propertiesById.put(propertyId, child);
@@ -330,6 +335,87 @@ public class EnterpriseArchitectXmiImporter {
                     relationshipType,
                     source.multiplicity(),
                     target.multiplicity()
+            ));
+        }
+        return result;
+    }
+
+    private List<UmlRelationship> importAssociationClasses(
+            ImportContext context,
+            List<UmlClass> classes
+    ) {
+        List<UmlRelationship> result = new ArrayList<>();
+        for (Element associationClass : context.associationClassElements) {
+            String associationClassXmiId = requiredXmiId(associationClass, "AssociationClass");
+            UUID associationClassId = context.classIds.get(associationClassXmiId);
+            List<Element> ends = associationEnds(associationClass, context);
+            if (ends.size() != 2) {
+                throw invalid(
+                        "XMI_ASSOCIATION_CLASS_ENDS_INVALID",
+                        "La AssociationClass " + associationClassXmiId
+                                + " debe tener exactamente dos extremos; encontrados: " + ends.size() + "."
+                );
+            }
+
+            AssociationEnd first = associationEnd(ends.get(0), context);
+            AssociationEnd second = associationEnd(ends.get(1), context);
+            int aggregateIndex = aggregationRank(first.aggregation()) > 0
+                    ? 0
+                    : aggregationRank(second.aggregation()) > 0 ? 1 : -1;
+            if (aggregationRank(first.aggregation()) > 0 && aggregationRank(second.aggregation()) > 0) {
+                throw invalid(
+                        "XMI_ASSOCIATION_CLASS_AGGREGATION_INVALID",
+                        "Una AssociationClass no puede declarar agregacion/composicion en ambos extremos."
+                );
+            }
+
+            AssociationEnd source = aggregateIndex == 1 ? second : first;
+            AssociationEnd target = aggregateIndex == 1 ? first : second;
+            UmlRelationshipType type = switch (source.aggregation().toLowerCase(Locale.ROOT)) {
+                case "composite" -> UmlRelationshipType.COMPOSITION;
+                case "shared" -> UmlRelationshipType.AGGREGATION;
+                default -> UmlRelationshipType.ASSOCIATION;
+            };
+
+            UmlRelationship original = new UmlRelationship(
+                    stableUuid("association-class-original:" + associationClassXmiId),
+                    source.classId(),
+                    target.classId(),
+                    type,
+                    source.multiplicity(),
+                    target.multiplicity()
+            );
+
+            for (int index = 0; index < classes.size(); index++) {
+                UmlClass umlClass = classes.get(index);
+                if (umlClass.id().equals(associationClassId)) {
+                    classes.set(index, AssociationClassSupport.withMarker(umlClass, original));
+                    break;
+                }
+            }
+
+            result.add(new UmlRelationship(
+                    stableUuid("association-class-source-bridge:" + associationClassXmiId),
+                    source.classId(),
+                    associationClassId,
+                    UmlRelationshipType.ASSOCIATION,
+                    Multiplicity.one(),
+                    target.multiplicity() == null ? new Multiplicity(0, null) : target.multiplicity()
+            ));
+            result.add(new UmlRelationship(
+                    stableUuid("association-class-target-bridge:" + associationClassXmiId),
+                    target.classId(),
+                    associationClassId,
+                    UmlRelationshipType.ASSOCIATION,
+                    Multiplicity.one(),
+                    source.multiplicity() == null ? new Multiplicity(0, null) : source.multiplicity()
+            ));
+
+            context.diagnostics.add(new XmiDiagnostic(
+                    XmiDiagnosticSeverity.INFO,
+                    "XMI_ASSOCIATION_CLASS_IMPORTED",
+                    "AssociationClass '" + context.classNames.get(associationClassXmiId)
+                            + "' se preservo como clase de asociacion UML y entidad asociativa generable."
             ));
         }
         return result;
@@ -634,6 +720,7 @@ public class EnterpriseArchitectXmiImporter {
 
     private static final class ImportContext {
         private final List<Element> classElements = new ArrayList<>();
+        private final List<Element> associationClassElements = new ArrayList<>();
         private final List<Element> associationElements = new ArrayList<>();
         private final List<Element> dataTypeElements = new ArrayList<>();
         private final Map<String, String> typeNames = new LinkedHashMap<>();

@@ -117,7 +117,9 @@ public class AssistantImagePlanService {
         AssistantImageMetadata metadata = metadata(normalized, validated);
         List<AssistantImageEvidenceItem> evidence = evidencePresenter.items(proposal);
 
-        if (proposal.safeClasses().isEmpty() && proposal.safeRelationships().isEmpty()) {
+        if (proposal.safeClasses().isEmpty()
+                && proposal.safeRelationships().isEmpty()
+                && proposal.safeAssociationClasses().isEmpty()) {
             List<String> warnings = new ArrayList<>(proposal.safeWarnings());
             if (warnings.isEmpty()) {
                 warnings.add("La imagen no contiene UML accionable con suficiente evidencia.");

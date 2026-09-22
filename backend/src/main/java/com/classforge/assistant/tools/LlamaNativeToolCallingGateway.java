@@ -345,6 +345,8 @@ public class LlamaNativeToolCallingGateway implements AssistantToolCallingGatewa
                 - Para renombrar atributos usa rename_attribute y devuelve new_name sin prefijo de clase.
                 - Para multiplicidad usa set_relationship_multiplicity y end_class debe ser el extremo cuya multiplicidad cambia.
                 - Para herencia usa create_generalization: subclass hereda de superclass.
+                - Una clase de asociacion (association class / clase intermedia UML) NO es una tercera asociacion normal: usa create_association_class sobre la relacion existente.
+                - Las clases de asociacion existentes son clases reales para agregar/editar atributos; su marcador tecnico nunca se expone como atributo editable.
                 - Para agregacion/composicion: whole_class es el todo y part_class es la parte.
                 - Para upper infinito usa -1; lower nunca puede ser negativo.
                 - "muchas/muchos" sin minimo explicito significa 0..*; "cero o muchas" significa 0..*.
@@ -368,6 +370,7 @@ public class LlamaNativeToolCallingGateway implements AssistantToolCallingGatewa
 
                 Ejemplos de significado:
                 - crear clase -> create_class
+                - clase de asociacion / clase intermedia UML / association class -> create_association_class
                 - renombrar clase -> rename_class
                 - borrar clase -> delete_class
                 - agregar campo/atributo -> add_attributes

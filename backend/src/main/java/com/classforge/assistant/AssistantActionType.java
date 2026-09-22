@@ -2,6 +2,7 @@ package com.classforge.assistant;
 
 public enum AssistantActionType {
     CREATE_CLASS,
+    CREATE_ASSOCIATION_CLASS,
     RENAME_CLASS,
     DELETE_CLASS,
     ADD_ATTRIBUTES,

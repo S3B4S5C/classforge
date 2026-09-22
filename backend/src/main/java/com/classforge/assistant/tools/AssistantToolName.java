@@ -7,6 +7,7 @@ import java.util.Arrays;
 public enum AssistantToolName {
     ROUTE_REQUEST("route_uml_request", null),
     CREATE_CLASS("create_class", AssistantActionType.CREATE_CLASS),
+    CREATE_ASSOCIATION_CLASS("create_association_class", AssistantActionType.CREATE_ASSOCIATION_CLASS),
     RENAME_CLASS("rename_class", AssistantActionType.RENAME_CLASS),
     DELETE_CLASS("delete_class", AssistantActionType.DELETE_CLASS),
     ADD_ATTRIBUTES("add_attributes", AssistantActionType.ADD_ATTRIBUTES),

@@ -437,7 +437,7 @@ export class UmlCanvasComponent
     return Boolean(
       this.document?.umlModel.relationships.some(
         (relationship) =>
-          relationship.type === 'ASSOCIATION',
+          relationship.type !== 'GENERALIZATION',
       ),
     );
   }
@@ -850,7 +850,7 @@ export class UmlCanvasComponent
       this.document?.umlModel.relationships.find(
         (candidate) =>
           candidate.id === relationshipId
-          && candidate.type === 'ASSOCIATION',
+          && candidate.type !== 'GENERALIZATION',
       );
 
     if (!relationship) {

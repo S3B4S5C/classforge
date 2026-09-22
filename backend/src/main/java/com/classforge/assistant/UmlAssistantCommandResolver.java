@@ -3,6 +3,7 @@ package com.classforge.assistant;
 import com.classforge.collaboration.application.ProjectCommandExecutor;
 import com.classforge.collaboration.protocol.UmlCommandPayload;
 import com.classforge.collaboration.protocol.UmlCommandType;
+import com.classforge.project.domain.document.AssociationClassSupport;
 import com.classforge.project.domain.document.DiagramNodeLayout;
 import com.classforge.project.domain.document.Multiplicity;
 import com.classforge.project.domain.document.ProjectDocument;
@@ -109,6 +110,12 @@ public class UmlAssistantCommandResolver {
                             document
                     );
 
+            case CREATE_ASSOCIATION_CLASS ->
+                    createAssociationClass(
+                            action,
+                            document
+                    );
+
             case RENAME_CLASS ->
                     List.of(
                             renameClass(
@@ -118,11 +125,9 @@ public class UmlAssistantCommandResolver {
                     );
 
             case DELETE_CLASS ->
-                    List.of(
-                            deleteClass(
-                                    action,
-                                    document
-                            )
+                    deleteClass(
+                            action,
+                            document
                     );
 
             case ADD_ATTRIBUTES ->
@@ -240,6 +245,136 @@ public class UmlAssistantCommandResolver {
         );
     }
 
+    private List<UmlCommandPayload> createAssociationClass(
+            AssistantPlanAction action,
+            ProjectDocument document
+    ) {
+        String name = required(action.className(), "CREATE_ASSOCIATION_CLASS.className");
+        UmlClass source = findClass(document, action.sourceClassName());
+        UmlClass target = findClass(document, action.targetClassName());
+        if (source.id().equals(target.id())) {
+            throw new AssistantPlanningException("CREATE_ASSOCIATION_CLASS requiere dos clases distintas.");
+        }
+
+        UmlRelationship original;
+        if (action.relationshipId() != null) {
+            original = document.umlModel().relationships().stream()
+                    .filter(item -> item.id().equals(action.relationshipId()))
+                    .findFirst()
+                    .orElseThrow(() -> new AssistantPlanningException(
+                            "La asociacion seleccionada para la clase de asociacion ya no existe."
+                    ));
+            boolean sameEndpoints = (original.sourceClassId().equals(source.id())
+                    && original.targetClassId().equals(target.id()))
+                    || (original.sourceClassId().equals(target.id())
+                    && original.targetClassId().equals(source.id()));
+            if (!sameEndpoints || original.type() == UmlRelationshipType.GENERALIZATION) {
+                throw new AssistantPlanningException(
+                        "La relacion seleccionada no puede convertirse en clase de asociacion."
+                );
+            }
+            if (original.sourceClassId().equals(target.id())) {
+                original = new UmlRelationship(
+                        original.id(),
+                        source.id(),
+                        target.id(),
+                        original.type(),
+                        original.targetMultiplicity(),
+                        original.sourceMultiplicity()
+                );
+            }
+        } else {
+            UmlRelationshipType type = action.relationshipType() == null
+                    ? UmlRelationshipType.ASSOCIATION
+                    : action.relationshipType();
+            if (type == UmlRelationshipType.GENERALIZATION) {
+                throw new AssistantPlanningException("Una generalizacion no puede ser AssociationClass.");
+            }
+            original = relationship(
+                    UUID.randomUUID(),
+                    source.id(),
+                    target.id(),
+                    type,
+                    action
+            );
+        }
+
+        UUID classId = UUID.randomUUID();
+        int index = document.umlModel().classes().size();
+        int column = index % 3;
+        int row = index / 3;
+
+        UmlAttribute markerAttribute = new UmlAttribute(
+                UUID.randomUUID(),
+                "id",
+                com.classforge.project.domain.document.UmlDataType.UUID,
+                AssociationClassSupport.marker(original),
+                com.classforge.project.domain.document.UmlVisibility.PRIVATE,
+                false,
+                true
+        );
+
+        List<UmlCommandPayload> commands = new ArrayList<>();
+        if (action.relationshipId() != null) {
+            commands.add(command(
+                    UmlCommandType.DELETE_RELATIONSHIP,
+                    null, null, null, null, null, null, null, original.id()
+            ));
+        }
+        commands.add(command(
+                UmlCommandType.CREATE_CLASS,
+                null,
+                null,
+                new UmlClass(classId, name, List.of(markerAttribute)),
+                new DiagramNodeLayout(
+                        80 + column * 300,
+                        80 + row * 220,
+                        260,
+                        160
+                ),
+                null, null, null, null
+        ));
+
+        for (AssistantAttributePlan attribute : action.safeAttributes()) {
+            if ("id".equalsIgnoreCase(attribute.name())) {
+                continue;
+            }
+            commands.add(addAttributeCommand(classId, attribute));
+        }
+
+        commands.add(command(
+                UmlCommandType.CREATE_RELATIONSHIP,
+                null, null, null, null, null, null,
+                new UmlRelationship(
+                        UUID.randomUUID(),
+                        source.id(),
+                        classId,
+                        UmlRelationshipType.ASSOCIATION,
+                        Multiplicity.one(),
+                        original.targetMultiplicity() == null
+                                ? new Multiplicity(0, null)
+                                : original.targetMultiplicity()
+                ),
+                null
+        ));
+        commands.add(command(
+                UmlCommandType.CREATE_RELATIONSHIP,
+                null, null, null, null, null, null,
+                new UmlRelationship(
+                        UUID.randomUUID(),
+                        target.id(),
+                        classId,
+                        UmlRelationshipType.ASSOCIATION,
+                        Multiplicity.one(),
+                        original.sourceMultiplicity() == null
+                                ? new Multiplicity(0, null)
+                                : original.sourceMultiplicity()
+                ),
+                null
+        ));
+        return List.copyOf(commands);
+    }
+
     private UmlCommandPayload renameClass(
             AssistantPlanAction action,
             ProjectDocument document
@@ -266,7 +401,7 @@ public class UmlAssistantCommandResolver {
         );
     }
 
-    private UmlCommandPayload deleteClass(
+    private List<UmlCommandPayload> deleteClass(
             AssistantPlanAction action,
             ProjectDocument document
     ) {
@@ -276,7 +411,8 @@ public class UmlAssistantCommandResolver {
                         action.className()
                 );
 
-        return command(
+        List<UmlCommandPayload> commands = new ArrayList<>();
+        commands.add(command(
                 UmlCommandType.DELETE_CLASS,
                 umlClass.id(),
                 null,
@@ -286,7 +422,23 @@ public class UmlAssistantCommandResolver {
                 null,
                 null,
                 null
-        );
+        ));
+
+        AssociationClassSupport.metadata(umlClass).ifPresent(metadata -> {
+            UmlRelationship original = metadata.relationship();
+            boolean sourceExists = document.umlModel().classes().stream()
+                    .anyMatch(item -> item.id().equals(original.sourceClassId()));
+            boolean targetExists = document.umlModel().classes().stream()
+                    .anyMatch(item -> item.id().equals(original.targetClassId()));
+            if (sourceExists && targetExists) {
+                commands.add(command(
+                        UmlCommandType.CREATE_RELATIONSHIP,
+                        null, null, null, null, null, null, original, null
+                ));
+            }
+        });
+
+        return List.copyOf(commands);
     }
 
     private List<UmlCommandPayload> addAttributes(

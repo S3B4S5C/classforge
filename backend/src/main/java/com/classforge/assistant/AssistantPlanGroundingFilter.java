@@ -89,9 +89,9 @@ public class AssistantPlanGroundingFilter {
                 );
 
                 if (
-                        sanitized.type()
-                                == AssistantActionType.CREATE_CLASS
-                        && sanitized.className() != null
+                        (sanitized.type() == AssistantActionType.CREATE_CLASS
+                                || sanitized.type() == AssistantActionType.CREATE_ASSOCIATION_CLASS)
+                                && sanitized.className() != null
                 ) {
                     knownClassNames.add(
                             classKey(
@@ -146,6 +146,14 @@ public class AssistantPlanGroundingFilter {
         return switch (action.type()) {
             case CREATE_CLASS ->
                     sanitizeCreateClass(
+                            userText,
+                            action,
+                            knownClassNames,
+                            redundantExistingCreates
+                    );
+
+            case CREATE_ASSOCIATION_CLASS ->
+                    sanitizeAssociationClass(
                             userText,
                             action,
                             knownClassNames,
@@ -229,6 +237,23 @@ public class AssistantPlanGroundingFilter {
                             ? action
                             : null;
         };
+    }
+
+    private AssistantPlanAction sanitizeAssociationClass(
+            String userText,
+            AssistantPlanAction action,
+            Set<String> knownClassNames,
+            List<String> redundantExistingCreates
+    ) {
+        AssistantPlanAction created = sanitizeCreateClass(
+                userText, action, knownClassNames, redundantExistingCreates
+        );
+        if (created == null
+                || !mentionsExistingEntity(userText, action.sourceClassName())
+                || !mentionsExistingEntity(userText, action.targetClassName())) {
+            return null;
+        }
+        return created;
     }
 
     private AssistantPlanAction sanitizeCreateClass(
@@ -344,7 +369,8 @@ public class AssistantPlanGroundingFilter {
                 action.sourceLower(),
                 action.sourceUpper(),
                 action.targetLower(),
-                action.targetUpper()
+                action.targetUpper(),
+                action.relationshipId()
         );
     }
 

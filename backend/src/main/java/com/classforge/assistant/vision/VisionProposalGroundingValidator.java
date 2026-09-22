@@ -44,6 +44,18 @@ public class VisionProposalGroundingValidator {
             required(relationship.type(), "relationship.type");
             requireEvidence(relationship.evidence(), null, "relationship.evidence", null);
         }
+
+        for (VisionAssociationClassProposal associationClass : proposal.safeAssociationClasses()) {
+            required(associationClass.classRef(), "associationClass.classRef");
+            required(associationClass.sourceRef(), "associationClass.sourceRef");
+            required(associationClass.targetRef(), "associationClass.targetRef");
+            requireEvidence(
+                    associationClass.evidence(),
+                    null,
+                    "associationClass.evidence",
+                    null
+            );
+        }
     }
 
     private void validateNoActionableConsistency(VisionUmlProposal proposal) {
@@ -59,9 +71,11 @@ public class VisionProposalGroundingValidator {
                 ));
 
         if (noActionableWarning
-                && (!proposal.safeClasses().isEmpty() || !proposal.safeRelationships().isEmpty())) {
+                && (!proposal.safeClasses().isEmpty()
+                || !proposal.safeRelationships().isEmpty()
+                || !proposal.safeAssociationClasses().isEmpty())) {
             throw new AssistantPlanningException(
-                    "NO_ACTIONABLE_UML solo es valido cuando classes y relationships estan vacios."
+                    "NO_ACTIONABLE_UML solo es valido cuando classes, relationships y associationClasses estan vacios."
             );
         }
     }
