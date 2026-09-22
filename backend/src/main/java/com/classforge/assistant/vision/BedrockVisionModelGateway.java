@@ -69,7 +69,10 @@ public class BedrockVisionModelGateway implements VisionModelGateway {
                 maxCompletionTokens
         );
         try {
-            return jsonMapper.treeToValue(input, VisionUmlProposal.class);
+            VisionUmlProposal proposal = jsonMapper.treeToValue(
+                    input, VisionUmlProposal.class
+            );
+            return VisionProposalOutcomeNormalizer.normalize(proposal);
         } catch (Exception exception) {
             throw outputContract(
                     "La salida de Bedrock no cumple VisionUmlProposal; se rechazo sin reparacion heuristica.",

@@ -118,7 +118,10 @@ public class LlamaCppVisionModelGateway implements VisionModelGateway {
                     requestPayload(image, context),
                     "principal"
             );
-            return jsonMapper.readValue(content, VisionUmlProposal.class);
+            VisionUmlProposal proposal = jsonMapper.readValue(
+                    content, VisionUmlProposal.class
+            );
+            return VisionProposalOutcomeNormalizer.normalize(proposal);
         } catch (AssistantPlanningException exception) {
             throw exception;
         } catch (Exception exception) {
