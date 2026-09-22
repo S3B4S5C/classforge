@@ -48,14 +48,14 @@ final class VisionBenchmarkSemanticComparator {
             String[] parts = signature.split("\\|", -1);
             if (parts.length >= 3
                     && ("CREATE_CLASS".equals(parts[0]) || "ADD_ATTRIBUTES".equals(parts[0]))) {
-                List<String> attributes = canonicalAttributes(parts[2]);
+                List<String> attributes = new ArrayList<>();
+                if (!parts[2].isBlank()) {
+                    for (String attribute : parts[2].split(",")) {
+                        attributes.add(canonicalAttribute(attribute));
+                    }
+                }
+                Collections.sort(attributes);
                 result.add(parts[0] + "|" + normalize(parts[1]) + "|" + String.join(",", attributes));
-                continue;
-            }
-
-            AssociationClass associationClass = associationClass(parts);
-            if (associationClass != null) {
-                result.add(associationClass.fullKey());
                 continue;
             }
 
@@ -77,8 +77,6 @@ final class VisionBenchmarkSemanticComparator {
             if (parts.length >= 2
                     && ("CREATE_CLASS".equals(parts[0]) || "ADD_ATTRIBUTES".equals(parts[0]))) {
                 result.add(parts[0] + "|" + normalize(parts[1]));
-            } else if (parts.length >= 8 && "CREATE_ASSOCIATION_CLASS".equals(parts[0])) {
-                result.add("CREATE_ASSOCIATION_CLASS|" + normalize(parts[1]));
             }
         }
         return sortedSet(result);
@@ -95,13 +93,6 @@ final class VisionBenchmarkSemanticComparator {
                 for (String attribute : parts[2].split(",")) {
                     result.add(className + "|" + canonicalAttribute(attribute));
                 }
-            } else if (parts.length >= 8
-                    && "CREATE_ASSOCIATION_CLASS".equals(parts[0])
-                    && !parts[7].isBlank()) {
-                String className = normalize(parts[1]);
-                for (String attribute : parts[7].split(",")) {
-                    result.add(className + "|" + canonicalAttribute(attribute));
-                }
             }
         }
         return sortedSet(result);
@@ -110,13 +101,7 @@ final class VisionBenchmarkSemanticComparator {
     private static Set<String> relationshipElements(Set<String> signatures) {
         Set<String> result = new LinkedHashSet<>();
         for (String signature : signatures) {
-            String[] parts = signature.split("\\|", -1);
-            AssociationClass associationClass = associationClass(parts);
-            if (associationClass != null) {
-                result.add(associationClass.topologyKey());
-                continue;
-            }
-            Relationship relationship = relationship(parts);
+            Relationship relationship = relationship(signature.split("\\|", -1));
             if (relationship != null) {
                 result.add(relationship.topologyKey());
             }
@@ -127,33 +112,12 @@ final class VisionBenchmarkSemanticComparator {
     private static Set<String> multiplicityElements(Set<String> signatures) {
         Set<String> result = new LinkedHashSet<>();
         for (String signature : signatures) {
-            String[] parts = signature.split("\\|", -1);
-            AssociationClass associationClass = associationClass(parts);
-            if (associationClass != null) {
-                result.addAll(associationClass.multiplicityKeys());
-                continue;
-            }
-            Relationship relationship = relationship(parts);
+            Relationship relationship = relationship(signature.split("\\|", -1));
             if (relationship != null) {
                 result.addAll(relationship.multiplicityKeys());
             }
         }
         return sortedSet(result);
-    }
-
-    private static AssociationClass associationClass(String[] parts) {
-        if (parts.length < 8 || !"CREATE_ASSOCIATION_CLASS".equals(parts[0])) {
-            return null;
-        }
-        return new AssociationClass(
-                normalize(parts[1]),
-                normalize(parts[2]),
-                normalize(parts[3]),
-                parts[4].trim().toUpperCase(Locale.ROOT),
-                parts[5].trim(),
-                parts[6].trim(),
-                String.join(",", canonicalAttributes(parts[7]))
-        );
     }
 
     private static Relationship relationship(String[] parts) {
@@ -186,17 +150,6 @@ final class VisionBenchmarkSemanticComparator {
                 targetMultiplicity,
                 "ASSOCIATION".equals(type)
         );
-    }
-
-    private static List<String> canonicalAttributes(String value) {
-        List<String> attributes = new ArrayList<>();
-        if (value != null && !value.isBlank()) {
-            for (String attribute : value.split(",")) {
-                attributes.add(canonicalAttribute(attribute));
-            }
-        }
-        Collections.sort(attributes);
-        return attributes;
     }
 
     private static String canonicalAttribute(String attribute) {
@@ -241,35 +194,6 @@ final class VisionBenchmarkSemanticComparator {
             ElementStats multiplicities,
             boolean semanticExact
     ) {
-    }
-
-    private record AssociationClass(
-            String className,
-            String source,
-            String target,
-            String type,
-            String sourceMultiplicity,
-            String targetMultiplicity,
-            String attributes
-    ) {
-        String topologyKey() {
-            return "CREATE_ASSOCIATION_CLASS|" + className + "|" + source + "|" + target + "|" + type;
-        }
-
-        String fullKey() {
-            return topologyKey() + "|" + sourceMultiplicity + "|" + targetMultiplicity + "|" + attributes;
-        }
-
-        Set<String> multiplicityKeys() {
-            Set<String> result = new LinkedHashSet<>();
-            if (!"null:null".equals(sourceMultiplicity)) {
-                result.add(topologyKey() + "|source=" + source + "|multiplicity=" + sourceMultiplicity);
-            }
-            if (!"null:null".equals(targetMultiplicity)) {
-                result.add(topologyKey() + "|target=" + target + "|multiplicity=" + targetMultiplicity);
-            }
-            return result;
-        }
     }
 
     private record Relationship(

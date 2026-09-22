@@ -72,45 +72,4 @@ class VisionProposalOutcomeNormalizerTests {
         assertEquals(1, normalized.safeWarnings().size());
         assertTrue(normalized.safeWarnings().getFirst().startsWith("NO_ACTIONABLE_UML:"));
     }
-    @Test
-    void associationClassTopologyDropsDashedConnectorArtifactsAndRestoresUnderlyingRelationship() {
-        VisionRelationshipProposal underlying = new VisionRelationshipProposal(
-                "pedido",
-                "producto",
-                "COMPOSITION",
-                new VisionMultiplicityProposal(1, null, true),
-                new VisionMultiplicityProposal(1, null, true),
-                new VisionEvidence("Pedido <>-- Producto", 0.95, 1, 1, 100, 30)
-        );
-        VisionUmlProposal proposal = new VisionUmlProposal(
-                "DetallePedido es clase de asociacion",
-                List.of(
-                        new VisionClassProposal("pedido", "Pedido", List.of(), new VisionEvidence("Pedido", 0.95, 1, 1, 40, 20)),
-                        new VisionClassProposal("producto", "Producto", List.of(), new VisionEvidence("Producto", 0.95, 120, 1, 40, 20)),
-                        new VisionClassProposal("detalle", "DetallePedido", List.of(), new VisionEvidence("DetallePedido", 0.95, 60, 80, 60, 20))
-                ),
-                List.of(
-                        underlying,
-                        new VisionRelationshipProposal(
-                                "detalle", "pedido", "ASSOCIATION", null, null,
-                                new VisionEvidence("dashed connector", 0.8, 60, 40, 20, 40)
-                        )
-                ),
-                List.of(new VisionAssociationClassProposal(
-                        "detalle", "pedido", "producto",
-                        new VisionEvidence("DetallePedido dashed to Pedido-Producto", 0.95, 60, 40, 40, 60)
-                )),
-                List.of(),
-                0.95
-        );
-
-        VisionUmlProposal normalized = VisionProposalOutcomeNormalizer.normalize(proposal);
-
-        assertEquals(1, normalized.safeAssociationClasses().size());
-        assertEquals(1, normalized.safeRelationships().size());
-        assertEquals("pedido", normalized.safeRelationships().getFirst().sourceRef());
-        assertEquals("producto", normalized.safeRelationships().getFirst().targetRef());
-        assertEquals("COMPOSITION", normalized.safeRelationships().getFirst().type());
-    }
-
 }

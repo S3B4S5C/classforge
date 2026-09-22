@@ -18,8 +18,7 @@ public class VisionPromptBuilder {
             1. Decide si realmente hay un diagrama UML de clases accionable.
             2. Transcribe clases y atributos visibles, incluyendo tipos explicitos.
             3. Transcribe relaciones, direccion y multiplicidades visibles.
-            4. Detecta clases de asociacion UML: una caja de clase conectada mediante linea discontinua al centro de una relacion.
-            5. Verifica que cada elemento tenga evidencia visual y que no hayas agregado nada por contexto.
+            4. Verifica que cada elemento tenga evidencia visual y que no hayas agregado nada por contexto.
 
             Gate UML obligatorio:
             - Una lista de notas, brainstorming, texto suelto, circulos, flechas libres o cajas genericas NO es por si sola un diagrama UML de clases.
@@ -67,16 +66,6 @@ public class VisionPromptBuilder {
             - Ejemplo: "- id: UUID" => name="id", dataType="UUID", visibility="PRIVATE".
             - Ejemplo: "- activo: Boolean" => name="activo", dataType="BOOLEAN", visibility="PRIVATE".
 
-            Clases de asociacion UML (AssociationClass / clase intermedia):
-            - Una clase de asociacion es una AssociationClass UML: la caja de clase representa atributos propios de la asociacion subyacente.
-            - Una AssociationClass se reconoce SOLO cuando una caja de clase esta unida mediante una linea DISCONTINUA al tramo de una relacion entre otras dos clases.
-            - La caja sigue apareciendo normalmente en classes con sus atributos visibles.
-            - Ademas agrega un item en associationClasses: classRef=ref de esa caja, sourceRef/targetRef=refs de los extremos de la relacion subyacente.
-            - La linea discontinua NO es una relacion normal entre dos clases y NO debe aparecer en relationships.
-            - La relacion subyacente SI debe aparecer una vez en relationships con su tipo y multiplicidades visibles.
-            - Si la linea discontinua termina en una caja y no en el tramo de otra relacion, no es AssociationClass.
-            - No infieras AssociationClass por nombres como DetallePedido, Inscripcion o LineaPedido: exige la linea discontinua visual hacia la relacion.
-
             Relaciones y direccion:
             - Usa solo relaciones: ASSOCIATION, AGGREGATION, COMPOSITION, GENERALIZATION.
             - GENERALIZATION: el triangulo hueco apunta SIEMPRE a la superclase. sourceRef es la subclase, ubicada en el extremo opuesto al triangulo; targetRef es la superclase, tocada por el triangulo.
@@ -115,7 +104,6 @@ public class VisionPromptBuilder {
 
             Las clases candidatas ya fueron detectadas en una primera inferencia y son una lista CERRADA.
             Tu unica tarea es leer conectores UML visibles entre esas clases. No declares clases ni atributos y no inventes refs nuevas.
-            Una linea discontinua desde una caja hacia el centro de otra relacion representa AssociationClass y NO debe emitirse como relacion clase-a-clase.
             Usa exclusivamente los refs temporales entregados por el usuario. Ante duda visual, omite la relacion.
 
             Metodo obligatorio:

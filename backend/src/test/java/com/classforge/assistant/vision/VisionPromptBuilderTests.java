@@ -77,22 +77,6 @@ class VisionPromptBuilderTests {
         assertFalse(prompt.contains("la relacion es A-C; NO declares A-B"));
     }
 
-
-    @Test
-    void promptAndSchemaTeachAssociationClassAsDashedConnectorToRelationship() {
-        String prompt = builder.systemPrompt();
-        String schema = VisionUmlProposalJsonSchema.json();
-
-        assertTrue(prompt.contains("clase de asociacion"));
-        assertTrue(prompt.contains("linea DISCONTINUA"));
-        assertTrue(prompt.contains("associationClasses"));
-        assertTrue(prompt.contains("NO es una relacion normal entre dos clases"));
-        assertTrue(schema.contains("\"associationClasses\""));
-        assertTrue(schema.contains("\"classRef\""));
-        assertTrue(schema.contains("\"sourceRef\""));
-        assertTrue(schema.contains("\"targetRef\""));
-    }
-
     @Test
     void relationshipPassUsesClosedRefsAndFocusesOnlyOnPhysicalConnectors() {
         VisionUmlProposal firstPass = new VisionUmlProposal(

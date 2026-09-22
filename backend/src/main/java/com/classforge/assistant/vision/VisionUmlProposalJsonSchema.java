@@ -269,58 +269,6 @@ public final class VisionUmlProposalJsonSchema {
                         }
                       }
                     },
-                    "associationClasses": {
-                      "type": "array",
-                      "maxItems": 40,
-                      "items": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "required": [
-                          "classRef",
-                          "sourceRef",
-                          "targetRef",
-                          "evidence"
-                        ],
-                        "properties": {
-                          "classRef": {
-                            "type": "string",
-                            "minLength": 1,
-                            "maxLength": 120
-                          },
-                          "sourceRef": {
-                            "type": "string",
-                            "minLength": 1,
-                            "maxLength": 120
-                          },
-                          "targetRef": {
-                            "type": "string",
-                            "minLength": 1,
-                            "maxLength": 120
-                          },
-                          "evidence": {
-                            "type": "object",
-                            "additionalProperties": false,
-                            "required": ["label"],
-                            "properties": {
-                              "label": {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 240
-                              },
-                              "confidence": {
-                                "type": "number",
-                                "minimum": 0,
-                                "maximum": 1
-                              },
-                              "x": { "type": "integer", "minimum": 0 },
-                              "y": { "type": "integer", "minimum": 0 },
-                              "width": { "type": "integer", "minimum": 1 },
-                              "height": { "type": "integer", "minimum": 1 }
-                            }
-                          }
-                        }
-                      }
-                    },
                     "warnings": {
                       "type": "array",
                       "maxItems": 30,
@@ -338,7 +286,6 @@ public final class VisionUmlProposalJsonSchema {
                   "required": [
                     "classes",
                     "relationships",
-                    "associationClasses",
                     "warnings"
                   ]
                 }

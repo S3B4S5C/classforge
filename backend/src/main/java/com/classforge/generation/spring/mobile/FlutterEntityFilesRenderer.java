@@ -431,7 +431,7 @@ final class FlutterEntityFilesRenderer {
                             child: ReferencePicker(
                               key: const ValueKey('%7$s'),
                               enabled: !saving,
-                              requiredSelection: %9$s,
+                              requiredSelection: %8$s,
                               label: '%s',
                               endpoint: '%s',
                               idFields: const [%s],

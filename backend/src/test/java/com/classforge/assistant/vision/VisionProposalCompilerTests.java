@@ -329,67 +329,6 @@ class VisionProposalCompilerTests {
         assertThrows(AssistantPlanningException.class, () -> compiler.compile(proposal, ProjectDocument.empty()));
     }
 
-
-    @Test
-    void compilesDashedAssociationClassEvidenceIntoCanonicalAssociationClassAction() {
-        VisionUmlProposal proposal = new VisionUmlProposal(
-                "Pedido con detalle",
-                List.of(
-                        new VisionClassProposal("pedido", "Pedido", List.of(), evidence("Pedido")),
-                        new VisionClassProposal("producto", "Producto", List.of(), evidence("Producto")),
-                        new VisionClassProposal(
-                                "detalle", "DetallePedido",
-                                List.of(
-                                        new VisionAttributeProposal(
-                                                "cantidad", "INTEGER", null, "PUBLIC", false, false,
-                                                evidence("cantidad : int")
-                                        ),
-                                        new VisionAttributeProposal(
-                                                "precioUnitario", "DECIMAL", null, "PUBLIC", false, false,
-                                                evidence("precioUnitario : Decimal")
-                                        )
-                                ),
-                                evidence("DetallePedido")
-                        )
-                ),
-                List.of(new VisionRelationshipProposal(
-                        "pedido", "producto", "COMPOSITION",
-                        new VisionMultiplicityProposal(1, null, true),
-                        new VisionMultiplicityProposal(1, null, true),
-                        evidence("Pedido Producto")
-                )),
-                List.of(new VisionAssociationClassProposal(
-                        "detalle", "pedido", "producto", evidence("dashed connector")
-                )),
-                List.of(),
-                0.96
-        );
-
-        VisionCompilationResult result = compiler.compile(proposal, ProjectDocument.empty());
-
-        assertEquals(3, result.plan().actions().size());
-        assertEquals(AssistantActionType.CREATE_CLASS, result.plan().actions().get(0).type());
-        assertEquals(AssistantActionType.CREATE_CLASS, result.plan().actions().get(1).type());
-        var associationClass = result.plan().actions().get(2);
-        assertEquals(AssistantActionType.CREATE_ASSOCIATION_CLASS, associationClass.type());
-        assertEquals("DetallePedido", associationClass.className());
-        assertEquals("Pedido", associationClass.sourceClassName());
-        assertEquals("Producto", associationClass.targetClassName());
-        assertEquals(UmlRelationshipType.COMPOSITION, associationClass.relationshipType());
-        assertEquals(1, associationClass.sourceLower());
-        assertEquals(-1, associationClass.sourceUpper());
-        assertEquals(1, associationClass.targetLower());
-        assertEquals(-1, associationClass.targetUpper());
-        assertEquals(
-                List.of("cantidad:INTEGER", "precioUnitario:DECIMAL"),
-                associationClass.safeAttributes().stream()
-                        .map(attribute -> attribute.name() + ":" + attribute.dataType().name())
-                        .sorted().toList()
-        );
-        assertTrue(result.plan().actions().stream()
-                .noneMatch(action -> action.type() == AssistantActionType.CREATE_RELATIONSHIP));
-    }
-
     private ProjectDocument documentWithClass(String name, List<UmlAttribute> attributes) {
         return new ProjectDocument(
                 ProjectDocument.CURRENT_SCHEMA_VERSION,

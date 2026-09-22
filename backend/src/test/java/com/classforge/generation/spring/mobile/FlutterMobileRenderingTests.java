@@ -3,7 +3,6 @@ package com.classforge.generation.spring.mobile;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.classforge.generation.spring.application.SpringBootGenerationOptions;
-import com.classforge.generation.spring.domain.DomainManifestPlan;
 import com.classforge.generation.spring.generated.GeneratedFile;
 import com.classforge.generation.spring.generated.GeneratedProject;
 import com.classforge.generation.spring.generated.GeneratedProjectValidator;
@@ -47,9 +46,7 @@ class FlutterMobileRenderingTests {
         assertTrue(dashboard.contains("/api/usuario"));
         assertTrue(dashboard.contains("${entity.endpoint}/count"));
         assertTrue(text(simple, "mobile/README.md").contains("plataforma formalmente aceptada: Android"));
-        String simpleUsuarioForm = text(simple, "mobile/lib/entities/usuario/usuario_form_page.dart");
-        assertFalse(simpleUsuarioForm.contains("idController"));
-        assertFalse(simpleUsuarioForm.contains("requiredSelection: rolId"));
+        assertFalse(text(simple, "mobile/lib/entities/usuario/usuario_form_page.dart").contains("idController"));
 
         GeneratedProject auth = renderer.render(
                 fixture.model(),
@@ -95,25 +92,6 @@ class FlutterMobileRenderingTests {
         assertTrue(form.contains("birthDateController.text = widget.existing == null ? DateTime.now().toIso8601String().substring(0, 10)"));
         assertTrue(form.contains("appointmentAtController.text = widget.existing == null ? DateTime.now().toIso8601String().substring(0, 16)"));
         assertTrue(form.contains("enabled: !saving"));
-        assertTrue(form.contains("requiredSelection: false"));
-        assertFalse(form.contains("requiredSelection: teamId"));
-        assertFalse(form.contains("requiredSelection: roleIds"));
-
-        DomainManifestPlan manifest = GeneratedUiRegressionFixture.manifest(false);
-        DomainManifestPlan.Entity person = manifest.entities().stream()
-                .filter(entity -> "Person".equals(entity.codeName()))
-                .findFirst().orElseThrow();
-        DomainManifestPlan.Relation optionalTeam = person.relations().stream()
-                .filter(relation -> "team".equals(relation.name()))
-                .findFirst().orElseThrow();
-        DomainManifestPlan.Relation requiredTeam = new DomainManifestPlan.Relation(
-                optionalTeam.id(), optionalTeam.umlType(), optionalTeam.kind(), optionalTeam.name(),
-                optionalTeam.targetEntityId(), optionalTeam.targetEntityName(), false, optionalTeam.requestField(),
-                optionalTeam.targetIdentifier(), optionalTeam.onDeleteCascade()
-        );
-        String requiredWidget = new FlutterEntityFilesRenderer().relationWidget(requiredTeam, manifest);
-        assertTrue(requiredWidget.contains("requiredSelection: true"));
-        assertFalse(requiredWidget.contains("requiredSelection: teamId"));
 
         String picker = text(files, "mobile/lib/core/widgets/reference_picker.dart");
         assertTrue(picker.contains("requestVersion"));

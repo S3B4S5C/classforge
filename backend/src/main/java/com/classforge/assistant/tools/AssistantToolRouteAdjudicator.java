@@ -83,10 +83,6 @@ public class AssistantToolRouteAdjudicator {
             return AssistantToolName.DELETE_ATTRIBUTE;
         }
 
-        if (isAssociationClassCreationRequest(text)) {
-            return AssistantToolName.CREATE_ASSOCIATION_CLASS;
-        }
-
         // Explicit relationship language determines the action family even
         // when one endpoint is unknown. That lets the relationship resolver
         // fail closed instead of accidentally reinterpreting the known class
@@ -113,7 +109,6 @@ public class AssistantToolRouteAdjudicator {
         if (hint.isPresent()) {
             return switch (hint.get().actionType()) {
                 case CREATE_CLASS -> mentions.isEmpty() ? AssistantToolName.CREATE_CLASS : null;
-                case CREATE_ASSOCIATION_CLASS -> AssistantToolName.CREATE_ASSOCIATION_CLASS;
                 case RENAME_CLASS -> AssistantToolName.RENAME_CLASS;
                 case DELETE_CLASS -> AssistantToolName.DELETE_CLASS;
                 case ADD_ATTRIBUTES -> AssistantToolName.ADD_ATTRIBUTES;
@@ -152,9 +147,6 @@ public class AssistantToolRouteAdjudicator {
         // the ephemeral ProjectDocument before later steps reference them.
         if (families.contains(AssistantActionType.CREATE_CLASS)) {
             result.add(AssistantToolName.CREATE_CLASS);
-        }
-        if (families.contains(AssistantActionType.CREATE_ASSOCIATION_CLASS)) {
-            result.add(AssistantToolName.CREATE_ASSOCIATION_CLASS);
         }
         if (families.contains(AssistantActionType.ADD_ATTRIBUTES)) {
             result.add(AssistantToolName.ADD_ATTRIBUTES);
@@ -254,47 +246,20 @@ public class AssistantToolRouteAdjudicator {
         return zero && many;
     }
 
-    private boolean isAssociationClassCreationRequest(String text) {
-        String associationClass =
-                "(?:clase de asociacion|clase asociativa|clase intermedia|association class|associationclass)";
-        if (!Pattern.compile("\\b" + associationClass + "\\b").matcher(text).find()) {
-            return false;
-        }
-        return Pattern.compile(
-                "(?:"
-                        + "\\b(?:convierte|convertir|transforma|transformar)\\b.*\\b(?:en|como)\\b.*\\b" + associationClass + "\\b"
-                        + "|\\b(?:crea|crear|agrega|anade)\\s+(?:una\\s+)?(?:nueva\\s+)?" + associationClass + "\\b"
-                        + "|\\bcrea\\b.*\\bcomo\\s+(?:una\\s+)?" + associationClass + "\\b"
-                        + "|\\b(?:haz|hacer)\\s+que\\b.*\\b(?:sea|como)\\b.*\\b" + associationClass + "\\b"
-                        + "|\\bvuelve\\b.*\\b" + associationClass + "\\b"
-                        + ")"
-        ).matcher(text).find();
-    }
-
     private AssistantToolName relationshipCreateTool(String text) {
-        String relationshipIntentText = withoutAssociationClassPhrases(text);
-        if (containsAny(relationshipIntentText, "especializacion", "generalizacion", "hereda", "heredar")) {
+        if (containsAny(text, "especializacion", "generalizacion", "hereda", "heredar")) {
             return AssistantToolName.CREATE_GENERALIZATION;
         }
-        if (containsAny(relationshipIntentText, "composicion", "compuesta", "compuesto")) {
+        if (containsAny(text, "composicion", "compuesta", "compuesto")) {
             return AssistantToolName.CREATE_COMPOSITION;
         }
-        if (containsAny(relationshipIntentText, "agregacion", "agrupa", "agrupar")) {
+        if (containsAny(text, "agregacion", "agrupa", "agrupar")) {
             return AssistantToolName.CREATE_AGGREGATION;
         }
-        if (containsAny(relationshipIntentText, "asocia", "asociar", "conecta", "conectar", "relaciona", "relacionar")) {
+        if (containsAny(text, "asocia", "asociar", "conecta", "conectar", "relaciona", "relacionar")) {
             return AssistantToolName.CREATE_ASSOCIATION;
         }
         return null;
-    }
-
-    private String withoutAssociationClassPhrases(String text) {
-        return text
-                .replace("clase de asociacion", " ")
-                .replace("clase asociativa", " ")
-                .replace("clase intermedia", " ")
-                .replace("association class", " ")
-                .replace("associationclass", " ");
     }
 
     private boolean containsAny(String text, String... values) {

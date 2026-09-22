@@ -48,18 +48,6 @@ public class VisionEvidencePresenter {
             );
         }
 
-        for (VisionAssociationClassProposal associationClass : proposal.safeAssociationClasses()) {
-            String associationName = displayName(associationClass.classRef(), displayNames);
-            String source = displayName(associationClass.sourceRef(), displayNames);
-            String target = displayName(associationClass.targetRef(), displayNames);
-            add(
-                    result,
-                    "ASSOCIATION_CLASS",
-                    associationName + " :: " + source + " <-> " + target,
-                    associationClass.evidence()
-            );
-        }
-
         return List.copyOf(result);
     }
 

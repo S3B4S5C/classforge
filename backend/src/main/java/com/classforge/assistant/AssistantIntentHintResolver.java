@@ -46,16 +46,8 @@ public class AssistantIntentHintResolver {
         String normalized = normalize(userText);
         List<String> tokens = tokens(normalized);
 
-        boolean associationClassContext =
-                containsPhrase(normalized, "clase de asociacion")
-                        || containsPhrase(normalized, "clase asociativa")
-                        || containsPhrase(normalized, "clase intermedia")
-                        || containsPhrase(normalized, "association class")
-                        || normalized.contains("associationclass");
-
         boolean relationshipContext =
-                !associationClassContext
-                        && (containsApprox(tokens, "relacion")
+                containsApprox(tokens, "relacion")
                         || containsApprox(tokens, "asociacion")
                         || containsApprox(tokens, "multiplicidad")
                         || containsApprox(tokens, "relaciona")
@@ -66,14 +58,14 @@ public class AssistantIntentHintResolver {
                         || containsApprox(tokens, "agrupa")
                         || normalized.contains("0..")
                         || normalized.contains("1..")
-                        || normalized.contains("..*"));
+                        || normalized.contains("..*");
 
         boolean attributeContext =
                 containsApprox(tokens, "atributo")
                         || containsApprox(tokens, "campo");
 
         boolean classContext =
-                !associationClassContext && containsApprox(tokens, "clase");
+                containsApprox(tokens, "clase");
 
         boolean deleteCue =
                 containsApprox(tokens, "elimina")
@@ -167,10 +159,7 @@ public class AssistantIntentHintResolver {
         Set<AssistantActionType> candidates = new LinkedHashSet<>();
         List<String> evidence = new ArrayList<>();
 
-        if (associationClassContext && isAssociationClassCreationRequest(normalized)) {
-            candidates.add(AssistantActionType.CREATE_ASSOCIATION_CLASS);
-            evidence.add("association-class+create");
-        } else if (relationshipContext) {
+        if (relationshipContext) {
             if (deleteCue) {
                 candidates.add(AssistantActionType.DELETE_RELATIONSHIP);
                 evidence.add("relationship+delete");
@@ -379,20 +368,6 @@ public class AssistantIntentHintResolver {
             }
         }
         return false;
-    }
-
-    private boolean isAssociationClassCreationRequest(String text) {
-        String associationClass =
-                "(?:clase de asociacion|clase asociativa|clase intermedia|association class|associationclass)";
-        return Pattern.compile(
-                "(?:"
-                        + "\\b(?:convierte|convertir|transforma|transformar)\\b.*\\b(?:en|como)\\b.*\\b" + associationClass + "\\b"
-                        + "|\\b(?:crea|crear|agrega|anade)\\s+(?:una\\s+)?(?:nueva\\s+)?" + associationClass + "\\b"
-                        + "|\\bcrea\\b.*\\bcomo\\s+(?:una\\s+)?" + associationClass + "\\b"
-                        + "|\\b(?:haz|hacer)\\s+que\\b.*\\b(?:sea|como)\\b.*\\b" + associationClass + "\\b"
-                        + "|\\bvuelve\\b.*\\b" + associationClass + "\\b"
-                        + ")"
-        ).matcher(text).find();
     }
 
     private String normalize(String value) {

@@ -73,9 +73,6 @@ public class AssistantSemanticCompiler {
             case CREATE_CLASS ->
                     action;
 
-            case CREATE_ASSOCIATION_CLASS ->
-                    compileRelationship(action, mentions, document);
-
             case RENAME_CLASS,
                  DELETE_CLASS,
                  ADD_ATTRIBUTES ->
@@ -314,8 +311,7 @@ public class AssistantSemanticCompiler {
                 action.sourceLower(),
                 action.sourceUpper(),
                 action.targetLower(),
-                action.targetUpper(),
-                action.relationshipId()
+                action.targetUpper()
         );
     }
 }

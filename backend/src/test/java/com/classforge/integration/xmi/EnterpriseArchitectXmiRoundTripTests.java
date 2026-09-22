@@ -1,6 +1,5 @@
 package com.classforge.integration.xmi;
 
-import com.classforge.project.domain.document.AssociationClassSupport;
 import com.classforge.project.domain.document.DiagramLayout;
 import com.classforge.project.domain.document.DiagramNodeLayout;
 import com.classforge.project.domain.document.Multiplicity;
@@ -54,84 +53,6 @@ class EnterpriseArchitectXmiRoundTripTests {
                 original.umlModel().relationships().stream().sorted(java.util.Comparator.comparing(item -> item.id().toString())).toList(),
                 imported.document().umlModel().relationships().stream().sorted(java.util.Comparator.comparing(item -> item.id().toString())).toList()
         );
-    }
-
-
-    @Test
-    void associationClassExportsAsNativeUmlAssociationClassAndRoundTripsSemantics() {
-        UUID pedidoId = UUID.fromString("10000000-0000-0000-0000-000000000001");
-        UUID productoId = UUID.fromString("10000000-0000-0000-0000-000000000002");
-        UUID detalleId = UUID.fromString("10000000-0000-0000-0000-000000000003");
-        UmlClass pedido = new UmlClass(pedidoId, "Pedido", List.of(
-                new UmlAttribute(UUID.randomUUID(), "idPedido", UmlDataType.INTEGER, null, UmlVisibility.PUBLIC, false, true)
-        ));
-        UmlClass producto = new UmlClass(productoId, "Producto", List.of(
-                new UmlAttribute(UUID.randomUUID(), "idProducto", UmlDataType.INTEGER, null, UmlVisibility.PUBLIC, false, true)
-        ));
-        UmlRelationship original = new UmlRelationship(
-                UUID.fromString("20000000-0000-0000-0000-000000000001"),
-                pedidoId, productoId, UmlRelationshipType.COMPOSITION,
-                new Multiplicity(1, null), new Multiplicity(1, null)
-        );
-        UmlClass detalle = AssociationClassSupport.withMarker(
-                new UmlClass(detalleId, "DetallePedido", List.of(
-                        new UmlAttribute(UUID.randomUUID(), "id", UmlDataType.UUID, null, UmlVisibility.PRIVATE, false, true),
-                        new UmlAttribute(UUID.randomUUID(), "cantidad", UmlDataType.INTEGER, null, UmlVisibility.PUBLIC, false, false),
-                        new UmlAttribute(UUID.randomUUID(), "precioUnitario", UmlDataType.DECIMAL, null, UmlVisibility.PUBLIC, false, false)
-                )),
-                original
-        );
-        UmlRelationship pedidoBridge = new UmlRelationship(
-                UUID.randomUUID(), pedidoId, detalleId, UmlRelationshipType.ASSOCIATION,
-                Multiplicity.one(), original.targetMultiplicity()
-        );
-        UmlRelationship productoBridge = new UmlRelationship(
-                UUID.randomUUID(), productoId, detalleId, UmlRelationshipType.ASSOCIATION,
-                Multiplicity.one(), original.sourceMultiplicity()
-        );
-        ProjectDocument document = new ProjectDocument(
-                ProjectDocument.CURRENT_SCHEMA_VERSION,
-                new UmlModel(List.of(pedido, producto, detalle), List.of(pedidoBridge, productoBridge)),
-                DiagramLayout.empty()
-        );
-
-        byte[] exported = exporter.export(UUID.randomUUID(), "Pedidos", document);
-        String xml = new String(exported, StandardCharsets.UTF_8);
-
-        assertTrue(xml.contains("xmi:type=\"uml:AssociationClass\""));
-        assertTrue(xml.contains("name=\"DetallePedido\""));
-        assertTrue(xml.contains("aggregation=\"composite\""));
-        assertTrue(xml.contains("name=\"cantidad\""));
-        assertTrue(xml.contains("name=\"precioUnitario\""));
-        assertEquals(0, count(xml, "xmi:type=\"uml:Association\""));
-        assertTrue(!xml.contains(AssociationClassSupport.MARKER_V1));
-        assertTrue(!xml.contains(AssociationClassSupport.MARKER_V2));
-
-        ProjectDocument imported = importer.importXmi(exported).document();
-        validator.validate(imported);
-        UmlClass importedDetalle = imported.umlModel().classes().stream()
-                .filter(item -> item.name().equals("DetallePedido"))
-                .findFirst().orElseThrow();
-        UmlRelationship restored = AssociationClassSupport.metadata(importedDetalle)
-                .orElseThrow().relationship();
-
-        assertEquals(UmlRelationshipType.COMPOSITION, restored.type());
-        assertEquals(new Multiplicity(1, null), restored.sourceMultiplicity());
-        assertEquals(new Multiplicity(1, null), restored.targetMultiplicity());
-        assertEquals(List.of("cantidad", "precioUnitario"), AssociationClassSupport.visibleAttributes(importedDetalle)
-                .stream().map(UmlAttribute::name).filter(name -> !name.equals("id")).sorted().toList());
-        assertEquals(2, AssociationClassSupport.auxiliaryRelationshipIds(imported).size());
-
-        String reexported = new String(
-                exporter.export(UUID.randomUUID(), "Pedidos", imported),
-                StandardCharsets.UTF_8
-        );
-        assertTrue(reexported.contains("xmi:type=\"uml:AssociationClass\""));
-        assertEquals(0, count(reexported, "xmi:type=\"uml:Association\""));
-    }
-
-    private long count(String value, String token) {
-        return value.split(java.util.regex.Pattern.quote(token), -1).length - 1L;
     }
 
     private ProjectDocument fixture() {

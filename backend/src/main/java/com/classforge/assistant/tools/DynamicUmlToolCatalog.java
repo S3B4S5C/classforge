@@ -2,7 +2,6 @@ package com.classforge.assistant.tools;
 
 import com.classforge.assistant.AssistantActionType;
 import com.classforge.assistant.AssistantIntentHintResolver;
-import com.classforge.project.domain.document.AssociationClassSupport;
 import com.classforge.project.domain.document.ProjectDocument;
 import com.classforge.project.domain.document.UmlAttribute;
 import com.classforge.project.domain.document.UmlClass;
@@ -57,7 +56,6 @@ public class DynamicUmlToolCatalog {
             classIds.put(umlClass.name(), umlClass.id());
             classNamesById.put(umlClass.id(), umlClass.name());
             for (UmlAttribute attribute : umlClass.attributes()) {
-                if (AssociationClassSupport.isMarker(attribute.customTypeName())) continue;
                 String label = umlClass.name() + "." + attribute.name();
                 attributes.put(label, new AssistantToolCatalog.AttributeReference(
                         label, umlClass.id(), umlClass.name(), attribute.id(), attribute.name()
@@ -65,10 +63,8 @@ public class DynamicUmlToolCatalog {
             }
         }
 
-        var associationAuxiliaryIds = AssociationClassSupport.auxiliaryRelationshipIds(document);
         int relationIndex = 1;
         for (UmlRelationship relationship : document.umlModel().relationships()) {
-            if (associationAuxiliaryIds.contains(relationship.id())) continue;
             String source = classNamesById.get(relationship.sourceClassId());
             String target = classNamesById.get(relationship.targetClassId());
             if (source == null || target == null) continue;
@@ -119,7 +115,6 @@ public class DynamicUmlToolCatalog {
             classIds.put(umlClass.name(), umlClass.id());
             classNamesById.put(umlClass.id(), umlClass.name());
             for (UmlAttribute attribute : umlClass.attributes()) {
-                if (AssociationClassSupport.isMarker(attribute.customTypeName())) continue;
                 String label = umlClass.name() + "." + attribute.name();
                 attributes.put(label, new AssistantToolCatalog.AttributeReference(
                         label,
@@ -131,10 +126,8 @@ public class DynamicUmlToolCatalog {
             }
         }
 
-        var associationAuxiliaryIds = AssociationClassSupport.auxiliaryRelationshipIds(document);
         int relationIndex = 1;
         for (UmlRelationship relationship : document.umlModel().relationships()) {
-            if (associationAuxiliaryIds.contains(relationship.id())) continue;
             String source = classNamesById.get(relationship.sourceClassId());
             String target = classNamesById.get(relationship.targetClassId());
             if (source == null || target == null) {
@@ -176,9 +169,7 @@ public class DynamicUmlToolCatalog {
         if (compound) {
             List<AssistantToolName> result = new ArrayList<>();
             String text = normalize(userText);
-            if (isAssociationClassCreationRequest(text)) {
-                result.add(AssistantToolName.CREATE_ASSOCIATION_CLASS);
-            } else if (containsAny(text, "crea", "crear", "nueva clase", "clase llamada", "necesito una clase")) {
+            if (containsAny(text, "crea", "crear", "nueva clase", "clase llamada", "necesito una clase")) {
                 result.add(AssistantToolName.CREATE_CLASS);
             }
             if (containsAny(text, "agrega", "agregale", "anade", "atributo", "campo", "ponle")) {
@@ -193,7 +184,6 @@ public class DynamicUmlToolCatalog {
             if (result.isEmpty()) {
                 result.addAll(List.of(
                         AssistantToolName.CREATE_CLASS,
-                        AssistantToolName.CREATE_ASSOCIATION_CLASS,
                         AssistantToolName.ADD_ATTRIBUTES,
                         AssistantToolName.CREATE_ASSOCIATION,
                         AssistantToolName.RENAME_CLASS
@@ -204,10 +194,6 @@ public class DynamicUmlToolCatalog {
             }
             return result.stream().distinct().toList();
         }
-        if (isAssociationClassCreationRequest(normalize(userText))) {
-            return List.of(AssistantToolName.CREATE_ASSOCIATION_CLASS);
-        }
-
         Optional<AssistantIntentHintResolver.IntentHint> hint = intentHintResolver.resolve(userText, document);
         if (hint.isEmpty()) {
             return java.util.Arrays.stream(AssistantToolName.values())
@@ -217,7 +203,6 @@ public class DynamicUmlToolCatalog {
 
         return switch (hint.get().actionType()) {
             case CREATE_CLASS -> List.of(AssistantToolName.CREATE_CLASS);
-            case CREATE_ASSOCIATION_CLASS -> List.of(AssistantToolName.CREATE_ASSOCIATION_CLASS);
             case RENAME_CLASS -> List.of(AssistantToolName.RENAME_CLASS);
             case DELETE_CLASS -> List.of(AssistantToolName.DELETE_CLASS);
             case ADD_ATTRIBUTES -> List.of(AssistantToolName.ADD_ATTRIBUTES);
@@ -245,23 +230,6 @@ public class DynamicUmlToolCatalog {
             return AssistantToolName.CREATE_AGGREGATION;
         }
         return AssistantToolName.CREATE_ASSOCIATION;
-    }
-
-    private boolean isAssociationClassCreationRequest(String text) {
-        String associationClass =
-                "(?:clase de asociacion|clase asociativa|clase intermedia|association class|associationclass)";
-        if (!Pattern.compile("\\b" + associationClass + "\\b").matcher(text).find()) {
-            return false;
-        }
-        return Pattern.compile(
-                "(?:"
-                        + "\\b(?:convierte|convertir|transforma|transformar)\\b.*\\b(?:en|como)\\b.*\\b" + associationClass + "\\b"
-                        + "|\\b(?:crea|crear|agrega|anade)\\s+(?:una\\s+)?(?:nueva\\s+)?" + associationClass + "\\b"
-                        + "|\\bcrea\\b.*\\bcomo\\s+(?:una\\s+)?" + associationClass + "\\b"
-                        + "|\\b(?:haz|hacer)\\s+que\\b.*\\b(?:sea|como)\\b.*\\b" + associationClass + "\\b"
-                        + "|\\bvuelve\\b.*\\b" + associationClass + "\\b"
-                        + ")"
-        ).matcher(text).find();
     }
 
     private boolean isAttributeRename(String userText) {
@@ -296,15 +264,6 @@ public class DynamicUmlToolCatalog {
                     objectSchema(Map.of(
                             "name", stringSchema("New class name literally requested by the user.")
                     ), List.of("name"))
-            );
-            case CREATE_ASSOCIATION_CLASS -> new AssistantToolDefinition(
-                    tool,
-                    "Convert one existing UML association/aggregation/composition into an UML AssociationClass. The selected relationship stays semantically between its two endpoint classes and the new class carries attributes of that relationship.",
-                    objectSchema(Map.of(
-                            "existing_relationship_ref", existingEnumSchema("Existing relationship that receives the association class.", relationshipLabels),
-                            "name", stringSchema("New association-class name literally requested by the user."),
-                            "attributes", arraySchema(attributeCreateSchema())
-                    ), List.of("existing_relationship_ref", "name"))
             );
             case RENAME_CLASS -> new AssistantToolDefinition(
                     tool,

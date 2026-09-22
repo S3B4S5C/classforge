@@ -24,10 +24,6 @@ public class VisionEvidenceBoundsValidator {
         for (VisionRelationshipProposal relationship : proposal.safeRelationships()) {
             validate(relationship.evidence(), imageWidth, imageHeight, "relationship.evidence");
         }
-
-        for (VisionAssociationClassProposal associationClass : proposal.safeAssociationClasses()) {
-            validate(associationClass.evidence(), imageWidth, imageHeight, "associationClass.evidence");
-        }
     }
 
     private void validate(

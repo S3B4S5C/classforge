@@ -44,19 +44,6 @@ class AssistantIntentHintResolverTests {
         );
     }
 
-
-    @Test
-    void detectsAssociationClassWithoutMisroutingItAsPlainRelationship() {
-        assertHint(
-                "Crea una clase de asociacion DetallePedido entre Pedido y Producto",
-                AssistantActionType.CREATE_ASSOCIATION_CLASS
-        );
-        assertHint(
-                "Convierte Pedido Producto en la clase intermedia DetallePedido",
-                AssistantActionType.CREATE_ASSOCIATION_CLASS
-        );
-    }
-
     @Test
     void detectsMultiplicityUpdateAsRelationshipUpdate() {
         assertHint(

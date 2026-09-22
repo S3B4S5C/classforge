@@ -85,44 +85,6 @@ export function createUmlRelationshipCell(
   return link;
 }
 
-
-export function createAssociationClassConnectorCell(
-  associationClassId: string,
-  associationLinkId: string,
-): dia.Link {
-  const link = new shapes.standard.Link({
-    id: `${associationClassId}::association-class-connector`,
-    source: {
-      id: associationClassId,
-    },
-    target: {
-      id: associationLinkId,
-    },
-    attrs: {
-      line: {
-        stroke: LINK_COLOR,
-        strokeWidth: 1.5,
-        strokeDasharray: '7 5',
-        sourceMarker: noMarker(),
-        targetMarker: noMarker(),
-      },
-      wrapper: {
-        strokeWidth: 12,
-      },
-    },
-  });
-
-  link.router('normal');
-  link.connector('straight');
-  link.set(
-    'associationClassId',
-    associationClassId,
-  );
-  link.set('presentationOnly', true);
-
-  return link;
-}
-
 export function selectRelationshipCell(
   link: dia.Link,
 ): void {

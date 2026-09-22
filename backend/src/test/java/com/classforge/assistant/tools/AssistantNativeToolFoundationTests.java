@@ -21,7 +21,6 @@ import tools.jackson.databind.json.JsonMapper;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -179,47 +178,6 @@ class AssistantNativeToolFoundationTests {
                         document
                 )
         );
-    }
-
-
-    @Test
-    void associationClassToolBindsExistingRelationshipAndNewClassName() throws Exception {
-        ProjectDocument document = fixture();
-        String prompt = "Convierte la relacion entre Propietario y Mascota en la clase intermedia Tenencia";
-        AssistantToolCatalog catalog = catalogBuilder.build(prompt, document);
-
-        assertEquals(1, catalog.definitions().size());
-        assertEquals(AssistantToolName.CREATE_ASSOCIATION_CLASS, catalog.definitions().getFirst().name());
-        String relationshipRef = catalog.relationshipsByLabel().entrySet().stream()
-                .filter(entry -> entry.getValue().sourceClassName().equals("Propietario")
-                        && entry.getValue().targetClassName().equals("Mascota"))
-                .map(Map.Entry::getKey)
-                .findFirst()
-                .orElseThrow();
-
-        AssistantToolInvocation invocation = new AssistantToolInvocation(
-                "call-association-class",
-                AssistantToolName.CREATE_ASSOCIATION_CLASS,
-                jsonMapper.readTree(
-                        "{\"existing_relationship_ref\":"
-                                + jsonMapper.writeValueAsString(relationshipRef)
-                                + ",\"name\":\"Tenencia\"}"
-                )
-        );
-
-        AssistantToolResolution resolution = resolver.resolve(
-                prompt,
-                List.of(invocation),
-                catalog,
-                document
-        );
-
-        var action = resolution.plan().actions().getFirst();
-        assertEquals(AssistantActionType.CREATE_ASSOCIATION_CLASS, action.type());
-        assertEquals("Tenencia", action.className());
-        assertEquals("Propietario", action.sourceClassName());
-        assertEquals("Mascota", action.targetClassName());
-        assertTrue(action.relationshipId() != null);
     }
 
     @Test
@@ -458,18 +416,6 @@ class AssistantNativeToolFoundationTests {
         assertEquals("Mascota", entityResolver.resolveExistingClass("Masctoas", document).orElseThrow().canonicalName());
     }
 
-
-    @Test
-    void existingAssociationClassMentionDoesNotBecomeCreateAssociationClassIntent() {
-        AssistantCompoundRequestDetector detector = new AssistantCompoundRequestDetector();
-        String prompt = "Agrega el atributo descuento Decimal a la clase intermedia Mascota";
-
-        assertEquals(Set.of(AssistantActionType.ADD_ATTRIBUTES), detector.requiredFamilies(prompt));
-
-        AssistantToolCatalog catalog = catalogBuilder.build(prompt, fixture());
-        assertEquals(1, catalog.definitions().size());
-        assertEquals(AssistantToolName.ADD_ATTRIBUTES, catalog.definitions().getFirst().name());
-    }
 
     @Test
     void compoundDetectorRequiresCreateAttributeAndRelationshipFamilies() {

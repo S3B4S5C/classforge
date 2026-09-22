@@ -110,21 +110,14 @@ public class VisionHybridProposalAssembler {
             ));
         }
 
-        List<VisionRelationshipProposal> reconciledRelationships =
-                VisionAssociationClassTopology.reconcile(semantic, relationships);
-
         List<String> warnings = new ArrayList<>(semantic.safeWarnings());
         warnings.addAll(annotation.safeWarnings());
-        if (!semantic.safeAssociationClasses().isEmpty()) {
-            warnings.add("HYBRID_ASSOCIATION_CLASS: se descartaron conectores discontinuos clase-relacion como relaciones clase-clase y se preservo la relacion subyacente.");
-        }
         warnings.add("HYBRID_CV: endpoints candidatos derivados de localizacion cerrada + geometria OpenCV; tipo/multiplicidad anotados sobre crops locales.");
 
         return new VisionUmlProposal(
                 semantic.summary(),
                 semantic.safeClasses(),
-                reconciledRelationships,
-                semantic.safeAssociationClasses(),
+                List.copyOf(relationships),
                 List.copyOf(new LinkedHashSet<>(warnings)),
                 minConfidence(semantic.confidence(), annotation.confidence())
         );

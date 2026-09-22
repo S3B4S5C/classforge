@@ -22,10 +22,6 @@ public class RelationalModelMapper {
         preflight(classes, relationships, classById, parentRelationship, diagnostics);
         if (!diagnostics.isEmpty()) throw new RelationalMappingException(diagnostics);
 
-        Set<UUID> associationClassIds = classes.stream()
-                .filter(umlClass -> AssociationClassSupport.metadata(umlClass).isPresent())
-                .map(UmlClass::id)
-                .collect(java.util.stream.Collectors.toUnmodifiableSet());
         Map<UUID, TableBuilder> tables = new HashMap<>();
         for (UmlClass umlClass : classes) {
             TableBuilder table = new TableBuilder(new RelationalTableOrigin(RelationalTableOriginType.UML_CLASS, umlClass.id()), umlClass.name(), naming.toSnakeCase(umlClass.name()));
@@ -48,7 +44,7 @@ public class RelationalModelMapper {
             child.foreignKeys.add(new RelationalForeignKey(relationship.id(), child.primaryKey.columnNames(), parent.name, parent.primaryKey.columnNames(), RelationalReferentialAction.CASCADE));
             relations.add(new RelationalRelation(relationship.id(), relationship.type(), child.name, parent.name, null, null, RelationalRelationStorage.JOINED_INHERITANCE, child.name, null, RelationalReferentialAction.CASCADE));
         }
-        for (UmlRelationship relationship : relationships) if (relationship.type() != UmlRelationshipType.GENERALIZATION) mapRelationship(relationship, tables, relations, diagnostics, associationClassIds);
+        for (UmlRelationship relationship : relationships) if (relationship.type() != UmlRelationshipType.GENERALIZATION) mapRelationship(relationship, tables, relations, diagnostics);
         if (!diagnostics.isEmpty()) throw new RelationalMappingException(diagnostics);
         List<RelationalTable> resultTables = tables.values().stream().map(TableBuilder::build).sorted(tableOrder()).toList();
         List<RelationalRelation> resultRelations = relations.stream().sorted(Comparator.comparing(RelationalRelation::sourceTableName).thenComparing(RelationalRelation::targetTableName).thenComparing(r -> r.umlType().name()).thenComparing(r -> r.sourceRelationshipId().toString())).toList();
@@ -90,14 +86,9 @@ public class RelationalModelMapper {
             if (r.type() == UmlRelationshipType.COMPOSITION && source != null && (source == RelationalCardinality.ZERO_OR_MANY || source == RelationalCardinality.ONE_OR_MANY)) diag(ds, RelationalMappingDiagnosticCode.COMPOSITION_OWNER_MULTIPLICITY_INVALID, r.id(), "relationships", "A composite part cannot have many owners.");
         }
     }
-    private void mapRelationship(UmlRelationship r, Map<UUID, TableBuilder> tables, List<RelationalRelation> relations, List<RelationalMappingDiagnostic> ds, Set<UUID> associationClassIds) {
+    private void mapRelationship(UmlRelationship r, Map<UUID, TableBuilder> tables, List<RelationalRelation> relations, List<RelationalMappingDiagnostic> ds) {
         TableBuilder source = tables.get(r.sourceClassId()), target = tables.get(r.targetClassId());
         RelationalCardinality sc = cardinality(r.sourceMultiplicity(), r, ds), tc = cardinality(r.targetMultiplicity(), r, ds); if (sc == null || tc == null || source == null || target == null) return;
-        if (r.type() == UmlRelationshipType.ASSOCIATION
-                && associationClassIds.contains(r.sourceClassId()) != associationClassIds.contains(r.targetClassId())) {
-            mapAssociationClassBridge(r, source, target, sc, tc, associationClassIds, relations, ds);
-            return;
-        }
         boolean sm = many(sc), tm = many(tc); RelationalReferentialAction action = r.type() == UmlRelationshipType.COMPOSITION ? RelationalReferentialAction.CASCADE : RelationalReferentialAction.NO_ACTION;
         if (r.type() == UmlRelationshipType.COMPOSITION) { addForeignKey(r, target, source, sc == RelationalCardinality.ZERO_OR_ONE, action, false, ds); relations.add(relation(r, source, target, sc, tc, RelationalRelationStorage.FOREIGN_KEY, target.name, null, action)); return; }
         if (sm && tm) { join(r, source, target, sc, tc, action, tables, relations, ds); return; }
@@ -109,32 +100,6 @@ public class RelationalModelMapper {
         TableBuilder referenced = holder == source ? target : source; RelationalCardinality referencedCard = holder == source ? tc : sc;
         addForeignKey(r, holder, referenced, referencedCard == RelationalCardinality.ZERO_OR_ONE, action, true, ds);
         relations.add(relation(r, source, target, sc, tc, RelationalRelationStorage.FOREIGN_KEY, holder.name, null, action));
-    }
-
-    private void mapAssociationClassBridge(
-            UmlRelationship r,
-            TableBuilder source,
-            TableBuilder target,
-            RelationalCardinality sc,
-            RelationalCardinality tc,
-            Set<UUID> associationClassIds,
-            List<RelationalRelation> relations,
-            List<RelationalMappingDiagnostic> ds
-    ) {
-        boolean associationIsSource = associationClassIds.contains(r.sourceClassId());
-        TableBuilder holder = associationIsSource ? source : target;
-        TableBuilder referenced = associationIsSource ? target : source;
-        RelationalCardinality holderCardinality = associationIsSource ? sc : tc;
-        RelationalCardinality referencedCardinality = associationIsSource ? tc : sc;
-        boolean nullable = referencedCardinality == RelationalCardinality.ZERO_OR_ONE;
-        boolean unique = !many(holderCardinality);
-        addForeignKey(
-                r, holder, referenced, nullable, RelationalReferentialAction.NO_ACTION, unique, ds
-        );
-        relations.add(relation(
-                r, source, target, sc, tc, RelationalRelationStorage.FOREIGN_KEY,
-                holder.name, null, RelationalReferentialAction.NO_ACTION
-        ));
     }
     private void join(UmlRelationship r, TableBuilder source, TableBuilder target, RelationalCardinality sc, RelationalCardinality tc, RelationalReferentialAction action, Map<UUID, TableBuilder> tables, List<RelationalRelation> relations, List<RelationalMappingDiagnostic> ds) {
         String name = r.type() == UmlRelationshipType.ASSOCIATION ? List.of(source.name, target.name).stream().sorted().reduce((a,b)->a+"_"+b).orElseThrow() : source.name + "_" + target.name;

@@ -187,8 +187,7 @@ public class BedrockVisionModelGateway implements VisionModelGateway {
         return new VisionUmlProposal(
                 firstPass.summary(),
                 firstPass.safeClasses(),
-                VisionAssociationClassTopology.reconcile(firstPass, relationshipPass.safeRelationships()),
-                firstPass.safeAssociationClasses(),
+                relationshipPass.safeRelationships(),
                 List.copyOf(new LinkedHashSet<>(warnings)),
                 combinedConfidence(firstPass.confidence(), relationshipPass.confidence())
         );

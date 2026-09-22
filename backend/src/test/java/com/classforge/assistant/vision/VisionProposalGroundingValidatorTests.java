@@ -159,44 +159,6 @@ class VisionProposalGroundingValidatorTests {
         assertThrows(AssistantPlanningException.class, () -> validator.validate(proposal));
     }
 
-    @Test
-    void acceptsGroundedAssociationClassMarker() {
-        VisionUmlProposal proposal = new VisionUmlProposal(
-                "DetallePedido conecta la asociacion Pedido-Producto",
-                List.of(
-                        new VisionClassProposal("pedido", "Pedido", List.of(), evidence("Pedido")),
-                        new VisionClassProposal("producto", "Producto", List.of(), evidence("Producto")),
-                        new VisionClassProposal("detalle", "DetallePedido", List.of(), evidence("DetallePedido"))
-                ),
-                List.of(new VisionRelationshipProposal(
-                        "pedido", "producto", "COMPOSITION", null, null, evidence("Pedido Producto")
-                )),
-                List.of(new VisionAssociationClassProposal(
-                        "detalle", "pedido", "producto", evidence("DetallePedido dashed connector")
-                )),
-                List.of(),
-                0.94
-        );
-
-        assertDoesNotThrow(() -> validator.validate(proposal));
-    }
-
-    @Test
-    void rejectsNoActionableWarningWhenOnlyAssociationClassIsPresent() {
-        VisionUmlProposal proposal = new VisionUmlProposal(
-                "Contradictory AssociationClass",
-                List.of(),
-                List.of(),
-                List.of(new VisionAssociationClassProposal(
-                        "detalle", "pedido", "producto", evidence("DetallePedido")
-                )),
-                List.of("NO_ACTIONABLE_UML: no hay UML"),
-                0.8
-        );
-
-        assertThrows(AssistantPlanningException.class, () -> validator.validate(proposal));
-    }
-
     private VisionEvidence evidence(String label) {
         return new VisionEvidence(label, 0.9, 1, 1, 100, 40);
     }

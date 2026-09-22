@@ -125,7 +125,6 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
                 warnings.add("HYBRID_GEOMETRY_ONLY: CV-first class boxes/mapping/geometry ejecutados sin anotacion VLM de relaciones.");
                 return new VisionUmlProposal(
                         semantic.summary(), semantic.safeClasses(), semantic.safeRelationships(),
-                        semantic.safeAssociationClasses(),
                         List.copyOf(new LinkedHashSet<>(warnings)), semantic.confidence()
                 );
             }
@@ -158,7 +157,6 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
                     semantic.summary(),
                     semantic.safeClasses(),
                     semantic.safeRelationships(),
-                    semantic.safeAssociationClasses(),
                     List.copyOf(new LinkedHashSet<>(warnings)),
                     semantic.confidence()
             );
