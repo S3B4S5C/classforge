@@ -105,7 +105,7 @@ documentar comandos y demo en `docs/parcial2/README.md`.
 - [x] Ejecutar suite backend completa, caracterización frontend y build.
 - [x] Revisar diff con contexto independiente; corregir fallos relevantes,
   registrar evidencia y límites de la demo real LLM.
-- [ ] Commit y `git push -u origin tiago`; verificar referencia remota.
+- [x] Commit y `git push -u origin tiago`; verificar referencia remota.
 
 ## Registro de ejecución
 
@@ -118,7 +118,7 @@ documentar comandos y demo en `docs/parcial2/README.md`.
   integración GREEN incluyendo primeros envíos concurrentes y revisión capturada.
 - Task 2: completo. 12 pruebas de gateways RED→GREEN; ningún proveedor real usado.
 - Task 3: completo. 36 pruebas frontend GREEN y build de producción exitoso.
-- Task 4: aceptación completa salvo publicación. Dos clientes WebSocket reales
+- Task 4: aceptación y publicación completas. Dos clientes WebSocket reales
   comparten mensajes; seguridad STOMP pasa. Suite backend: 395 aprobadas,
   10 opt-in omitidas, 0 errores/fallos. Browser móvil/escritorio pasa con proveedor
   simulado, incluyendo recuperación de dos eventos STOMP suprimidos.
@@ -128,3 +128,4 @@ documentar comandos y demo en `docs/parcial2/README.md`.
 - Sin cambios en ProjectActivity, ProjectSession, ProjectNotification ni auditoría.
 - Límite de evidencia: llama.cpp real y AWS no se ejecutaron; se documenta la
   configuración y demo para probar el modelo elegido.
+- Publicación: commit de implementación 6981174 subido a origin/tiago; referencia remota verificada.
