@@ -27,3 +27,24 @@
 .assistant-mic.is-recording, .assistant-voice-status { color: #b42318; }
 .assistant-voice-status { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.68rem; font-weight: 700; }
 .voice-dot { width: 0.48rem; height: 0.48rem; border-radius: 50%; background: currentColor; }
+.assistant-title div { display: grid; gap: 0.15rem; }
+.assistant-title small, .mode-hint { color: #667085; font-size: 0.7rem; font-weight: 400; }
+.assistant-chat { max-height: 420px; overflow-wrap: anywhere; }
+.assistant-message p { margin: 0.4rem 0; white-space: pre-wrap; }
+.message-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.65rem; font-size: 0.68rem; }
+.message-meta span, .assistant-message time { color: #667085; font-size: 0.65rem; }
+.assistant-modes { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.assistant-modes button { min-width: 0; padding-inline: 0.65rem; font-size: 0.72rem; }
+.assistant-modes .is-active { background: #e0e7ff; color: #3730a3; }
+.assistant-review { display: grid; gap: 0.5rem; margin-top: 0.6rem; }
+.review-finding { display: grid; gap: 0.25rem; border: 1px solid #dfe3f8; border-radius: 0.5rem; padding: 0.5rem; }
+.review-finding button { justify-self: start; }
+.review-stale { padding: 0.5rem; background: #fffaeb; color: #93370d; border-radius: 0.4rem; }
+.assistant-error { flex-wrap: wrap; }
+.assistant-notice { margin: 0; padding: 0.75rem; color: #027a48; font-size: 0.75rem; }
+@media (max-width: 480px) {
+  .assistant-chat { max-height: 52dvh; }
+  .assistant-message { max-width: 100%; box-sizing: border-box; }
+  .assistant-modes { display: grid; grid-template-columns: repeat(2, 1fr); }
+  .preview-actions { flex-wrap: wrap; }
+}

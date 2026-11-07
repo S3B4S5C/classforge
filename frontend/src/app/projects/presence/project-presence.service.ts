@@ -16,7 +16,7 @@ import {
 import {
   ProjectCollaborationService,
 } from '../collaboration/project-collaboration.service';
-import {
+import type {
   UmlCanvasCursorEvent,
   UmlCanvasSelection,
 } from '../diagram/uml-canvas/uml-canvas.component';

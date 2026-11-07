@@ -1,0 +1,36 @@
+<main class="assistant-page">
+  <nav aria-label="Navegación"><a mat-button routerLink="/projects">← Proyectos</a>
+    @if (store.project(); as project) { <a mat-button [routerLink]="['/projects', project.id]">Abrir workspace</a> }
+  </nav>
+  @if (store.loading()) {
+    <p class="page-feedback" role="status">Abriendo proyecto...</p>
+  } @else if (store.project(); as project) {
+    <header class="project-heading"><span class="eyebrow">CLASSFORGE · ASISTENTE COLABORATIVO</span>
+      <h1>{{ project.name }}</h1>
+      <p>Consulta y revisa tu modelo con el equipo, desde cualquier pantalla.</p>
+      <div class="project-stats" aria-label="Estado del proyecto">
+        <span>Revisión <strong>{{ store.revision() }}</strong></span>
+        <span><strong>{{ store.classes().length }}</strong> clases</span>
+        <span><strong>{{ store.relationships().length }}</strong> relaciones</span>
+        <span role="status">{{ store.collaborationStatusText() }}</span>
+      </div>
+    </header>
+    <div class="assistant-layout">
+      <section class="chat-column" aria-label="Conversación del proyecto"><app-project-assistant-panel [compact]="true" /></section>
+      <aside class="members-panel" aria-label="Miembros del proyecto">
+        <h2>Equipo <span>{{ presence.participantCount() }} sesiones en línea</span></h2>
+        @if (members(); as team) {
+          @for (member of [team.owner, ...team.editors]; track member.userId) {
+            <div class="member"><span class="member-avatar" aria-hidden="true">{{ member.displayName.slice(0, 1).toUpperCase() }}</span>
+              <div><strong>{{ member.displayName }}</strong><small>{{ member.accessRole === 'OWNER' ? 'Propietario' : 'Editor' }}</small></div>
+              <span class="presence-badge" [class.is-online]="online(member.userId)">{{ online(member.userId) ? 'En línea' : 'Sin conexión' }}</span>
+            </div>
+          }
+        } @else { <p>{{ membersError() ? 'No pudimos cargar los miembros.' : 'Cargando miembros...' }}</p> }
+        <p class="team-hint">Las preguntas y respuestas se guardan para todos los miembros. Las propuestas se aplican desde el workspace.</p>
+      </aside>
+    </div>
+  } @else {
+    <div class="page-feedback" role="alert"><p>{{ store.errorMessage() }}</p><button mat-button type="button" (click)="reload()">Reintentar</button></div>
+  }
+</main>

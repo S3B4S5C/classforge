@@ -39,6 +39,7 @@ import {
 } from '../data/project-api.service';
 import { WorkspaceDocumentSession } from './workspace/workspace-document-session';
 import { WorkspaceCollaborationState } from './workspace/workspace-collaboration-state';
+import { ProjectRequestScope } from './workspace/project-request-scope';
 import {
   normalizeUmlClassLayout,
   UML_CLASS_MIN_WIDTH,
@@ -82,6 +83,7 @@ export class ProjectWorkspaceStore {
 
   private readonly realtimeState =
     new WorkspaceCollaborationState();
+  private readonly loadScope = new ProjectRequestScope();
 
   private readonly projectState =
     signal<Project | null>(null);
@@ -322,6 +324,7 @@ export class ProjectWorkspaceStore {
 
     this.destroyRef.onDestroy(
       () => {
+        this.loadScope.clear();
         this.collaboration.disconnect();
       },
     );
@@ -330,6 +333,9 @@ export class ProjectWorkspaceStore {
   load(
     projectId: string,
   ): void {
+    const token = this.loadScope.begin(projectId);
+    this.projectState.set(null);
+    this.documentDraftState.set(null);
     this.loading.set(true);
     this.collaboration.disconnect();
     this.resetTransientState();
@@ -337,13 +343,14 @@ export class ProjectWorkspaceStore {
     this.projectApi
       .get(projectId)
       .pipe(
+        takeUntilDestroyed(this.destroyRef),
         finalize(
-          () =>
-            this.loading.set(false),
+          () => { if (this.loadScope.accepts(token)) this.loading.set(false); },
         ),
       )
       .subscribe({
         next: (project) => {
+          if (!this.loadScope.accepts(token)) return;
           this.installAuthoritativeProject(
             project,
             true,
@@ -354,6 +361,7 @@ export class ProjectWorkspaceStore {
           );
         },
         error: () => {
+          if (!this.loadScope.accepts(token)) return;
           this.errorMessage.set(
             'No pudimos abrir este proyecto. Puede que no exista o que no tengas acceso.',
           );
@@ -378,6 +386,7 @@ export class ProjectWorkspaceStore {
       return;
     }
 
+    const token = this.loadScope.capture();
     this.renaming.set(true);
     this.errorMessage.set(null);
 
@@ -387,13 +396,11 @@ export class ProjectWorkspaceStore {
         { name },
       )
       .pipe(
-        finalize(
-          () =>
-            this.renaming.set(false),
-        ),
+        takeUntilDestroyed(this.destroyRef),
+        finalize(this.loadScope.guard(token, () => this.renaming.set(false))),
       )
       .subscribe({
-        next: (updated) => {
+        next: this.loadScope.guard(token, (updated: Project) => {
           this.projectState.set({
             ...updated,
             document:
@@ -401,12 +408,12 @@ export class ProjectWorkspaceStore {
                 ?.document
               ?? updated.document,
           });
-        },
-        error: () => {
+        }),
+        error: this.loadScope.guard(token, () => {
           this.errorMessage.set(
             'No pudimos cambiar el nombre del proyecto.',
           );
-        },
+        }),
       });
   }
 
@@ -656,6 +663,7 @@ export class ProjectWorkspaceStore {
       return;
     }
 
+    const token = this.loadScope.capture();
     this.validating.set(true);
     this.validationRequestError.set(null);
 
@@ -667,13 +675,11 @@ export class ProjectWorkspaceStore {
         },
       )
       .pipe(
-        finalize(
-          () =>
-            this.validating.set(false),
-        ),
+        takeUntilDestroyed(this.destroyRef),
+        finalize(this.loadScope.guard(token, () => this.validating.set(false))),
       )
       .subscribe({
-        next: (result) => {
+        next: this.loadScope.guard(token, (result: ProjectValidationResult) => {
           this.validationResult.set(
             result,
           );
@@ -681,8 +687,8 @@ export class ProjectWorkspaceStore {
           this.validationCheckedAt.set(
             new Date().toISOString(),
           );
-        },
-        error: () => {
+        }),
+        error: this.loadScope.guard(token, () => {
           this.validationResult.set(null);
           this.validationCheckedAt.set(
             null,
@@ -691,7 +697,7 @@ export class ProjectWorkspaceStore {
           this.validationRequestError.set(
             'No pudimos validar el modelo. Verifica la conexion con el backend e intenta nuevamente.',
           );
-        },
+        }),
       });
   }
 
@@ -712,6 +718,7 @@ export class ProjectWorkspaceStore {
       return;
     }
 
+    const token = this.loadScope.capture();
     this.saving.set(true);
     this.saveState.set('saving');
     this.errorMessage.set(null);
@@ -731,13 +738,11 @@ export class ProjectWorkspaceStore {
         },
       )
       .pipe(
-        finalize(
-          () =>
-            this.saving.set(false),
-        ),
+        takeUntilDestroyed(this.destroyRef),
+        finalize(this.loadScope.guard(token, () => this.saving.set(false))),
       )
       .subscribe({
-        next: (updated) => {
+        next: this.loadScope.guard(token, (updated: Project) => {
           this.installAuthoritativeProject(
             updated,
             false,
@@ -754,8 +759,8 @@ export class ProjectWorkspaceStore {
           this.startCollaboration(
             updated.id,
           );
-        },
-        error: (
+        }),
+        error: this.loadScope.guard(token, (
           error: HttpErrorResponse,
         ) => {
           if (
@@ -813,7 +818,7 @@ export class ProjectWorkspaceStore {
           this.errorMessage.set(
             'No pudimos guardar el documento.',
           );
-        },
+        }),
       });
   }
 
@@ -1280,6 +1285,7 @@ export class ProjectWorkspaceStore {
       return;
     }
 
+    const token = this.loadScope.capture();
     const generation =
       this.realtimeState.nextResyncGeneration();
 
@@ -1297,8 +1303,9 @@ export class ProjectWorkspaceStore {
 
     this.projectApi
       .get(project.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (fresh) => {
+        next: this.loadScope.guard(token, (fresh: Project) => {
           if (
             generation
               !== this.realtimeState.currentResyncGeneration()
@@ -1371,8 +1378,8 @@ export class ProjectWorkspaceStore {
               null,
             );
           }
-        },
-        error: () => {
+        }),
+        error: this.loadScope.guard(token, () => {
           if (
             generation
               !== this.realtimeState.currentResyncGeneration()
@@ -1387,7 +1394,7 @@ export class ProjectWorkspaceStore {
           this.collaborationMessage.set(
             'No pudimos recuperar el estado autoritativo del proyecto.',
           );
-        },
+        }),
       });
   }
 
@@ -1484,6 +1491,9 @@ export class ProjectWorkspaceStore {
   }
 
   private resetTransientState(): void {
+    this.saving.set(false);
+    this.validating.set(false);
+    this.renaming.set(false);
     this.errorMessage.set(null);
     this.conflictRevision.set(null);
     this.validationViolations.set([]);

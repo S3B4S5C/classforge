@@ -3,11 +3,15 @@ import {
 } from '@angular/common/http';
 import {
   Component,
+  DestroyRef,
   effect,
   inject,
   OnDestroy,
   signal,
+  untracked,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ProjectRequestScope, type ProjectRequestToken } from '../state/workspace/project-request-scope';
 import {
   MatButtonModule,
 } from '@angular/material/button';
@@ -43,6 +47,10 @@ export class ProjectImageUmlPanelComponent
   implements OnDestroy {
   private readonly api = inject(AssistantApiService);
   private readonly imagePreparation = inject(AssistantImagePreparationService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly projectScope = new ProjectRequestScope();
+  private projectToken: ProjectRequestToken | null = null;
+  private preparationGeneration = 0;
   private healthProjectId: string | null = null;
   private originalImageFile: File | null = null;
   private imageRequest: Subscription | null = null;
@@ -59,11 +67,20 @@ export class ProjectImageUmlPanelComponent
 
   private readonly runtimeHealthEffect = effect(() => {
     const projectId = this.store.project()?.id ?? null;
-    if (!projectId || projectId === this.healthProjectId) {
+    if (projectId === this.healthProjectId) {
       return;
     }
     this.healthProjectId = projectId;
-    queueMicrotask(() => this.refreshRuntimeHealth());
+    this.projectToken = projectId ? this.projectScope.begin(projectId) : null;
+    if (!projectId) this.projectScope.clear();
+    untracked(() => {
+      this.imageRequest?.unsubscribe();
+      this.imageRequest = null;
+      this.imagePlanning.set(false);
+      this.clearSelectedImage();
+      this.runtimeHealth.set(null);
+      if (projectId) this.refreshRuntimeHealth();
+    });
   });
 
   onImageSelected(event: Event): void {
@@ -126,6 +143,7 @@ export class ProjectImageUmlPanelComponent
   }
 
   clearSelectedImage(): void {
+    this.preparationGeneration++;
     const preview = this.imagePreviewUrl();
     if (preview) {
       URL.revokeObjectURL(preview);
@@ -158,10 +176,14 @@ export class ProjectImageUmlPanelComponent
     this.error.set(null);
     this.imageResult.set(null);
     this.imagePlanning.set(true);
+    const token = this.projectToken;
+    if (!token) { this.imagePlanning.set(false); return; }
     this.imageRequest = this.api.imagePlan(project.id, image, this.store.revision()).pipe(
-      finalize(() => this.imagePlanning.set(false)),
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => { if (this.projectScope.accepts(token)) this.imagePlanning.set(false); }),
     ).subscribe({
       next: (result) => {
+        if (!this.projectScope.accepts(token)) return;
         this.imageRequest = null;
         if (result.disposition === 'READY') {
           if (this.store.revision() !== result.baseRevision) {
@@ -174,6 +196,7 @@ export class ProjectImageUmlPanelComponent
         this.error.set(this.dispositionMessage(result.disposition));
       },
       error: (response: HttpErrorResponse) => {
+        if (!this.projectScope.accepts(token)) return;
         this.imageRequest = null;
         this.error.set(this.formatError(response));
       },
@@ -204,6 +227,7 @@ export class ProjectImageUmlPanelComponent
   }
 
   ngOnDestroy(): void {
+    this.projectScope.clear();
     this.imageRequest?.unsubscribe();
     this.clearSelectedImage();
   }
@@ -227,12 +251,18 @@ export class ProjectImageUmlPanelComponent
     if (!original) {
       return;
     }
+    const generation = ++this.preparationGeneration;
+    const token = this.projectToken;
     try {
       const prepared = await this.imagePreparation.prepare(
         original,
         this.imageRotation(),
         this.imageCropInsetPercent(),
       );
+      if (!token || !this.projectScope.accepts(token) || generation !== this.preparationGeneration) {
+        URL.revokeObjectURL(prepared.previewUrl);
+        return;
+      }
       const previous = this.imagePreviewUrl();
       if (previous) {
         URL.revokeObjectURL(previous);
@@ -242,6 +272,7 @@ export class ProjectImageUmlPanelComponent
       this.imageResult.set(null);
       this.error.set(null);
     } catch {
+      if (!token || !this.projectScope.accepts(token) || generation !== this.preparationGeneration) return;
       this.error.set('No se pudo preparar la imagen. Prueba con otra.');
     }
   }
@@ -251,9 +282,11 @@ export class ProjectImageUmlPanelComponent
     if (!project) {
       return;
     }
-    this.api.health(project.id).subscribe({
-      next: (health) => this.runtimeHealth.set(health),
-      error: () => this.runtimeHealth.set(null),
+    const token = this.projectToken;
+    if (!token) return;
+    this.api.health(project.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (health) => { if (this.projectScope.accepts(token)) this.runtimeHealth.set(health); },
+      error: () => { if (this.projectScope.accepts(token)) this.runtimeHealth.set(null); },
     });
   }
 

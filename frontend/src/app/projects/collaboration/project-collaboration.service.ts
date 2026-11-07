@@ -8,6 +8,7 @@ import {
 import {
   Subject,
 } from 'rxjs';
+import type { ProjectAssistantEvent } from '../../features/project-assistant/project-assistant-model';
 
 import {
   CollaborationConnectionEvent,
@@ -47,6 +48,8 @@ export class ProjectCollaborationService {
   readonly presenceSnapshots$ =
     new Subject<ProjectPresenceSnapshot>();
 
+  readonly assistantEvents$ = new Subject<ProjectAssistantEvent>();
+
   connect(
     projectId: string,
     accessToken: string,
@@ -80,7 +83,8 @@ export class ProjectCollaborationService {
 
     client.onConnect = () => {
       if (
-        !this.projectId
+        this.client !== client
+        || !this.projectId
         || this.projectId !== projectId
       ) {
         return;
@@ -104,6 +108,15 @@ export class ProjectCollaborationService {
           this.handlePresenceEvent(message),
       );
 
+      client.subscribe(`/topic/projects/${projectId}/assistant`, (message) => {
+        if (this.client !== client || this.projectId !== projectId) return;
+        const event = this.parseJson<ProjectAssistantEvent>(message.body);
+        if (event?.projectId === projectId && event.message?.projectId === projectId
+          && ['ASSISTANT_MESSAGE_CREATED', 'ASSISTANT_RESPONSE_CREATED', 'ASSISTANT_REVIEW_COMPLETED'].includes(event.type)) {
+          this.assistantEvents$.next(event);
+        }
+      });
+
       client.subscribe(
         `/user/queue/projects/${projectId}/presence`,
         (message) =>
@@ -116,6 +129,7 @@ export class ProjectCollaborationService {
     };
 
     client.onStompError = (frame) => {
+      if (this.client !== client) return;
       this.connectionEvents$.next({
         type: 'ERROR',
         message:
@@ -125,6 +139,7 @@ export class ProjectCollaborationService {
     };
 
     client.onWebSocketError = () => {
+      if (this.client !== client) return;
       this.connectionEvents$.next({
         type: 'ERROR',
         message:
@@ -133,7 +148,7 @@ export class ProjectCollaborationService {
     };
 
     client.onWebSocketClose = () => {
-      if (this.intentionallyDisconnected) {
+      if (this.client !== client || this.intentionallyDisconnected) {
         return;
       }
 

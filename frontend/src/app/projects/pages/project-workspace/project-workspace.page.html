@@ -22,6 +22,9 @@
     <span>
       {{ store.project()?.name ?? 'Cargando...' }}
     </span>
+    @if (store.project(); as project) {
+      <a mat-button [routerLink]="['/projects', project.id, 'assistant']">Asistente móvil</a>
+    }
   </nav>
 
   @if (

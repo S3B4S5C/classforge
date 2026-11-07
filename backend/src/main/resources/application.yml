@@ -27,6 +27,10 @@ server:
   port: 8082
 classforge:
   assistant:
+    conversation:
+      request-timeout-millis: ${CLASSFORGE_ASSISTANT_CONVERSATION_TIMEOUT_MILLIS:90000}
+      max-context-chars: ${CLASSFORGE_ASSISTANT_CONVERSATION_MAX_CONTEXT_CHARS:120000}
+      max-completion-tokens: ${CLASSFORGE_ASSISTANT_CONVERSATION_MAX_TOKENS:2048}
     text:
       provider: ${CLASSFORGE_ASSISTANT_TEXT_PROVIDER:llama-cpp}
     llama-url: ${CLASSFORGE_ASSISTANT_LLAMA_URL:http://127.0.0.1:8092}

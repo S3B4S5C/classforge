@@ -26,7 +26,7 @@ public class ProjectStompAuthorizationInterceptor
                     "^/(?:app|topic|user/queue)/projects/"
                             + "([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-"
                             + "[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
-                            + "[0-9a-fA-F]{12})/(?:operations|presence)$"
+                            + "[0-9a-fA-F]{12})/(?:operations|presence|assistant)$"
             );
 
     private final ProjectAccessService projectAccessService;
@@ -75,6 +75,11 @@ public class ProjectStompAuthorizationInterceptor
         }
 
         enforceDirection(command, destination);
+
+        if (destination.endsWith("/assistant")
+                && (command != StompCommand.SUBSCRIBE || !destination.startsWith("/topic/projects/"))) {
+            throw new AccessDeniedException("Assistant messages are submitted via the authenticated HTTP API only");
+        }
 
         Matcher matcher = PROJECT_DESTINATION.matcher(destination);
 

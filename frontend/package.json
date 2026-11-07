@@ -9,8 +9,9 @@
     "watch": "ng build --watch --configuration development",
     "test:generation": "node --experimental-strip-types --test src/app/projects/generation/spring-boot-generation.utils.test.ts",
     "test:commands": "node --experimental-transform-types --experimental-loader ./scripts/ts-extension-loader.mjs --test src/app/projects/commands/uml-command-characterization.test.ts",
-    "test:characterization": "npm run test:generation && npm run test:commands && npm run test:workspace",
-    "test:workspace": "node --experimental-transform-types --experimental-loader ./scripts/ts-extension-loader.mjs --test src/app/projects/state/workspace/workspace-state-characterization.test.ts"
+    "test:characterization": "npm run test:generation && npm run test:commands && npm run test:workspace && npm run test:assistant",
+    "test:assistant": "node --experimental-transform-types --experimental-loader ./scripts/ts-extension-loader.mjs --test src/app/features/project-assistant/*.test.ts",
+    "test:workspace": "node --experimental-transform-types --experimental-loader ./scripts/ts-extension-loader.mjs --test src/app/projects/state/workspace/*.test.ts"
   },
   "engines": {
     "node": ">=22.22.3"

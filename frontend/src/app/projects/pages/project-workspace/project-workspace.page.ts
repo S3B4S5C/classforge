@@ -19,6 +19,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { distinctUntilChanged, map } from 'rxjs';
 
 import {
   AttributeDialogComponent,
@@ -231,12 +233,14 @@ export class ProjectWorkspacePage {
         this.presence.detachProject(),
     );
 
-    const projectId =
-      this.route.snapshot.paramMap.get('id');
-
-    if (projectId) {
-      this.store.load(projectId);
-    }
+    this.route.paramMap.pipe(
+      map(params => params.get('id')),
+      distinctUntilChanged(),
+      takeUntilDestroyed(),
+    ).subscribe(projectId => {
+      this.presence.detachProject();
+      if (projectId) this.store.load(projectId);
+    });
 
     effect(() => {
       const project =
@@ -246,7 +250,7 @@ export class ProjectWorkspacePage {
         this.presence.attachProject(
           project.id,
         );
-      }
+      } else this.presence.detachProject();
     });
 
     effect(() => {

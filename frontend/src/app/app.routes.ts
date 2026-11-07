@@ -27,6 +27,12 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'projects/:id/assistant',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/project-assistant/project-assistant.page').then(module => module.ProjectAssistantPage),
+  },
+  {
     path: 'projects/:id',
     canActivate: [authGuard],
     loadComponent: () =>
