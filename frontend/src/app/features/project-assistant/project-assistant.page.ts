@@ -1,3 +1,4 @@
+import { SinceLastVisitCardComponent } from '../activity/since-last-visit-card.component';
 import { Component, DestroyRef, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -11,7 +12,7 @@ import { ProjectWorkspaceStore } from '../../projects/state/project-workspace.st
 
 @Component({
   selector: 'app-project-assistant-page',
-  imports: [RouterLink, MatButtonModule, ProjectAssistantPanelComponent],
+  imports: [RouterLink, MatButtonModule, ProjectAssistantPanelComponent, SinceLastVisitCardComponent],
   providers: [ProjectWorkspaceStore],
   templateUrl: './project-assistant.page.html',
   styleUrl: './project-assistant.page.scss',

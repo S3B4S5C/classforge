@@ -25,8 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:classforge-project-service-test;DB_CLOSE_DELAY=-1",
-        "spring.jpa.hibernate.ddl-auto=create-drop"
+        "spring.mongodb.database=classforge_project_service_test"
 })
 class ProjectServiceIntegrationTests {
 

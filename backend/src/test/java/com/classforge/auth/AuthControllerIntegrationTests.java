@@ -18,8 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
-                "spring.datasource.url=jdbc:h2:mem:classforge-auth-test;DB_CLOSE_DELAY=-1",
-                "spring.jpa.hibernate.ddl-auto=create-drop",
+                "spring.mongodb.database=classforge_auth_test",
                 "classforge.security.jwt.secret=test-secret-long-enough-for-classforge-auth-tests-2026"
         }
 )

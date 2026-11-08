@@ -20,6 +20,9 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -38,6 +41,7 @@ public class DemoScenarioSeeder implements ApplicationRunner {
     private final PasswordEncoder passwordEncoder;
     private final EnterpriseArchitectXmiImporter xmiImporter;
     private final ProjectDocumentValidator validator;
+    private final MongoTemplate mongo;
 
     public DemoScenarioSeeder(
             UserRepository userRepository,
@@ -46,7 +50,8 @@ public class DemoScenarioSeeder implements ApplicationRunner {
             ProjectMembershipRepository membershipRepository,
             PasswordEncoder passwordEncoder,
             EnterpriseArchitectXmiImporter xmiImporter,
-            ProjectDocumentValidator validator
+            ProjectDocumentValidator validator,
+            MongoTemplate mongo
     ) {
         this.userRepository = userRepository;
         this.projectRepository = projectRepository;
@@ -55,6 +60,7 @@ public class DemoScenarioSeeder implements ApplicationRunner {
         this.passwordEncoder = passwordEncoder;
         this.xmiImporter = xmiImporter;
         this.validator = validator;
+        this.mongo = mongo;
     }
 
     @Override
@@ -107,6 +113,12 @@ public class DemoScenarioSeeder implements ApplicationRunner {
     }
 
     private void resetDeterministicRows() {
+        var oldSessions = mongo.find(Query.query(Criteria.where("projectId").is(DemoScenario.PROJECT_ID)), com.classforge.session.ProjectSessionEntity.class);
+        var oldSessionIds = oldSessions.stream().map(com.classforge.session.ProjectSessionEntity::getId).toList();
+        if (!oldSessionIds.isEmpty()) mongo.remove(Query.query(Criteria.where("sessionId").in(oldSessionIds)), "project_session_participants");
+        for (String collection : java.util.List.of("project_activities", "project_sessions", "project_notifications", "project_user_visits", "project_ai_messages")) {
+            mongo.remove(Query.query(Criteria.where("projectId").is(DemoScenario.PROJECT_ID)), collection);
+        }
         membershipRepository.findByProjectIdAndUserId(DemoScenario.PROJECT_ID, DemoScenario.EDITOR_ID)
                 .ifPresent(membershipRepository::delete);
         projectRepository.findById(DemoScenario.PROJECT_ID).ifPresent(projectRepository::delete);

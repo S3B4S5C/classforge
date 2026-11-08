@@ -1,20 +1,12 @@
 package com.classforge.projectassistant.persistence;
-
-import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.*;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.*;
-
-public interface ProjectAiMessageRepository extends JpaRepository<ProjectAiMessageEntity, Long> {
-    Optional<ProjectAiMessageEntity> findByProjectIdAndRequestIdAndRole(UUID projectId, UUID requestId, String role);
-
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select m from ProjectAiMessageEntity m where m.projectId=:project and m.requestId=:request and m.role='USER'")
-    Optional<ProjectAiMessageEntity> lockRequest(@Param("project") UUID project, @Param("request") UUID request);
-
-    List<ProjectAiMessageEntity> findByProjectIdAndSequenceLessThanOrderBySequenceDesc(UUID projectId, long before, Pageable pageable);
-
-    @Query("select m from ProjectAiMessageEntity m where m.projectId=:project and m.requestId<>:excluded order by m.sequence desc")
-    List<ProjectAiMessageEntity> recent(@Param("project") UUID project, @Param("excluded") UUID excluded, Pageable pageable);
+public interface ProjectAiMessageRepository extends MongoRepository<ProjectAiMessageEntity, UUID>, ProjectAiRequestWriteAccess {
+    Optional<ProjectAiMessageEntity> findByProjectIdAndRequestIdAndRole(UUID project, UUID request, String role);
+    List<ProjectAiMessageEntity> findByProjectIdAndSequenceLessThanOrderBySequenceDesc(UUID project, long before, Pageable pageable);
+    List<ProjectAiMessageEntity> findByProjectIdAndRequestIdNotOrderBySequenceDesc(UUID project, UUID excluded, Pageable pageable);
+    default List<ProjectAiMessageEntity> recent(UUID project, UUID excluded, Pageable pageable) {
+        return findByProjectIdAndRequestIdNotOrderBySequenceDesc(project, excluded, pageable);
+    }
 }

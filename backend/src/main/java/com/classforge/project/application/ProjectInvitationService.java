@@ -152,6 +152,7 @@ public class ProjectInvitationService {
                 ProjectMembershipEntity.editor(project.id(), userId)
         );
         invitation.accept();
+        projectInvitationRepository.save(invitation);
 
         return toView(invitation);
     }
@@ -170,6 +171,7 @@ public class ProjectInvitationService {
         requirePending(invitation);
 
         invitation.decline();
+        projectInvitationRepository.save(invitation);
         return toView(invitation);
     }
 
@@ -190,6 +192,7 @@ public class ProjectInvitationService {
 
         requirePending(invitation);
         invitation.cancel();
+        projectInvitationRepository.save(invitation);
     }
 
     @Transactional(readOnly = true)

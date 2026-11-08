@@ -52,9 +52,11 @@ Origin files installed.
 
 Before starting the application:
   1. Edit /etc/classforge/classforge.env (JWT secret + exact CloudFront origin when known).
-  2. Install Whisper reproducibly: sudo bash ./install-whisper.sh
+  2. Configure CLASSFORGE_MONGODB_URI with a MongoDB replica set (for example Atlas).
+     Standalone MongoDB is insufficient for project/audit transactions.
+  3. Install Whisper reproducibly: sudo bash ./install-whisper.sh
      (or place a known-good whisper-server + ggml-base.bin in /opt/classforge/whisper).
-  3. Attach the EC2 IAM role that can invoke Bedrock.
-  4. Run: systemctl restart classforge-whisper classforge
-  5. Check: systemctl status classforge-whisper classforge --no-pager
+  4. Attach the EC2 IAM role that can invoke Bedrock.
+  5. Run: systemctl restart classforge-whisper classforge
+  6. Check: systemctl status classforge-whisper classforge --no-pager
 MSG

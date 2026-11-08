@@ -3,12 +3,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 
+import { NotificationBellComponent } from './features/notifications/notification-bell.component';
 import { AuthService } from './auth/data/auth.service';
 import { HealthService } from './core/api/health.service';
 
 @Component({
   selector: 'app-root',
-  imports: [MatButtonModule, MatToolbarModule, RouterLink, RouterOutlet],
+  imports: [MatButtonModule, MatToolbarModule, RouterLink, RouterOutlet, NotificationBellComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })

@@ -18,8 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:classforge-explicit-validation-service-test;DB_CLOSE_DELAY=-1",
-        "spring.jpa.hibernate.ddl-auto=create-drop"
+        "spring.mongodb.database=classforge_explicit_validation_service_test"
 })
 class ProjectExplicitValidationIntegrationTests {
 

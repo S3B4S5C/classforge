@@ -2,20 +2,11 @@ spring:
   application:
     name: classforge-test
 
-  datasource:
-    url: jdbc:h2:mem:classforge-default-test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
-
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    open-in-view: false
-
-  h2:
-    console:
-      enabled: false
+  mongodb:
+    uri: ${CLASSFORGE_TEST_MONGODB_URI:mongodb://localhost:27017/?replicaSet=rs0}
+    database: classforge_tests
+    representation:
+      uuid: standard
 
 server:
   port: 0

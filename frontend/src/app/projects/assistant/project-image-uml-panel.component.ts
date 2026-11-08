@@ -217,7 +217,7 @@ export class ProjectImageUmlPanelComponent
     if (!result?.command) {
       return;
     }
-    const applied = this.store.applyAssistantCommand(result.command, result.baseRevision);
+    const applied = this.store.applyAssistantCommand(result.command, result.baseRevision, 'VISION');
     if (!applied.applied) {
       this.imageResult.set(null);
       this.error.set(applied.reason ?? 'El proyecto cambió. Analiza la imagen nuevamente.');

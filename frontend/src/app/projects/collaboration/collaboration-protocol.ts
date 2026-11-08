@@ -1,6 +1,7 @@
 import {
   UmlCommand,
 } from '../commands/uml-command';
+import type { ActivitySource } from '../model/activity-source';
 
 export interface ProjectOperation {
   operationId: string;
@@ -8,6 +9,7 @@ export interface ProjectOperation {
   clientId: string;
   baseRevision: number;
   command: UmlCommand;
+  source?: ActivitySource;
 }
 
 export interface CollaborationActor {

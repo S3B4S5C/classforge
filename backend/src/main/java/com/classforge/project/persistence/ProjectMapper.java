@@ -22,7 +22,7 @@ public class ProjectMapper {
                 project.ownerId(),
                 project.name(),
                 project.revision(),
-                serialize(project.document()),
+                project.document(),
                 project.createdAt(),
                 project.updatedAt()
         );
@@ -34,7 +34,7 @@ public class ProjectMapper {
                 entity.getOwnerId(),
                 entity.getName(),
                 entity.getRevision(),
-                deserializeDocument(entity.getDocumentJson()),
+                entity.getDocument() != null ? entity.getDocument() : deserializeDocument(entity.getDocumentJson()),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

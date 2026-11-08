@@ -1,5 +1,9 @@
 # Segundo parcial — Persona B
 
+El cierre de trazabilidad, continuidad y notificaciones de Persona A y la migración
+NoSQL están en [Persona A — cierre y MongoDB](persona-a-cierre.md).
+Las instrucciones de base H2 de la verificación histórica de Persona B fueron reemplazadas por ese runbook.
+
 Implementación del asistente colaborativo de proyecto (RF24, RF28 y RF29).
 Los requisitos recibidos están en [persona-b-requisitos.md](persona-b-requisitos.md)
 y el diseño aprobado en
@@ -7,7 +11,7 @@ y el diseño aprobado en
 
 ## Funcionalidades
 
-- Conversación persistida con JPA por proyecto, visible para OWNER y EDITOR,
+- Conversación persistida con MongoDB por proyecto, visible para OWNER y EDITOR,
   con autor, modo, fecha y revisión del UML utilizada.
 - ASK: preguntas y asesoría contextual sin generar comandos.
 - REVIEW: revisión textual y observaciones estructuradas cuando las entrega
@@ -24,18 +28,20 @@ y el diseño aprobado en
   workspace; la vista móvil no necesita montar el lienzo JointJS.
 - Se conservan voz, imagen, validación y pipeline de comandos existentes.
 
-No se usan ProjectActivity, ProjectSession, ProjectNotification ni
-ProjectUserVisit. No se requiere instalar una PWA ni otra aplicación móvil.
+El chat funciona sin depender de ProjectActivity, ProjectSession, ProjectNotification ni
+ProjectUserVisit. Esas features de Persona A están disponibles de manera independiente.
+No se requiere instalar una PWA ni otra aplicación móvil.
 
 ## Ejecutar
 
-Requisitos: JDK con soporte de compilación Java 21 y Node compatible con Angular
+Requisitos: Docker para MongoDB replica set, JDK con soporte de compilación Java 21 y Node compatible con Angular
 22 (rama 22 desde 22.22.3, o rama 24 desde 24.15.0). La verificación se hizo con
 Temurin 25.0.1 y Node 24.22.1 para compilar Angular.
 
 Backend, desde la raíz:
 
 ```powershell
+docker compose -f compose.mongo.yml up -d --wait
 .\backend\gradlew.bat -p backend bootRun
 ```
 

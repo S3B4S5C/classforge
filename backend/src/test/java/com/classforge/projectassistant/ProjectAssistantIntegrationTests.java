@@ -31,7 +31,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "spring.datasource.url=jdbc:h2:mem:project-assistant-integration;DB_CLOSE_DELAY=-1")
+        properties = "spring.mongodb.database=project_assistant_integration")
 class ProjectAssistantIntegrationTests {
     @LocalServerPort int port;
     @Autowired UserRepository users;

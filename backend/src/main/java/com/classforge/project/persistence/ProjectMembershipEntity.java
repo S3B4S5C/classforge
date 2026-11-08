@@ -1,55 +1,25 @@
 package com.classforge.project.persistence;
 
 import com.classforge.project.access.ProjectAccessRole;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-@Entity
-@Table(
-        name = "project_memberships",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_project_membership_project_user",
-                        columnNames = {"project_id", "user_id"}
-                )
-        },
-        indexes = {
-                @Index(
-                        name = "idx_project_membership_user",
-                        columnList = "user_id"
-                ),
-                @Index(
-                        name = "idx_project_membership_project",
-                        columnList = "project_id"
-                )
-        }
-)
+@Document("project_memberships")
 public class ProjectMembershipEntity {
 
     @Id
     private UUID id;
 
-    @Column(name = "project_id", nullable = false)
     private UUID projectId;
 
-    @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
     private ProjectAccessRole role;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     protected ProjectMembershipEntity() {

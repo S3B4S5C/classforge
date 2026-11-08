@@ -1,0 +1,71 @@
+<main class="activity-page">
+  <nav aria-label="Navegación del proyecto"><a mat-button routerLink="/projects">← Proyectos</a>
+    @if (project(); as project) { <div><a mat-button [routerLink]="['/projects', project.id, 'assistant']">Asistente</a><a mat-button [routerLink]="['/projects', project.id]">Abrir workspace</a></div> }</nav>
+  @if (loading()) { <div class="feedback" role="status">Recuperando el contexto del proyecto…</div> }
+  @else if (error()) { <div class="feedback" role="alert"><p>{{ error() }}</p><button mat-button (click)="retry()">Reintentar</button></div> }
+  @else if (project(); as project) {
+    <header class="page-heading"><div><p class="eyebrow">ACTIVIDAD Y CONTINUIDAD</p><h1>{{ project.name }}</h1><p>Lo que hizo tu equipo, en un solo lugar.</p></div>
+      <div class="revision"><span class="material-symbols-rounded" aria-hidden="true">history</span><span>Revisión<strong>{{ items()[0]?.revisionAfter && items()[0].revisionAfter > project.revision ? items()[0].revisionAfter : project.revision }}</strong></span></div></header>
+    <app-since-last-visit [projectId]="project.id" />
+    <div class="activity-layout">
+      <section class="timeline-section" aria-labelledby="timeline-title">
+        <div class="section-heading"><div><p class="eyebrow">HISTORIAL DEL PROYECTO</p><h2 id="timeline-title">Actividad <span class="total">{{ total() }}</span></h2></div>
+          <button mat-button type="button" [disabled]="activityLoading()" (click)="refreshHead()">Actualizar</button></div>
+        <form class="filters" (ngSubmit)="applyFilters()" aria-label="Filtros de actividad">
+          <label>Integrante<select name="actor" [(ngModel)]="actor"><option value="">Todos los integrantes</option>
+            @if (team(); as team) { @for (member of [team.owner, ...team.editors]; track member.userId) { <option [value]="member.userId">{{ member.displayName }}</option> } }</select></label>
+          <label>Operación<select name="operation" [(ngModel)]="operation"><option value="">Todas las operaciones</option>@for (option of operationOptions; track option[0]) { <option [value]="option[0]">{{ option[1] }}</option> }</select></label>
+          <label>Desde<input type="datetime-local" name="from" [(ngModel)]="from" /></label><label>Hasta<input type="datetime-local" name="to" [(ngModel)]="to" /></label>
+          <label>Después de revisión<input type="number" min="0" step="1" name="after" [(ngModel)]="after" placeholder="Ej. 12" /></label>
+          <label>Antes de revisión<input type="number" min="0" step="1" name="before" [(ngModel)]="before" placeholder="Ej. 30" /></label>
+          <div class="filter-actions"><button mat-flat-button class="cf-button-primary" type="submit">Filtrar</button><button mat-button type="button" (click)="clearFilters()">Limpiar</button>
+            @if (sessionFilter) { <span class="filter-tag">Sesión seleccionada</span> }</div>
+        </form>
+        @if (activityError()) { <p class="error" role="alert">{{ activityError() }} <button mat-button (click)="loadActivities()">Reintentar</button></p> }
+        @if (activityLoading() && !items().length) { <p class="feedback" role="status">Cargando actividad…</p> }
+        @if (!activityLoading() && !items().length && !activityError()) { <div class="empty"><span class="material-symbols-rounded" aria-hidden="true">history_toggle_off</span><h3>No hay actividad para mostrar</h3><p>Los cambios guardados aparecerán aquí. También puedes ajustar los filtros.</p></div> }
+        <ol class="timeline">
+          @for (activity of items(); track activity.id) {
+            <li><span class="timeline-dot" aria-hidden="true"></span><article>
+              <div class="activity-meta"><strong>{{ activity.actorDisplayName }}</strong><time [attr.datetime]="activity.createdAt">{{ activity.createdAt | date:'dd MMM · HH:mm:ss' }}</time></div>
+              <p class="description">{{ activity.description }}</p>
+              <div class="activity-tags"><span>{{ operationLabels[activity.operationType] || activity.operationType }}</span><span>{{ sourceLabels[activity.source] || activity.source }}</span><span>r{{ activity.revisionBefore }} → r{{ activity.revisionAfter }}</span></div>
+              <div class="row-actions"><button mat-button type="button" (click)="viewSession(activity.sessionId)">Ver sesión</button><button mat-button type="button" (click)="viewActivity(activity)">Ver detalle</button></div>
+            </article></li>
+          }
+        </ol>
+        @if (hasMore()) { <button mat-button class="load-more" type="button" [disabled]="activityLoading()" (click)="loadActivities(true)">{{ activityLoading() ? 'Cargando…' : 'Cargar actividad anterior' }}</button> }
+      </section>
+      <aside class="sessions-panel" aria-labelledby="sessions-title">
+        <div class="section-heading"><div><p class="eyebrow">MEMORIA DE TRABAJO</p><h2 id="sessions-title">Sesiones</h2></div><span class="material-symbols-rounded" aria-hidden="true">work_history</span></div>
+        <label class="session-status">Estado<select name="sessionStatus" [(ngModel)]="sessionStatus" (ngModelChange)="loadSessions()"><option value="">Todas</option><option value="OPEN">Abiertas</option><option value="CLOSED">Cerradas</option></select></label>
+        @if (sessionError()) { <p class="error" role="alert">{{ sessionError() }} <button mat-button (click)="loadSessions()">Reintentar</button></p> }
+        @if (!sessions().length && !sessionsLoading()) { <p class="empty-copy">La primera operación guardada abrirá una sesión de trabajo.</p> }
+        @for (session of sessions(); track session.id) {
+          <button class="session-item" type="button" [class.selected]="selectedSession()?.id === session.id" (click)="viewSession(session.id)">
+            <div><strong>{{ session.startedAt | date:'dd MMM · HH:mm' }}</strong><span class="status" [class.open]="session.status === 'OPEN'">{{ session.status === 'OPEN' ? 'Abierta' : 'Cerrada' }}</span></div>
+            <p>{{ session.totalOperations }} operaciones · {{ session.participants.length }} integrantes</p><small>Revisión {{ session.startRevision }} → {{ session.endRevision }}</small>
+          </button>
+        }
+        @if (sessionsLoading()) { <p role="status" class="empty-copy">Recuperando sesiones…</p> }
+        @if (sessionsMore()) { <button mat-button type="button" [disabled]="sessionsLoading()" (click)="loadSessions(true)">Sesiones anteriores</button> }
+        @if (detailsError()) { <p class="error" role="alert">{{ detailsError() }}</p> }
+        @if (selectedSession(); as session) {
+          <section class="session-detail" aria-label="Detalle de sesión"><div class="detail-heading"><h3>Resumen de sesión</h3><button mat-button type="button" (click)="selectedSession.set(null)" aria-label="Cerrar detalle de sesión">Cerrar</button></div>
+            <p>{{ session.startedAt | date:'medium' }}</p><p>Fin: {{ session.endedAt ? (session.endedAt | date:'medium') : 'En curso' }}</p>
+            @if (session.closeReason) { <p class="close-reason">{{ session.closeReason === 'INACTIVITY' ? 'Cerrada por inactividad' : 'Cierre explícito' }}</p> }
+            <ul class="session-members">@for (member of session.participants; track member.userId) { <li><strong>{{ member.displayName }}</strong><span>{{ member.operations }} operaciones · {{ member.changes }} cambios</span></li> }</ul>
+            <pre>{{ session.summary }}</pre><button mat-button type="button" (click)="filterSession(session)">Ver actividad de esta sesión</button>
+            @if (session.status === 'OPEN') { <button mat-button class="close-session" type="button" [disabled]="closing()" (click)="closeSession(session)">{{ closing() ? 'Cerrando…' : 'Cerrar sesión de trabajo' }}</button> }
+          </section>
+        }
+      </aside>
+    </div>
+    @if (selectedActivity(); as activity) {
+      <section class="activity-detail" aria-label="Detalle de actividad"><div class="detail-heading"><h2>Detalle de actividad</h2><button mat-button type="button" (click)="selectedActivity.set(null)">Cerrar detalle</button></div>
+        <p><strong>{{ activity.actorDisplayName }}</strong> {{ activity.description }}</p><dl><dt>Fecha</dt><dd>{{ activity.createdAt | date:'medium' }}</dd><dt>Operación</dt><dd>{{ activity.operationId }}</dd><dt>Revisión</dt><dd>{{ activity.revisionBefore }} → {{ activity.revisionAfter }}</dd></dl>
+        <details><summary>Documento y datos de auditoría</summary><pre>{{ payload(activity) }}</pre></details>
+      </section>
+    }
+  }
+</main>

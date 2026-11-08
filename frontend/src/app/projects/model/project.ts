@@ -96,6 +96,8 @@ export interface UpdateProjectRequest {
 export interface SaveProjectDocumentRequest {
   baseRevision: number;
   document: ProjectDocument;
+  source?: import('./activity-source').ActivitySource;
+  operationId?: string;
 }
 
 export type ValidationSeverity =

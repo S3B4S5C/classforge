@@ -22,8 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 @SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:classforge-cu31-realtime-access-test;DB_CLOSE_DELAY=-1",
-        "spring.jpa.hibernate.ddl-auto=create-drop"
+        "spring.mongodb.database=classforge_cu31_realtime_access_test"
 })
 class ProjectRealtimeMembershipAccessIntegrationTests {
 

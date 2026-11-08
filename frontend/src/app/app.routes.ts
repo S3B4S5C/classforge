@@ -27,6 +27,11 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'projects/:id/activity',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/activity/activity.page').then(module => module.ActivityPage),
+  },
+  {
     path: 'projects/:id/assistant',
     canActivate: [authGuard],
     loadComponent: () =>

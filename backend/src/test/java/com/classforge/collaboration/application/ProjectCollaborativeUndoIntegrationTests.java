@@ -22,8 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:classforge-cu06-003-undo-test;DB_CLOSE_DELAY=-1",
-        "spring.jpa.hibernate.ddl-auto=create-drop"
+        "spring.mongodb.database=classforge_cu06_003_undo_test"
 })
 class ProjectCollaborativeUndoIntegrationTests {
 

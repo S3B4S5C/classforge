@@ -49,8 +49,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
-        "spring.datasource.url=jdbc:h2:mem:project-assistant-stomp-e2e;DB_CLOSE_DELAY=-1",
-        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "spring.mongodb.database=project_assistant_stomp_e2e",
         "classforge.security.jwt.secret=test-secret-long-enough-for-project-assistant-stomp-e2e"
 })
 class ProjectAssistantStompEndToEndTests {

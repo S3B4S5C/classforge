@@ -6,6 +6,7 @@ import type { ProjectOperationApplied } from '../../collaboration/collaboration-
 import type { UmlCommand } from '../../commands/uml-command';
 import { UmlCommandBus } from '../../commands/uml-command-bus';
 import { UmlCommandExecutor } from '../../commands/uml-command-executor';
+import { ActivityOrigins, type ActivitySource } from '../../model/activity-source';
 
 /**
  * Pure editor/session state used by ProjectWorkspaceStore.
@@ -13,6 +14,7 @@ import { UmlCommandExecutor } from '../../commands/uml-command-executor';
  * No Angular, HTTP or STOMP dependency lives here, which makes the invariants testable.
  */
 export class WorkspaceDocumentSession {
+  private readonly origins = new ActivityOrigins();
   private readonly commandBus = new UmlCommandBus();
   private readonly authoritativeExecutor = new UmlCommandExecutor();
 
@@ -20,6 +22,7 @@ export class WorkspaceDocumentSession {
   private confirmedRevisionState = 0;
 
   loadAuthoritative(project: Project, resetHistory: boolean): void {
+    this.origins.clear();
     this.confirmedDocumentState = structuredClone(project.document);
     this.confirmedRevisionState = project.revision;
     if (resetHistory) {
@@ -30,20 +33,29 @@ export class WorkspaceDocumentSession {
   }
 
   reset(): void {
+    this.origins.clear();
     this.confirmedDocumentState = null;
     this.confirmedRevisionState = 0;
   }
 
-  dispatch(command: UmlCommand): boolean {
-    return this.commandBus.dispatch(command);
+  dispatch(command: UmlCommand, source: ActivitySource = 'MANUAL'): boolean {
+    const changed = this.commandBus.dispatch(command);
+    if (changed) this.origins.record(source);
+    return changed;
   }
 
+  activitySource(): ActivitySource { return this.origins.source(); }
+
   undoCommand(): UmlCommand | null {
-    return this.commandBus.undoCommand();
+    const command = this.commandBus.undoCommand();
+    if (command) this.origins.record('MANUAL');
+    return command;
   }
 
   redoCommand(): UmlCommand | null {
-    return this.commandBus.redoCommand();
+    const command = this.commandBus.redoCommand();
+    if (command) this.origins.record('MANUAL');
+    return command;
   }
 
   draft(): ProjectDocument {
@@ -71,6 +83,7 @@ export class WorkspaceDocumentSession {
   }
 
   markSaved(document?: ProjectDocument): void {
+    this.origins.clear();
     this.commandBus.markSaved(document);
   }
 
@@ -104,6 +117,7 @@ export class WorkspaceDocumentSession {
 
   finishOwnSynchronization(): void {
     if (!this.confirmedDocumentState) return;
+    this.origins.clear();
     this.commandBus.markSaved(this.confirmedDocumentState);
   }
 }

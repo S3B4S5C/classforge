@@ -148,10 +148,22 @@ Consultar `docs/runtime/assistant-local.md`.
 
 ## Persistencia
 
-- Spring Data JPA/Hibernate;
-- H2 en archivo durante desarrollo;
-- H2 en memoria para tests;
-- PostgreSQL permanece como destino posterior.
+- MongoDB con Spring Data MongoDB para toda la base propia de ClassForge;
+- replica set y transacciones para documento, auditoría, sesiones y notificaciones;
+- volumen persistente local con Docker; las pruebas usan bases aisladas sobre MongoDB real.
+
+Antes de iniciar el backend o ejecutar sus pruebas:
+
+```powershell
+docker compose -f compose.mongo.yml up -d --wait
+```
+
+`CLASSFORGE_MONGODB_URI` permite usar otro replica set o MongoDB Atlas.
+La migración preserva usuarios, IDs, contraseñas cifradas, proyectos, membresías,
+invitaciones, chat e historial de una base H2 anterior. Ver
+[cierre de Persona A y migración NoSQL](docs/parcial2/persona-a-cierre.md).
+Los generadores del primer parcial conservan su salida Spring/JPA; esa salida
+no es la base de datos interna de ClassForge.
 
 Un posible archivo `*.classforge` continúa siendo un formato portable futuro, no la persistencia primaria.
 

@@ -24,6 +24,7 @@
     </span>
     @if (store.project(); as project) {
       <a mat-button [routerLink]="['/projects', project.id, 'assistant']">Asistente móvil</a>
+      <a mat-button [routerLink]="['/projects', project.id, 'activity']">Actividad</a>
     }
   </nav>
 
@@ -81,6 +82,7 @@
     store.project();
     as currentProject
   ) {
+    <app-since-last-visit [projectId]="currentProject.id" />
     <header class="workspace-heading">
       <div class="title-block">
         <p class="eyebrow">

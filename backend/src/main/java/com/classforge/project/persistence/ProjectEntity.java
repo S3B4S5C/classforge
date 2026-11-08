@@ -1,46 +1,42 @@
 package com.classforge.project.persistence;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
-import jakarta.persistence.Table;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.Instant;
 import java.util.UUID;
+import com.classforge.project.domain.document.ProjectDocument;
 
-@Entity
-@Table(name = "projects")
+@Document("projects")
 public class ProjectEntity {
 
     @Id
     private UUID id;
 
-    @Column(name = "owner_id")
     private UUID ownerId;
 
-    @Column(nullable = false, length = 120)
     private String name;
 
-    @Column(nullable = false)
     private long revision;
 
-    /*
-     * Se conserva el nombre fisico uml_model para no destruir bases H2
-     * existentes. Desde CU-02 el contenido representa ProjectDocument.
-     */
-    @Lob
-    @Column(name = "uml_model", nullable = false)
+    // Read-only compatibility for legacy imports. New writes persist the native UML document below.
     private String documentJson;
+    private ProjectDocument document;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
     protected ProjectEntity() {
     }
+
+    public ProjectEntity(UUID id, UUID ownerId, String name, long revision, ProjectDocument document,
+            Instant createdAt, Instant updatedAt) {
+        this(id, ownerId, name, revision, (String) null, createdAt, updatedAt);
+        this.document = document;
+    }
+
+    public ProjectDocument getDocument() { return document; }
 
     public ProjectEntity(
             UUID id,

@@ -1,53 +1,28 @@
 package com.classforge.project.persistence;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-@Entity
-@Table(
-        name = "project_invitations",
-        indexes = {
-                @Index(
-                        name = "idx_project_invitation_email_status",
-                        columnList = "invited_email,status"
-                ),
-                @Index(
-                        name = "idx_project_invitation_project_status",
-                        columnList = "project_id,status"
-                )
-        }
-)
+@Document("project_invitations")
 public class ProjectInvitationEntity {
 
     @Id
     private UUID id;
 
-    @Column(name = "project_id", nullable = false)
     private UUID projectId;
 
-    @Column(name = "invited_email", nullable = false, length = 160)
     private String invitedEmail;
 
-    @Column(name = "invited_by_user_id", nullable = false)
     private UUID invitedByUserId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
     private ProjectInvitationStatus status;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    @Column(name = "responded_at")
     private Instant respondedAt;
 
     protected ProjectInvitationEntity() {

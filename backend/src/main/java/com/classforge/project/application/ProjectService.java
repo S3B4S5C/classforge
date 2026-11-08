@@ -1,5 +1,7 @@
 package com.classforge.project.application;
 
+import com.classforge.activity.ActivitySource;
+import com.classforge.activity.ProjectChangePublisher;
 import com.classforge.project.access.ProjectAccessRole;
 import com.classforge.project.access.ProjectAccessService;
 import com.classforge.project.domain.Project;
@@ -29,19 +31,22 @@ public class ProjectService {
     private final ProjectDocumentValidator projectDocumentValidator;
     private final ProjectAccessService projectAccessService;
     private final ProjectMembershipRepository projectMembershipRepository;
+    private final ProjectChangePublisher changes;
 
     public ProjectService(
             ProjectRepository projectRepository,
             ProjectMapper projectMapper,
             ProjectDocumentValidator projectDocumentValidator,
             ProjectAccessService projectAccessService,
-            ProjectMembershipRepository projectMembershipRepository
+            ProjectMembershipRepository projectMembershipRepository,
+            ProjectChangePublisher changes
     ) {
         this.projectRepository = projectRepository;
         this.projectMapper = projectMapper;
         this.projectDocumentValidator = projectDocumentValidator;
         this.projectAccessService = projectAccessService;
         this.projectMembershipRepository = projectMembershipRepository;
+        this.changes = changes;
     }
 
     @Transactional
@@ -188,6 +193,12 @@ public class ProjectService {
             long baseRevision,
             ProjectDocument document
     ) {
+        return saveDocument(userId, projectId, baseRevision, document, ActivitySource.MANUAL, null);
+    }
+
+    @Transactional
+    public Project saveDocument(UUID userId, UUID projectId, long baseRevision,
+            ProjectDocument document, ActivitySource source, UUID operationId) {
         projectAccessService.requireEdit(userId, projectId);
         projectDocumentValidator.validate(document);
 
@@ -206,8 +217,10 @@ public class ProjectService {
 
         Project saved = current.saveDocument(document);
 
-        return projectMapper.toDomain(
+        Project persisted = projectMapper.toDomain(
                 projectRepository.save(projectMapper.toEntity(saved))
         );
+        changes.publish(userId, operationId, source, null, current, persisted);
+        return persisted;
     }
 }

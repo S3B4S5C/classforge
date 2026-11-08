@@ -1,5 +1,6 @@
 package com.classforge.integration.xmi;
 
+import com.classforge.activity.ActivitySource;
 import com.classforge.project.access.ProjectAccessRole;
 import com.classforge.project.application.AccessibleProject;
 import com.classforge.project.application.ProjectService;
@@ -87,7 +88,9 @@ public class XmiInterchangeService {
                 userId,
                 projectId,
                 preview.baseRevision(),
-                preview.document()
+                preview.document(),
+                ActivitySource.XMI,
+                previewToken
         );
         return new AppliedImport(saved, accessRole);
     }

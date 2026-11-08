@@ -1,13 +1,8 @@
 spring:
-  datasource:
-    url: jdbc:h2:file:./data/classforge-demo
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
-  jpa:
-    hibernate:
-      ddl-auto: create
-    open-in-view: false
+  mongodb:
+    uri: ${CLASSFORGE_MONGODB_URI:mongodb://localhost:27017/classforge_demo?replicaSet=rs0}
+    representation:
+      uuid: standard
 
 classforge:
   security:

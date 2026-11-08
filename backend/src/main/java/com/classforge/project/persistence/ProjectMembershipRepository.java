@@ -1,13 +1,13 @@
 package com.classforge.project.persistence;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface ProjectMembershipRepository
-        extends JpaRepository<ProjectMembershipEntity, UUID> {
+        extends MongoRepository<ProjectMembershipEntity, UUID> {
 
     Optional<ProjectMembershipEntity> findByProjectIdAndUserId(
             UUID projectId,

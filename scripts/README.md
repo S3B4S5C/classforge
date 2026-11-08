@@ -1,5 +1,9 @@
 # Scripts
 
+Las pruebas backend y el runtime requieren MongoDB replica set: ejecutar primero
+`docker compose -f compose.mongo.yml up -d --wait` desde la raíz.
+Ver [migración NoSQL y cierre de Persona A](../docs/parcial2/persona-a-cierre.md).
+
 Aquí irán scripts de automatización del monorepo cuando aparezca una necesidad real (arranque conjunto, empaquetado de modelos locales, generación de ejemplos, etc.).
 
 <!-- ASSISTANT-RELIABILITY-BENCHMARK -->

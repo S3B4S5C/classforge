@@ -1,48 +1,10 @@
 package com.classforge.project.persistence;
-
-import jakarta.persistence.LockModeType;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-public interface ProjectRepository extends JpaRepository<ProjectEntity, UUID> {
-
+import org.springframework.data.mongodb.repository.MongoRepository;
+import java.util.*;
+public interface ProjectRepository extends MongoRepository<ProjectEntity, UUID>, ProjectWriteAccess {
     List<ProjectEntity> findAllByOwnerIdOrderByUpdatedAtDesc(UUID ownerId);
-
-    Optional<ProjectEntity> findByIdAndOwnerId(
-            UUID projectId,
-            UUID ownerId
-    );
-
-    boolean existsByIdAndOwnerId(
-            UUID projectId,
-            UUID ownerId
-    );
-
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("""
-            select project
-            from ProjectEntity project
-            where project.id = :projectId
-              and project.ownerId = :ownerId
-            """)
-    Optional<ProjectEntity> findForUpdate(
-            @Param("projectId") UUID projectId,
-            @Param("ownerId") UUID ownerId
-    );
-
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("""
-            select project
-            from ProjectEntity project
-            where project.id = :projectId
-            """)
-    Optional<ProjectEntity> findForUpdateById(
-            @Param("projectId") UUID projectId
-    );
+    Optional<ProjectEntity> findByIdAndOwnerId(UUID projectId, UUID ownerId);
+    boolean existsByIdAndOwnerId(UUID projectId, UUID ownerId);
+    default Optional<ProjectEntity> findForUpdateById(UUID id) { return acquireWrite(id); }
+    default Optional<ProjectEntity> findForUpdate(UUID id, UUID owner) { return acquireWrite(id).filter(p -> p.getOwnerId().equals(owner)); }
 }

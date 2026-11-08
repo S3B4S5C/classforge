@@ -24,8 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:classforge-cu09-acceptance;DB_CLOSE_DELAY=-1",
-        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "spring.mongodb.database=classforge_cu09_acceptance",
         "classforge.assistant.vision.provider=llama-cpp"
 })
 @EnabledIfSystemProperty(named = "assistant.vision.acceptance.enabled", matches = "true")

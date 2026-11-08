@@ -35,8 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
-                "spring.datasource.url=jdbc:h2:mem:classforge-cu07-presence-e2e-test;DB_CLOSE_DELAY=-1",
-                "spring.jpa.hibernate.ddl-auto=create-drop",
+                "spring.mongodb.database=classforge_cu07_presence_e2e_test",
                 "classforge.security.jwt.secret=test-secret-long-enough-for-cu07-presence-e2e"
         }
 )

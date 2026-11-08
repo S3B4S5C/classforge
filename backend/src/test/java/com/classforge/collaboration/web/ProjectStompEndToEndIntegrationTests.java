@@ -1,5 +1,7 @@
 package com.classforge.collaboration.web;
 
+import com.classforge.activity.ActivitySource;
+import com.classforge.activity.ProjectActivityQueryService;
 import com.classforge.auth.persistence.UserEntity;
 import com.classforge.auth.persistence.UserRepository;
 import com.classforge.auth.security.JwtService;
@@ -41,8 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
-                "spring.datasource.url=jdbc:h2:mem:classforge-cu06-stomp-e2e-test;DB_CLOSE_DELAY=-1",
-                "spring.jpa.hibernate.ddl-auto=create-drop",
+                "spring.mongodb.database=classforge_cu06_stomp_e2e_test",
                 "classforge.security.jwt.secret=test-secret-long-enough-for-cu06-end-to-end-stomp"
         }
 )
@@ -65,6 +66,9 @@ class ProjectStompEndToEndIntegrationTests {
 
     @Autowired
     private JsonMapper jsonMapper;
+
+    @Autowired
+    private ProjectActivityQueryService activities;
 
     @Test
     void ownerAndEditorExchangeOperationsAndStaleWriterGetsPrivateRejection()
@@ -278,6 +282,16 @@ class ProjectStompEndToEndIntegrationTests {
                             .getFirst()
                             .id()
             );
+
+            var history = activities.getRecentActivity(ownerId, project.id());
+            assertEquals(1, history.totalElements(), "The rejected operation must not appear in the audit");
+            var activity = history.items().getFirst();
+            assertEquals(accepted.operationId(), activity.operationId());
+            assertEquals(editorId, activity.actorUserId());
+            assertEquals("Realtime Editor", activity.actorDisplayName());
+            assertEquals(ActivitySource.ASSISTANT_VOICE, activity.source());
+            assertEquals(0, activity.revisionBefore());
+            assertEquals(1, activity.revisionAfter());
         } finally {
             if (sessionA != null && sessionA.isConnected()) {
                 sessionA.disconnect();
@@ -395,7 +409,8 @@ class ProjectStompEndToEndIntegrationTests {
                         null,
                         null,
                         null
-                )
+                ),
+                ActivitySource.ASSISTANT_VOICE
         );
     }
 }

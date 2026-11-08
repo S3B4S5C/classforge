@@ -40,6 +40,7 @@ import {
 import { WorkspaceDocumentSession } from './workspace/workspace-document-session';
 import { WorkspaceCollaborationState } from './workspace/workspace-collaboration-state';
 import { ProjectRequestScope } from './workspace/project-request-scope';
+import type { ActivitySource } from '../model/activity-source';
 import {
   normalizeUmlClassLayout,
   UML_CLASS_MIN_WIDTH,
@@ -735,6 +736,8 @@ export class ProjectWorkspaceStore {
           baseRevision:
             project.revision,
           document,
+          source: this.documentSession.activitySource(),
+          operationId: crypto.randomUUID(),
         },
       )
       .pipe(
@@ -855,6 +858,7 @@ export class ProjectWorkspaceStore {
   applyAssistantCommand(
     command: UmlCommand,
     expectedRevision: number,
+    source: ActivitySource = 'ASSISTANT_TEXT',
   ): {
     applied: boolean;
     reason: string | null;
@@ -880,7 +884,7 @@ export class ProjectWorkspaceStore {
       };
     }
 
-    this.dispatch(command);
+    this.dispatch(command, source);
 
     return {
       applied: true,
@@ -915,11 +919,13 @@ export class ProjectWorkspaceStore {
 
   private dispatch(
     command: UmlCommand,
+    source: ActivitySource = 'MANUAL',
   ): void {
     try {
       const changed =
         this.documentSession.dispatch(
           command,
+          source,
         );
 
       if (!changed) {
@@ -936,6 +942,7 @@ export class ProjectWorkspaceStore {
       ) {
         this.publishOptimistic(
           command,
+          source,
         );
       }
     } catch (error) {
@@ -979,6 +986,7 @@ export class ProjectWorkspaceStore {
 
   private publishOptimistic(
     command: UmlCommand,
+    source: ActivitySource = 'MANUAL',
   ): void {
     const project =
       this.projectState();
@@ -999,6 +1007,7 @@ export class ProjectWorkspaceStore {
           this.documentSession.confirmedRevision()
           + this.realtimeState.pendingCount(),
         command,
+        source,
       };
 
     const published =

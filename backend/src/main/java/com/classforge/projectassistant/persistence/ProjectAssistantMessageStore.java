@@ -26,7 +26,7 @@ public class ProjectAssistantMessageStore {
         var existing = messages.lockRequest(projectId, request.requestId());
         if (existing.isEmpty()) {
             var author = users.findById(userId).orElseThrow();
-            var created = messages.saveAndFlush(ProjectAiMessageEntity.user(projectId, request.requestId(), userId,
+            var created = messages.save(ProjectAiMessageEntity.user(projectId, request.requestId(), userId,
                     author.getDisplayName(), request.mode(), request.content().trim(), revision));
             return new Claim(created.toMessage(json), created.getGenerationToken(), null, true);
         }
@@ -43,6 +43,7 @@ public class ProjectAssistantMessageStore {
             throw new ProjectAssistantConflictException("La solicitud sigue en proceso. Reintenta en unos segundos.");
         }
         user.startGeneration();
+        messages.save(user);
         return new Claim(user.toMessage(json), user.getGenerationToken(), null, false);
     }
 
@@ -52,9 +53,10 @@ public class ProjectAssistantMessageStore {
         if (!Objects.equals(claim.token(), user.getGenerationToken()) || !"PROCESSING".equals(user.getGenerationStatus())) {
             throw new ProjectAssistantConflictException("La solicitud fue recuperada por otro intento. Actualiza el historial.");
         }
-        var response = messages.saveAndFlush(ProjectAiMessageEntity.assistant(claim.userMessage().projectId(),
+        var response = messages.save(ProjectAiMessageEntity.assistant(claim.userMessage().projectId(),
                 claim.userMessage().requestId(), claim.userMessage().type(), content, revision, review, plan, json));
         user.finishGeneration("COMPLETED");
+        messages.save(user);
         return response.toMessage(json);
     }
 
@@ -63,6 +65,7 @@ public class ProjectAssistantMessageStore {
         messages.lockRequest(claim.userMessage().projectId(), claim.userMessage().requestId()).ifPresent(user -> {
             if (Objects.equals(user.getGenerationToken(), claim.token()) && "PROCESSING".equals(user.getGenerationStatus())) {
                 user.finishGeneration("FAILED");
+                messages.save(user);
             }
         });
     }

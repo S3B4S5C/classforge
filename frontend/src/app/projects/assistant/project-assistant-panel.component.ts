@@ -159,7 +159,8 @@ export class ProjectAssistantPanelComponent
     if (!plan || !plan.command) {
       return;
     }
-    const result = this.store.applyAssistantCommand(plan.command, plan.baseRevision);
+    const result = this.store.applyAssistantCommand(plan.command, plan.baseRevision,
+      plan.source === 'VOICE' ? 'ASSISTANT_VOICE' : plan.source === 'IMAGE' ? 'VISION' : 'ASSISTANT_TEXT');
     if (!result.applied) {
       this.error.set(result.reason ?? 'No se pudo aplicar el plan.');
       this.plan.set(null);

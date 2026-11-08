@@ -19,8 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
-                "spring.datasource.url=jdbc:h2:mem:classforge-explicit-validation-web-test;DB_CLOSE_DELAY=-1",
-                "spring.jpa.hibernate.ddl-auto=create-drop",
+                "spring.mongodb.database=classforge_explicit_validation_web_test",
                 "classforge.security.jwt.secret=test-secret-long-enough-for-cu04-validation-tests-2026"
         }
 )

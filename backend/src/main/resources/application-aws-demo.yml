@@ -1,16 +1,8 @@
 spring:
-  datasource:
-    url: jdbc:h2:file:/opt/classforge/data/classforge-aws
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
-  jpa:
-    hibernate:
-      ddl-auto: create
-    open-in-view: false
-  h2:
-    console:
-      enabled: false
+  mongodb:
+    uri: ${CLASSFORGE_MONGODB_URI:mongodb://localhost:27017/classforge?replicaSet=rs0}
+    representation:
+      uuid: standard
 
 server:
   address: 127.0.0.1

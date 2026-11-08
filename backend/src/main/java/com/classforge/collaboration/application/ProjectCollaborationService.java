@@ -1,5 +1,6 @@
 package com.classforge.collaboration.application;
 
+import com.classforge.activity.ProjectChangePublisher;
 import com.classforge.auth.persistence.UserEntity;
 import com.classforge.auth.persistence.UserRepository;
 import com.classforge.collaboration.protocol.CollaborationActor;
@@ -29,6 +30,7 @@ public class ProjectCollaborationService {
     private final ProjectCommandExecutor projectCommandExecutor;
     private final UserRepository userRepository;
     private final ProjectAccessService projectAccessService;
+    private final ProjectChangePublisher changes;
 
     public ProjectCollaborationService(
             ProjectRepository projectRepository,
@@ -36,7 +38,8 @@ public class ProjectCollaborationService {
             ProjectDocumentValidator projectDocumentValidator,
             ProjectCommandExecutor projectCommandExecutor,
             UserRepository userRepository,
-            ProjectAccessService projectAccessService
+            ProjectAccessService projectAccessService,
+            ProjectChangePublisher changes
     ) {
         this.projectRepository =
                 projectRepository;
@@ -55,6 +58,7 @@ public class ProjectCollaborationService {
 
         this.projectAccessService =
                 projectAccessService;
+        this.changes = changes;
     }
 
     @Transactional
@@ -164,6 +168,8 @@ public class ProjectCollaborationService {
                                                 "Authenticated user no longer exists"
                                         )
                         );
+
+        changes.publish(userId, request.operationId(), request.source(), request.command(), current, persisted);
 
         return new ProjectOperationApplied(
                 request.operationId(),

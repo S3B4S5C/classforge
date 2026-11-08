@@ -1,0 +1,28 @@
+<button mat-icon-button class="bell" type="button" [attr.aria-label]="'Notificaciones: ' + store.unread() + ' sin leer'"
+  [attr.aria-expanded]="expanded()" aria-controls="notification-panel" (click)="toggle()">
+  <span class="material-symbols-rounded" aria-hidden="true">notifications</span>
+  @if (store.unread()) { <span class="count">{{ store.unread() > 99 ? '99+' : store.unread() }}</span> }
+</button>
+@if (expanded()) {
+  <button class="backdrop" type="button" aria-label="Cerrar notificaciones" (click)="expanded.set(false)"></button>
+  <section class="notification-panel" id="notification-panel" role="dialog" aria-label="Notificaciones">
+    <header><div><h2>Notificaciones</h2><p>{{ store.unread() }} sin leer</p></div>
+      <button mat-button type="button" aria-label="Cerrar panel" (click)="expanded.set(false)">Cerrar</button></header>
+    <div class="panel-actions"><button mat-button type="button" [disabled]="!store.unread() || store.loading()" (click)="store.readAll()">Marcar todas como leídas</button>
+      <button mat-button type="button" [disabled]="store.loading()" (click)="store.refresh()">Actualizar</button></div>
+    @if (store.error()) { <p class="error" role="alert">{{ store.error() }}</p> }
+    @if (store.loading() && !store.items().length) { <p class="feedback" role="status">Cargando notificaciones…</p> }
+    @if (!store.loading() && !store.items().length) { <div class="feedback"><span class="material-symbols-rounded" aria-hidden="true">notifications_none</span><p>No tienes notificaciones todavía.</p></div> }
+    <div class="notification-list">
+      @for (notification of store.items(); track notification.id) {
+        <article [class.unread]="!notification.read">
+          <a [routerLink]="['/projects', notification.projectId, 'activity']" [queryParams]="notification.sessionId && notification.type === 'SESSION_CLOSED' ? {sessionId: notification.sessionId} : {}" (click)="open(notification)">
+            <strong>{{ notification.title }}</strong><p>{{ notification.message }}</p><time [attr.datetime]="notification.createdAt">{{ notification.createdAt | date:'dd/MM HH:mm' }}</time>
+          </a>
+          @if (!notification.read) { <button mat-button type="button" (click)="store.read(notification)" aria-label="Marcar notificación como leída">Marcar leída</button> }
+        </article>
+      }
+    </div>
+    @if (store.hasMore()) { <button mat-button class="more" type="button" [disabled]="store.loading()" (click)="store.more()">Cargar anteriores</button> }
+  </section>
+}

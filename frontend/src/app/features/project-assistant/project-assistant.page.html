@@ -1,6 +1,6 @@
 <main class="assistant-page">
   <nav aria-label="Navegación"><a mat-button routerLink="/projects">← Proyectos</a>
-    @if (store.project(); as project) { <a mat-button [routerLink]="['/projects', project.id]">Abrir workspace</a> }
+    @if (store.project(); as project) { <a mat-button [routerLink]="['/projects', project.id]">Abrir workspace</a> <a mat-button [routerLink]="['/projects', project.id, 'activity']">Actividad</a> }
   </nav>
   @if (store.loading()) {
     <p class="page-feedback" role="status">Abriendo proyecto...</p>
@@ -15,6 +15,7 @@
         <span role="status">{{ store.collaborationStatusText() }}</span>
       </div>
     </header>
+    <app-since-last-visit [projectId]="project.id" />
     <div class="assistant-layout">
       <section class="chat-column" aria-label="Conversación del proyecto"><app-project-assistant-panel [compact]="true" /></section>
       <aside class="members-panel" aria-label="Miembros del proyecto">

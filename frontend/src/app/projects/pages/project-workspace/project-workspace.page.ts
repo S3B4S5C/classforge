@@ -1,3 +1,4 @@
+import { SinceLastVisitCardComponent } from '../../../features/activity/since-last-visit-card.component';
 import { DatePipe } from '@angular/common';
 import {
   Component,
@@ -81,6 +82,7 @@ import {
 @Component({
   selector: 'app-project-workspace-page',
   imports: [
+    SinceLastVisitCardComponent,
     DatePipe,
     MatButtonModule,
     MatCardModule,

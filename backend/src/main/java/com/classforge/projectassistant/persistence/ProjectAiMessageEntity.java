@@ -2,34 +2,30 @@ package com.classforge.projectassistant.persistence;
 
 import com.classforge.assistant.AssistantPlanResponse;
 import com.classforge.projectassistant.*;
-import jakarta.persistence.*;
 import tools.jackson.databind.json.JsonMapper;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.Instant;
 import java.util.UUID;
 
-@Entity
-@Table(name = "project_ai_messages", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_ai_project_request_role", columnNames = {"project_id", "request_id", "message_role"}),
-        @UniqueConstraint(name = "uk_ai_message_id", columnNames = "message_id")
-}, indexes = @Index(name = "idx_ai_project_sequence", columnList = "project_id,message_sequence"))
+@Document("project_ai_messages")
 public class ProjectAiMessageEntity {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "message_sequence") private Long sequence;
-    @Column(name = "message_id", nullable = false, updatable = false) private UUID id;
-    @Column(name = "project_id", nullable = false, updatable = false) private UUID projectId;
-    @Column(name = "request_id", nullable = false, updatable = false) private UUID requestId;
-    @Column(name = "author_user_id", updatable = false) private UUID authorUserId;
-    @Column(name = "author_display_name", nullable = false, length = 80) private String authorDisplayName;
-    @Column(name = "message_role", nullable = false, length = 16) private String role;
-    @Enumerated(EnumType.STRING) @Column(name = "message_type", nullable = false, length = 24) private AssistantMode type;
-    @Column(nullable = false, columnDefinition = "text") private String content;
-    @Column(name = "project_revision", nullable = false) private long projectRevision;
-    @Column(name = "created_at", nullable = false, updatable = false) private Instant createdAt;
-    @Column(name = "review_json", columnDefinition = "text") private String reviewJson;
-    @Column(name = "plan_json", columnDefinition = "text") private String planJson;
-    @Column(name = "generation_status", length = 16) private String generationStatus;
-    @Column(name = "generation_token") private UUID generationToken;
-    @Column(name = "generation_updated_at") private Instant generationUpdatedAt;
+    private Long sequence;
+    @Id private UUID id;
+    private UUID projectId;
+    private UUID requestId;
+    private UUID authorUserId;
+    private String authorDisplayName;
+    private String role;
+    private AssistantMode type;
+    private String content;
+    private long projectRevision;
+    private Instant createdAt;
+    private String reviewJson;
+    private String planJson;
+    private String generationStatus;
+    private UUID generationToken;
+    private Instant generationUpdatedAt;
 
     protected ProjectAiMessageEntity() { }
 
@@ -61,7 +57,7 @@ public class ProjectAiMessageEntity {
         entity.type = mode;
         entity.content = content;
         entity.projectRevision = revision;
-        // H2/PostgreSQL persist microseconds; publish the same timestamp returned on replay.
+        // Preserve the public timestamp on initial publication and history replay.
         entity.createdAt = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
         return entity;
     }
@@ -73,6 +69,8 @@ public class ProjectAiMessageEntity {
                 planJson == null ? null : mapper.readValue(planJson, AssistantPlanResponse.class));
     }
 
+    public Long getSequence() { return sequence; }
+    public void assignSequence(long sequence) { this.sequence = sequence; }
     public UUID getAuthorUserId() { return authorUserId; }
     public String getContent() { return content; }
     public AssistantMode getType() { return type; }

@@ -24,9 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
-                "spring.datasource.url=jdbc:h2:mem:classforge-cu27-demo;DB_CLOSE_DELAY=-1",
-                "spring.jpa.hibernate.ddl-auto=create-drop"
-        }
+                "spring.mongodb.database=classforge_cu27_demo"
+}
 )
 class DemoScenarioAcceptanceIntegrationTest {
 

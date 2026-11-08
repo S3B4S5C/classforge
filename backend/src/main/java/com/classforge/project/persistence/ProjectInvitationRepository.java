@@ -1,50 +1,11 @@
 package com.classforge.project.persistence;
-
-import jakarta.persistence.LockModeType;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-public interface ProjectInvitationRepository
-        extends JpaRepository<ProjectInvitationEntity, UUID> {
-
-    boolean existsByProjectIdAndInvitedEmailIgnoreCaseAndStatus(
-            UUID projectId,
-            String invitedEmail,
-            ProjectInvitationStatus status
-    );
-
-    List<ProjectInvitationEntity> findAllByInvitedEmailIgnoreCaseAndStatusOrderByCreatedAtDesc(
-            String invitedEmail,
-            ProjectInvitationStatus status
-    );
-
-    List<ProjectInvitationEntity> findAllByProjectIdAndStatusOrderByCreatedAtAsc(
-            UUID projectId,
-            ProjectInvitationStatus status
-    );
-
-    @Query("""
-            select invitation.projectId
-            from ProjectInvitationEntity invitation
-            where invitation.id = :invitationId
-            """)
-    Optional<UUID> findProjectIdById(
-            @Param("invitationId") UUID invitationId
-    );
-
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("""
-            select invitation
-            from ProjectInvitationEntity invitation
-            where invitation.id = :invitationId
-            """)
-    Optional<ProjectInvitationEntity> findForUpdateById(
-            @Param("invitationId") UUID invitationId
-    );
+import org.springframework.data.mongodb.repository.MongoRepository;
+import java.util.*;
+public interface ProjectInvitationRepository extends MongoRepository<ProjectInvitationEntity, UUID> {
+    boolean existsByProjectIdAndInvitedEmailIgnoreCaseAndStatus(UUID projectId, String email, ProjectInvitationStatus status);
+    List<ProjectInvitationEntity> findAllByInvitedEmailIgnoreCaseAndStatusOrderByCreatedAtDesc(String email, ProjectInvitationStatus status);
+    List<ProjectInvitationEntity> findAllByProjectIdAndStatusOrderByCreatedAtAsc(UUID projectId, ProjectInvitationStatus status);
+    // Mutations acquire the owning project's transactional write fence first.
+    default Optional<UUID> findProjectIdById(UUID id) { return findById(id).map(ProjectInvitationEntity::getProjectId); }
+    default Optional<ProjectInvitationEntity> findForUpdateById(UUID id) { return findById(id); }
 }

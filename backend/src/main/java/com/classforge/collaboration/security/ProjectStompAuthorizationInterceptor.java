@@ -76,6 +76,11 @@ public class ProjectStompAuthorizationInterceptor
 
         enforceDirection(command, destination);
 
+        if (destination.contains("notifications")) {
+            if (command == StompCommand.SUBSCRIBE && destination.equals("/user/queue/notifications")) return message;
+            throw new AccessDeniedException("Notifications use only the authenticated user's private queue");
+        }
+
         if (destination.endsWith("/assistant")
                 && (command != StompCommand.SUBSCRIBE || !destination.startsWith("/topic/projects/"))) {
             throw new AccessDeniedException("Assistant messages are submitted via the authenticated HTTP API only");

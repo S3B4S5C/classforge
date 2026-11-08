@@ -12,6 +12,7 @@
 
     <nav class="primary-nav" aria-label="Principal">
       @if (auth.isAuthenticated()) {
+        <app-notification-bell />
         <a mat-button class="cf-button-secondary" routerLink="/projects">Mis proyectos</a>
         <span class="user-name">{{ auth.user()?.displayName }}</span>
         <button mat-button class="cf-button-secondary" type="button" (click)="logout()">Salir</button>

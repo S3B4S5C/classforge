@@ -117,7 +117,9 @@ public class ProjectController {
                         currentUser.id(),
                         projectId,
                         request.baseRevision(),
-                        request.document()
+                        request.document(),
+                        request.source(),
+                        request.operationId()
                 ),
                 accessRole
         );
