@@ -36,9 +36,9 @@ No se requiere instalar una PWA ni otra aplicación móvil.
 
 ## Ejecutar
 
-Requisitos: Docker para MongoDB replica set, JDK con soporte de compilación Java 21 y Node compatible con Angular
-22 (rama 22 desde 22.22.3, o rama 24 desde 24.15.0). La verificación se hizo con
-Temurin 25.0.1 y Node 24.22.1 para compilar Angular.
+Requisitos: Docker para MongoDB replica set (o un replica set propio), JDK 21 y Node compatible con Angular
+22 (rama 22 desde 22.22.3, o rama 24 desde 24.15.0). La verificación integrada
+se hizo con Temurin 21.0.13, Node 24.22.1 y MongoDB 8.0.17.
 
 Backend, desde la raíz:
 
@@ -112,8 +112,9 @@ puede contener `review` o `plan`; ambos sobreviven a recargas del historial.
 Un reintento debe conservar requestId, contenido, modo y autor. Si la respuesta
 ya existe, se devuelve la misma; una petición en proceso devuelve HTTP 409.
 Una petición diferente que intenta reutilizar ese ID también devuelve 409.
-Un fallo del proveedor devuelve 503 y conserva la pregunta, que puede volver
-a enviarse con el mismo ID. Una solicitud abandonada se puede recuperar a los
+Un fallo del proveedor devuelve 503, o 429 con Retry-After si se agota una cuota,
+y conserva la pregunta para reintentar manualmente con el mismo ID.
+Una solicitud abandonada se puede recuperar a los
 diez minutos; un token evita que un intento anterior publique otra respuesta.
 La restricción única en base de datos protege los primeros envíos concurrentes.
 
@@ -126,6 +127,15 @@ Cada respuesta conserva la revisión de su instantánea; EDIT usa específicamen
 preparar otra revisión. Las consultas nunca guardan el ProjectDocument.
 
 ## Verificación ejecutada
+
+La integración MongoDB + Groq del 2026-11-08 terminó con 507 pruebas backend
+aprobadas y 10 opt-in omitidas, 46 pruebas frontend aprobadas, builds de backend
+y Angular correctos y aceptación explícita de los proyectos exportados Simple/Auth.
+Se verificaron ASK, REVIEW, SUMMARY_CURRENT, EDIT, voz e imagen con Groq real.
+La evidencia y sus límites están en
+[integración Groq](../evidence/parcial2/groq-integration.md).
+
+### Verificación histórica de Persona B
 
 2026-11-07, sobre la rama `tiago`:
 
@@ -161,23 +171,34 @@ Los gateways se probaron con servidor HTTP local y doble del SDK de Bedrock.
 La prueba de navegador usó una base H2 en memoria, usuarios demo y un proveedor
 simulado local aislado. **No se comprobó la calidad de un modelo real ni se
 invocó AWS**: no había un runtime llama.cpp activo en el equipo durante esta
-verificación. Esa comprobación queda para la demostración con el modelo elegido.
+verificación histórica. La comprobación posterior con Groq real está documentada arriba.
 
 ## Demo del examen
 
-El perfil demo existente crea Veterinaria y dos miembros. Al iniciar ese perfil
-se recrea su base de datos; para conservar trabajo habitual se usa el perfil
-normal, que mantiene H2 en archivo y `ddl-auto=update`.
+El perfil demo crea Veterinaria y dos miembros en MongoDB. Por defecto usa
+`classforge_demo`; el perfil normal usa `classforge`. Al arrancar se reconstruyen
+los documentos del fixture, incluidos su chat y actividad, sin vaciar toda la base.
+Si se configura CLASSFORGE_MONGODB_URI, el perfil utiliza la base indicada en esa
+URI: usar una base dedicada para la demo. El perfil normal conserva los proyectos
+habituales. El reset completo de la base demo local está en `scripts/demo-reset.ps1`.
 
 ```powershell
+docker compose -f compose.mongo.yml up -d --wait
 .\backend\gradlew.bat -p backend bootRun --args="--spring.profiles.active=demo"
+```
+
+Configurar GROQ_API_KEY como se indica en la sección Ejecutar. Con backend y
+frontend iniciados, comprobar la demo y disponibilidad de modelos:
+
+```powershell
+.\scripts\demo-smoke.ps1 -RequireAi
 ```
 
 Usuarios demo: `demo@classforge.local` y `colaborador@classforge.local`;
 contraseña local de ambos: `classforge-demo` (fixture del repositorio original).
 Proyecto: `27000000-0000-0000-0000-000000000100`.
 
-1. Iniciar el proveedor IA y abrir dos navegadores con esos usuarios.
+1. Comprobar Groq con el smoke y abrir dos navegadores con esos usuarios.
 2. Entrar al mismo proyecto y preguntar con ASK. Ambos reciben la conversación.
 3. Continuar desde el colaborador y solicitar REVIEW; comprobar que el UML no cambia.
 4. Preparar una sugerencia con EDIT, revisar preview y confirmar Apply desde

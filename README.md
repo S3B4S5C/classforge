@@ -24,11 +24,11 @@ El incremento ejecutable actual incluye:
 - CU-05 Command Bus + Undo/Redo;
 - CU-06 colaboración autoritativa Spring WebSocket/STOMP;
 - CU-07 presencia efímera;
-- CU-08 lenguaje natural y voz local para proponer cambios UML;
+- CU-08 lenguaje natural y voz mediante Groq para proponer cambios UML;
 - Groq (`openai/gpt-oss-120b`) con native tool calling como planner;
 - Groq Whisper (`whisper-large-v3-turbo`) como Speech-to-Text;
 - preview, grounding, validación, BATCH atómico y protección por revisión;
-- health de runtimes locales y diagnóstico del pipeline;
+- health de modelos Groq y diagnóstico del pipeline;
 - CU-09 Imagen -> UML: Groq Qwen3.8-27B + OpenCV + Java, fail-closed, BATCH/preview/Apply canónico y persistencia validada;
 - CU-10/CU-11 XMI 2.1 / Enterprise Architect: import seguro con preview/apply y export determinista del subconjunto UML canónico, con round-trip semántico;
 - CU-12 UML -> `RelationalModel`: IR interna, efímera y determinista;
@@ -178,7 +178,7 @@ Un posible archivo `*.classforge` continúa siendo un formato portable futuro, n
 - `docs/product/`: visión y alcance del producto objetivo;
 - `docs/puds/`: proceso, ciclos, casos de uso y estado;
 - `docs/architecture/`: decisiones técnicas y correspondencia con código;
-- `docs/runtime/`: instalación y ejecución de runtimes locales;
+- `docs/runtime/`: configuración de Groq, despliegue y guías históricas de runtimes locales;
 - `docs/uml/`: catálogo de diagramas UML académicos y su estado.
 
 ## Cierre funcional
