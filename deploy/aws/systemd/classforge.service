@@ -1,7 +1,7 @@
 [Unit]
 Description=ClassForge Spring Boot (AWS demo)
-After=network-online.target classforge-whisper.service
-Wants=network-online.target classforge-whisper.service
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple

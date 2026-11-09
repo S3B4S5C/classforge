@@ -3,6 +3,8 @@
 El cierre de trazabilidad, continuidad y notificaciones de Persona A y la migración
 NoSQL están en [Persona A — cierre y MongoDB](persona-a-cierre.md).
 Las instrucciones de base H2 de la verificación histórica de Persona B fueron reemplazadas por ese runbook.
+Desde el 8 de noviembre toda la IA activa usa Groq. La configuración vigente y
+las cuotas están en [asistente Groq](../runtime/assistant-groq.md).
 
 Implementación del asistente colaborativo de proyecto (RF24, RF28 y RF29).
 Los requisitos recibidos están en [persona-b-requisitos.md](persona-b-requisitos.md)
@@ -56,27 +58,27 @@ npm start
 Frontend: `http://localhost:4200`. Backend: `http://localhost:8082`.
 El proxy Angular existente redirige `/api` y `/ws` al backend.
 
-El proveedor predeterminado es llama.cpp en `http://127.0.0.1:8092`, igual que
-el asistente original. Debe estar iniciado con un modelo instruct compatible;
-la configuración y los scripts están en [runtime local](../runtime/assistant-local.md).
+El proveedor es Groq para texto, herramientas, imágenes y voz. Configurar
+GROQ_API_KEY en el backend mediante `.env` ignorado o variable de entorno;
+ver [configuración Groq](../runtime/assistant-groq.md).
 El backend informa un error recuperable si el proveedor no está disponible:
 no sustituye una respuesta real por contenido ficticio.
 
-También se admite Bedrock usando las variables existentes
-`CLASSFORGE_ASSISTANT_TEXT_PROVIDER=bedrock`, `CLASSFORGE_BEDROCK_ENABLED=true`,
-región, credenciales y modelo configurados. No se provisionan recursos AWS.
+Los adaptadores históricos de llama.cpp y Bedrock quedan para regresión;
+no se seleccionan en los perfiles normales ni se usan como fallback.
 
 Variables nuevas opcionales:
 
 | Variable | Predeterminado | Uso |
 | --- | --- | --- |
 | CLASSFORGE_ASSISTANT_CONVERSATION_TIMEOUT_MILLIS | 90000 | Tiempo máximo de consulta |
-| CLASSFORGE_ASSISTANT_CONVERSATION_MAX_CONTEXT_CHARS | 120000 | Límite de contexto serializado |
+| CLASSFORGE_ASSISTANT_CONVERSATION_MAX_CONTEXT_CHARS | 18000 | Límite de contexto serializado |
 | CLASSFORGE_ASSISTANT_CONVERSATION_MAX_TOKENS | 2048 | Tokens máximos de respuesta |
 
-Se envía el documento actual, miembros y como máximo 20 mensajes previos.
-Un contexto que excede el límite devuelve un error explícito; no se corta el
-documento JSON ni se inventa un resumen. La respuesta admite hasta 20000
+Se envía el documento actual, miembros y los mensajes recientes completos que
+entren en el presupuesto, con un máximo de 20. Si el contexto obligatorio excede
+el límite se devuelve un error explícito; no se corta el documento JSON ni se
+inventa un resumen. La respuesta admite hasta 20000
 caracteres. La conversación completa permanece en la base de datos.
 
 ## API

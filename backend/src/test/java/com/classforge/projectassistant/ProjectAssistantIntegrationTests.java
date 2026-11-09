@@ -11,6 +11,8 @@ import com.classforge.project.domain.document.ProjectDocument;
 import com.classforge.assistant.AssistantPlanService;
 import com.classforge.assistant.AssistantPlanResponse;
 import com.classforge.assistant.AssistantSemanticPlan;
+import com.classforge.assistant.AssistantPlanningStage;
+import com.classforge.assistant.groq.GroqApiException;
 import com.classforge.collaboration.protocol.UmlCommandPayload;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -170,6 +172,72 @@ class ProjectAssistantIntegrationTests {
         assertEquals(1, json.readTree(get(owner, project, "").body()).get("messages").size());
         assertEquals(200, post(owner, project, "Pregunta", "ASK", request).statusCode());
         assertEquals(2, json.readTree(get(owner, project, "").body()).get("messages").size());
+    }
+
+    @Test void groqQuotaFailureRetainsRetryAfterAndQuestionWithoutAutomaticRetry() throws Exception {
+        UserEntity owner = user();
+        Project project = projects.create(owner.getId(), "Cuota de conversación");
+        UUID requestId = UUID.randomUUID();
+        when(gateway.respond(any(), anyString(), any()))
+                .thenThrow(new GroqApiException(429, 17, "Cuota Groq agotada temporalmente."));
+
+        var response = post(owner, project, "Explica el UML", "ASK", requestId);
+
+        assertEquals(429, response.statusCode(), response.body());
+        assertEquals("17", response.headers().firstValue("Retry-After").orElseThrow());
+        assertEquals("GROQ_RATE_LIMIT", json.readTree(response.body()).get("error").asString());
+        var history = json.readTree(get(owner, project, "").body()).get("messages");
+        assertEquals(1, history.size());
+        assertEquals(requestId.toString(), history.get(0).get("requestId").asString());
+        assertEquals("USER", history.get(0).get("role").asString());
+        assertEquals("Explica el UML", history.get(0).get("content").asString());
+        assertEquals(project.document(), projects.get(owner.getId(), project.id()).document());
+        assertEquals(project.revision(), projects.get(owner.getId(), project.id()).revision());
+        verify(gateway, times(1)).respond(any(), eq("Explica el UML"), eq(AssistantMode.ASK));
+        verifyNoInteractions(planner);
+    }
+
+    @Test void editQuotaFailureKeeps429AndRetryAfterThroughPlanningDiagnosticCause() throws Exception {
+        UserEntity owner = user();
+        Project project = projects.create(owner.getId(), "Cuota de propuesta EDIT");
+        UUID requestId = UUID.randomUUID();
+        var diagnostic = new GroqApiException(429, 17, "Cuota Groq agotada temporalmente.")
+                .withDiagnostic(AssistantPlanningStage.LLM, "TEXT", "Crear Cliente", null);
+        when(planner.plan(owner.getId(), project.id(), "Crear Cliente")).thenThrow(diagnostic);
+
+        var response = post(owner, project, "Crear Cliente", "EDIT", requestId);
+
+        assertEquals(429, response.statusCode(), response.body());
+        assertEquals("17", response.headers().firstValue("Retry-After").orElseThrow());
+        assertEquals("GROQ_RATE_LIMIT", json.readTree(response.body()).get("error").asString());
+        var history = json.readTree(get(owner, project, "").body()).get("messages");
+        assertEquals(1, history.size());
+        assertEquals(requestId.toString(), history.get(0).get("requestId").asString());
+        assertEquals("EDIT", history.get(0).get("type").asString());
+        assertEquals(project.document(), projects.get(owner.getId(), project.id()).document());
+        assertEquals(project.revision(), projects.get(owner.getId(), project.id()).revision());
+        verify(planner, times(1)).plan(owner.getId(), project.id(), "Crear Cliente");
+        verifyNoInteractions(gateway);
+    }
+
+    @Test void invalidGroqKeyReturns503WithoutInvalidatingTheAuthenticatedUsersSession() throws Exception {
+        UserEntity owner = user();
+        Project project = projects.create(owner.getId(), "Credenciales del proveedor");
+        when(gateway.respond(any(), anyString(), any()))
+                .thenThrow(new GroqApiException(401, 0, "La clave del proveedor Groq no es válida."));
+
+        var request = postRequest(owner, project, "Explica", "ASK", UUID.randomUUID());
+        var response = http.send(request, HttpResponse.BodyHandlers.ofString());
+
+        assertEquals(503, response.statusCode(), response.body());
+        assertEquals("GROQ_UNAVAILABLE", json.readTree(response.body()).get("error").asString());
+        assertTrue(response.headers().firstValue("WWW-Authenticate").isEmpty());
+        var history = http.send(HttpRequest.newBuilder(request.uri())
+                .header("Authorization", request.headers().firstValue("Authorization").orElseThrow())
+                .GET().build(), HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, history.statusCode(), "The user's existing JWT must still authorize project history");
+        assertEquals(1, json.readTree(history.body()).get("messages").size());
+        verify(gateway, times(1)).respond(any(), eq("Explica"), eq(AssistantMode.ASK));
     }
 
     @Test void concurrentRetriesProduceOnlyOneAssistantResponse() throws Exception {

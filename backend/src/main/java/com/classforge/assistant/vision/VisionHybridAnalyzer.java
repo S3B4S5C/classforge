@@ -1,6 +1,7 @@
 package com.classforge.assistant.vision;
 
 import com.classforge.assistant.AssistantPlanningException;
+import com.classforge.assistant.groq.GroqApiException;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -140,6 +141,9 @@ public class VisionHybridAnalyzer implements VisionModelGateway {
                     annotations.multiplicityPanels(), annotations.observations()
             );
             return assembler.assemble(semantic, geometry, annotations.annotation());
+        } catch (GroqApiException exception) {
+            // Provider failures must remain actionable, even with semantic fallback enabled.
+            throw exception;
         } catch (RuntimeException exception) {
             if (!fallbackToSemantic) {
                 if (exception instanceof VisionModelGatewayException gatewayException) {

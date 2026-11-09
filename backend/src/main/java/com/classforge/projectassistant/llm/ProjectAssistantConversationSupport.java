@@ -45,21 +45,27 @@ final class ProjectAssistantConversationSupport {
         snapshot.put("document", context.document());
         snapshot.put("members", context.members() == null ? List.of() : context.members());
         turns.add(new Turn("user", mapper.writeValueAsString(snapshot)));
+        turns.add(new Turn("user", userMessage));
+        // These three turns are mandatory. History must never prevent a new question when they fit.
+        if (mapper.writeValueAsString(turns).length() > maxContextChars) {
+            throw new ProjectAssistantUnavailableException("El contexto obligatorio del proyecto supera el límite configurado de "
+                    + maxContextChars + " caracteres. Reduce el contexto o aumenta classforge.assistant.conversation.max-context-chars.");
+        }
         List<ProjectAiMessage> recent = context.recentMessages() == null ? List.of() : context.recentMessages();
-        for (ProjectAiMessage message : recent.subList(Math.max(0, recent.size() - 20), recent.size())) {
+        for (int index = recent.size() - 1; index >= Math.max(0, recent.size() - 20); index--) {
+            ProjectAiMessage message = recent.get(index);
             if (message == null || message.content() == null || message.content().isBlank()) continue;
             Map<String, Object> authored = new LinkedHashMap<>();
             authored.put("authorUserId", message.authorUserId());
             authored.put("authorDisplayName", message.authorDisplayName());
             authored.put("content", message.content());
-            turns.add(new Turn("ASSISTANT".equalsIgnoreCase(message.role()) ? "assistant" : "user",
+            // Prepending accepted history at index 2 restores chronological order before the active question.
+            turns.add(2, new Turn("ASSISTANT".equalsIgnoreCase(message.role()) ? "assistant" : "user",
                     mapper.writeValueAsString(authored)));
-        }
-        turns.add(new Turn("user", userMessage));
-        // Reject the complete request. Never cut a serialized UML document or a historical turn in half.
-        if (mapper.writeValueAsString(turns).length() > maxContextChars) {
-            throw new ProjectAssistantUnavailableException("El contexto del proyecto supera el límite configurado de "
-                    + maxContextChars + " caracteres. Reduce el contexto o aumenta classforge.assistant.conversation.max-context-chars.");
+            if (mapper.writeValueAsString(turns).length() > maxContextChars) {
+                turns.remove(2);
+                break;
+            }
         }
         return List.copyOf(turns);
     }

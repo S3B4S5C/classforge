@@ -117,12 +117,11 @@ public class AssistantController {
     @ExceptionHandler(
             AssistantPlanningException.class
     )
-    @ResponseStatus(
-            HttpStatus.SERVICE_UNAVAILABLE
-    )
-    public Map<String, Object> handle(
+    public org.springframework.http.ResponseEntity<Map<String, Object>> handle(
             AssistantPlanningException exception
     ) {
+        var groq = com.classforge.assistant.groq.GroqErrorResponses.from(exception);
+        if (groq != null) return groq;
         Map<String, Object> response =
                 new LinkedHashMap<>();
 
@@ -184,7 +183,7 @@ public class AssistantController {
             );
         }
 
-        return response;
+        return org.springframework.http.ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
     }
     @ExceptionHandler(AssistantImageValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)

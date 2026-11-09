@@ -12,6 +12,13 @@ server:
   port: 0
 
 classforge:
+  assistant:
+    text:
+      provider: llama-cpp
+    voice:
+      provider: whisper-cpp
+    vision:
+      provider: llama-cpp
   security:
     jwt:
       secret: classforge-test-secret-isolated-from-development-database-2026

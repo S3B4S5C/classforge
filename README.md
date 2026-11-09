@@ -25,11 +25,11 @@ El incremento ejecutable actual incluye:
 - CU-06 colaboración autoritativa Spring WebSocket/STOMP;
 - CU-07 presencia efímera;
 - CU-08 lenguaje natural y voz local para proponer cambios UML;
-- llama.cpp + Qwen2.5-3B-Instruct Q4_K_M con native tool calling como planner local;
-- whisper.cpp como Speech-to-Text local;
+- Groq (`openai/gpt-oss-120b`) con native tool calling como planner;
+- Groq Whisper (`whisper-large-v3-turbo`) como Speech-to-Text;
 - preview, grounding, validación, BATCH atómico y protección por revisión;
 - health de runtimes locales y diagnóstico del pipeline;
-- CU-09 Imagen -> UML: pipeline local Qwen3-VL + OpenCV + Java, fail-closed, BATCH/preview/Apply canónico y persistencia validada;
+- CU-09 Imagen -> UML: Groq Qwen3.8-27B + OpenCV + Java, fail-closed, BATCH/preview/Apply canónico y persistencia validada;
 - CU-10/CU-11 XMI 2.1 / Enterprise Architect: import seguro con preview/apply y export determinista del subconjunto UML canónico, con round-trip semántico;
 - CU-12 UML -> `RelationalModel`: IR interna, efímera y determinista;
 - CU-13 generación Spring Boot/JPA: Java 21, Spring Boot 4.0.8, Gradle Wrapper 9.2.0, entidades/repositorios, H2/PostgreSQL, ZIP determinista y acceptance compilable.
@@ -38,7 +38,7 @@ El incremento ejecutable actual incluye:
 - CU-16 Domain Manifest: `domain-manifest.json` schema 1.0 determinista con UUIDs estables, IDs, atributos, relaciones, herencia, capacidades, operationIds y metadata Auth;
 - CU-17 frontend web Angular: SPA standalone dentro de `frontend/`, dashboard, componentes específicos por entidad, CRUD/relaciones, Simple/Auth y color primario seleccionable;
 - CU-18 frontend mobile Flutter: app independiente dentro de `mobile/`, dashboard, pantallas específicas por entidad, Simple/Auth, almacenamiento seguro de JWT y Android validado;
-- CU-19 interacción con datos mediante chat y voz en la aplicación generada: Whisper + Qwen/llama.cpp locales, native tool calling, grounding Java, consultas directas y mutaciones con preview/token/apply.
+- CU-19 interacción con datos mediante chat y voz en la aplicación generada: Groq para texto y transcripción, native tool calling, grounding Java, consultas directas y mutaciones con preview/token/apply.
 - hardening post-CU-19: las apps generadas autogeneran PK simples seguras (`UUID`, `Integer`, `Long`, `String`), las ocultan en formularios web/mobile salvo una PK `String` elegida explícitamente como credencial Auth, ocultan navegación web Auth hasta login y reutilizan estilos globales en los controles del Assistant.
 
 También están implementados como infraestructura transversal:
@@ -46,7 +46,7 @@ También están implementados como infraestructura transversal:
 - CU-28 registrar cuenta;
 - CU-29 iniciar sesión;
 - CU-30 ownership persistente, ampliado en CU-31 con proyectos compartidos;
-- CU-24 STT local y CU-25 IA local en el contexto del Asistente UML.
+- CU-24 STT y CU-25 IA en el contexto del Asistente UML, actualmente mediante Groq.
 
 CU-27 — demo reproducible final — está **CERRADO**. El perfil `demo` crea un proyecto Veterinaria determinista con OWNER/EDITOR, fixture XMI 2.1, scripts de reset/start/smoke, acceptance agregado y smoke opcional con Enterprise Architect real.
 
@@ -98,7 +98,7 @@ Principios:
 6. Las mutaciones pasan por comandos tipados.
 7. El backend valida, controla revisión y persiste como autoridad final.
 8. Presencia es efímera y no incrementa revisión.
-9. Whisper transcribe; Qwen selecciona tools UML; Java grounded-resuelve, valida y previsualiza.
+9. Groq transcribe y selecciona tools UML; Java grounded-resuelve, valida y previsualiza.
 10. La IA nunca modifica directamente `ProjectDocument`.
 
 ## Ejecutar backend
@@ -136,15 +136,20 @@ http://localhost:4200
 
 El proxy Angular reenvía `/api/*` a `http://localhost:8082`.
 
-## Runtimes locales del Asistente
+## IA con Groq
 
 ```text
-llama-server texto   127.0.0.1:8092
-whisper-server       127.0.0.1:8093
-llama-server Vision  127.0.0.1:8094
+GROQ_API_KEY=tu_clave_solo_en_el_backend
+GROQ_TEXT_MODEL=openai/gpt-oss-120b
+GROQ_VISION_MODEL=qwen/qwen3.8-27b
+GROQ_SPEECH_MODEL=whisper-large-v3-turbo
 ```
 
-Consultar `docs/runtime/assistant-local.md`.
+Copiar `.env.example` a `.env` y completar la clave, o definir las variables en
+el servidor. `.env` está excluido de Git y se carga al ejecutar desde raíz o backend.
+No hace falta iniciar llama.cpp, whisper.cpp ni configurar Bedrock.
+Groq Free tiene cuotas; el modelo visual es preview. Consultar
+[`docs/runtime/assistant-groq.md`](docs/runtime/assistant-groq.md).
 
 ## Persistencia
 
@@ -200,4 +205,8 @@ El cierre de legibilidad del 14 de septiembre de 2026 no modifica funcionalidade
 
 ## Deployment AWS de demostración
 
-El perfil `aws-demo` mantiene Angular/Spring/Whisper en una EC2 detrás de CloudFront/Nginx y usa Amazon Bedrock para texto/visión mediante los mismos ports del Assistant. Ver `docs/runtime/aws-demo-deployment.md` y `docs/formal/deployment-diagram-spec.md`.
+El perfil `aws-demo` mantiene Angular/Spring en una EC2 detrás de CloudFront/Nginx,
+con MongoDB replica set y Groq para toda la IA. El bundle activo no requiere
+Whisper local ni permisos Bedrock. Ver
+[`docs/runtime/assistant-groq.md`](docs/runtime/assistant-groq.md) para la
+configuración actual; los documentos anteriores de Bedrock describen el despliegue histórico.

@@ -6,6 +6,7 @@ import com.classforge.generation.spring.application.SpringBootGenerationOptions;
 import com.classforge.generation.spring.generated.GeneratedFile;
 import com.classforge.generation.spring.generated.GeneratedProject;
 import com.classforge.generation.spring.generated.GeneratedProjectValidator;
+import com.classforge.generation.spring.generated.GeneratedProjectException;
 import com.classforge.generation.spring.model.*;
 import com.classforge.generation.spring.rendering.SpringFreeMarkerRenderer;
 import com.classforge.generation.spring.rendering.SpringProjectRenderer;
@@ -18,12 +19,34 @@ class GeneratedAssistantRenderingTests {
     @Test
     void rendersGroundedNativeToolAssistantAndVoiceClientsWithoutLeakingSensitivePreviewValues() {
         Fixture fixture = fixture();
-        SpringProjectRenderer renderer = new SpringProjectRenderer(new SpringFreeMarkerRenderer(), new GeneratedProjectValidator());
+        SpringProjectRenderer renderer = new SpringProjectRenderer(new SpringFreeMarkerRenderer(), new GeneratedProjectValidator() {
+            @Override public void validate(GeneratedProject project) {
+                try { super.validate(project); }
+                catch (GeneratedProjectException exception) { fail(exception.diagnostics().toString()); }
+            }
+        });
 
         GeneratedProject simple = renderer.render(fixture.model(), SpringBootGenerationOptions.simpleCrud(false, "#7C3AED"));
         assertAssistant(simple);
-        assertTrue(text(simple, "src/main/resources/application.yml").contains("llama-url: ${LLAMA_URL:http://127.0.0.1:8092}"));
-        assertTrue(text(simple, "src/main/resources/application.yml").contains("whisper-url: ${WHISPER_URL:http://127.0.0.1:8093}"));
+        String configuration = text(simple, "src/main/resources/application.yml");
+        assertTrue(configuration.contains("api-key: ${GROQ_API_KEY:}"));
+        assertTrue(configuration.contains("base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}"));
+        assertTrue(configuration.contains("text-model: ${GROQ_TEXT_MODEL:openai/gpt-oss-120b}"));
+        assertTrue(configuration.contains("speech-model: ${GROQ_SPEECH_MODEL:whisper-large-v3-turbo}"));
+        assertFalse(configuration.contains("LLAMA_"));
+        assertFalse(configuration.contains("WHISPER_URL"));
+        String readme = text(simple, "README.md");
+        assertTrue(readme.contains("GROQ_API_KEY"));
+        assertTrue(readme.contains("429"));
+        assertFalse(readme.contains("llama.cpp"));
+        for (GeneratedFile file : simple.files()) {
+            String content = new String(file.content(), StandardCharsets.UTF_8);
+            assertFalse(content.contains("gsk_"), file.path());
+            if (file.path().startsWith("frontend/") || file.path().startsWith("mobile/")) {
+                assertFalse(content.contains("GROQ_API_KEY"), file.path());
+                assertFalse(content.contains("api.groq.com"), file.path());
+            }
+        }
         assertTrue(text(simple, "frontend/src/app/assistant/assistant.component.ts").contains("previewToken"));
         assertFalse(text(simple, "frontend/src/app/assistant/assistant.component.ts").contains("pending.command"));
         assertTrue(text(simple, "frontend/src/app/assistant/browser-wav-recorder.service.ts").contains("16_000"));
@@ -63,6 +86,7 @@ class GeneratedAssistantRenderingTests {
                 "GeneratedAssistantMetadata.java",
                 "GeneratedAssistantLlamaGateway.java",
                 "GeneratedAssistantWhisperGateway.java",
+                "GeneratedAssistantGroqClient.java",
                 "GeneratedAssistantHttpExecutor.java",
                 "GeneratedAssistantService.java",
                 "GeneratedAssistantController.java"
@@ -76,7 +100,10 @@ class GeneratedAssistantRenderingTests {
         assertTrue(controller.contains("@PostMapping(\"/apply\")"));
         String llama = assistantText(project, "GeneratedAssistantLlamaGateway.java");
         assertTrue(llama.contains("route_data_request"));
-        assertTrue(llama.contains("/v1/chat/completions"));
+        assertTrue(llama.contains("groq.chat(request)"));
+        assertTrue(llama.contains("max_completion_tokens"));
+        assertFalse(llama.contains("/props"));
+        assertFalse(llama.contains("max_tokens"));
         assertTrue(llama.contains("tool_choice"));
         assertTrue(llama.contains("filterFieldNames(entity)"));
         assertTrue(llama.contains("valueFieldNames(entity, intent)"));
@@ -86,11 +113,18 @@ class GeneratedAssistantRenderingTests {
         assertTrue(llama.contains("LocalDateTime.now().withNano(0)"));
         assertTrue(llama.contains("maxItems"));
         String whisper = assistantText(project, "GeneratedAssistantWhisperGateway.java");
-        assertTrue(whisper.contains("/inference"));
-        assertTrue(whisper.contains("audio/wav"));
-        assertTrue(whisper.contains("temperature_inc"));
-        assertTrue(whisper.contains("response_format"));
-        assertTrue(whisper.contains("GeneratedAssistantMetadata.speechPrompt()"));
+        assertTrue(whisper.contains("groq.transcribe"));
+        String groq = assistantText(project, "GeneratedAssistantGroqClient.java");
+        assertTrue(groq.contains("/chat/completions"));
+        assertTrue(groq.contains("/audio/transcriptions"));
+        assertTrue(groq.contains("Authorization"));
+        assertTrue(groq.contains("Bearer "));
+        assertTrue(groq.contains("audio/wav"));
+        assertTrue(groq.contains("response_format"));
+        assertTrue(groq.contains("Retry-After"));
+        assertFalse(groq.contains("temperature_inc"));
+        assertFalse(groq.contains("/inference"));
+        assertFalse(groq.contains("/props"));
         String executor = assistantText(project, "GeneratedAssistantHttpExecutor.java");
         assertTrue(executor.contains("materializeValues"));
         assertTrue(executor.contains("pending.selector()"));
@@ -111,7 +145,7 @@ class GeneratedAssistantRenderingTests {
         return new String(file.content(), StandardCharsets.UTF_8);
     }
 
-    private Fixture fixture() {
+    Fixture fixture() {
         UUID classId = UUID.fromString("11111111-1111-1111-1111-111111111111");
         UUID idId = UUID.fromString("11111111-1111-1111-1111-111111111112");
         UUID usernameId = UUID.fromString("11111111-1111-1111-1111-111111111113");
@@ -154,5 +188,5 @@ class GeneratedAssistantRenderingTests {
         return new Fixture(model, classId, usernameId, passwordId);
     }
 
-    private record Fixture(SpringGenerationModel model, UUID classId, UUID usernameId, UUID passwordId) { }
+    record Fixture(SpringGenerationModel model, UUID classId, UUID usernameId, UUID passwordId) { }
 }

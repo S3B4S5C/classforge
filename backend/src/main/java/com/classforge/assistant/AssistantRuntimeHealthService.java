@@ -22,6 +22,15 @@ public class AssistantRuntimeHealthService {
     private final String bedrockRegion;
     private final String bedrockTextModel;
     private final String bedrockVisionModel;
+    private com.classforge.assistant.groq.GroqHealthProbe groqHealth;
+    private String voiceProvider = "whisper-cpp";
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public void configureGroq(com.classforge.assistant.groq.GroqHealthProbe groqHealth,
+            @Value("${classforge.assistant.voice.provider:whisper-cpp}") String voiceProvider) {
+        this.groqHealth = groqHealth;
+        this.voiceProvider = voiceProvider;
+    }
 
     public AssistantRuntimeHealthService(
             ProjectService projectService,
@@ -54,13 +63,15 @@ public class AssistantRuntimeHealthService {
     public AssistantRuntimeHealthResponse health(UUID userId, UUID projectId) {
         projectService.get(userId, projectId);
 
-        AssistantRuntimeStatus text = "bedrock".equals(textProvider)
+        var groq = groqHealth != null && ("groq".equals(textProvider) || "groq".equals(visionProvider) || "groq".equals(voiceProvider))
+                ? groqHealth.probe() : null;
+        AssistantRuntimeStatus text = "groq".equals(textProvider) && groq != null ? groq.text() : "bedrock".equals(textProvider)
                 ? configuredBedrock("bedrock-text", bedrockTextModel)
                 : runtimeProbe.probe("llama.cpp", llamaUrl);
 
-        AssistantRuntimeStatus whisper = runtimeProbe.probe("whisper.cpp", whisperUrl);
+        AssistantRuntimeStatus whisper = "groq".equals(voiceProvider) && groq != null ? groq.speech() : runtimeProbe.probe("whisper.cpp", whisperUrl);
 
-        AssistantRuntimeStatus vision = "bedrock".equals(visionProvider)
+        AssistantRuntimeStatus vision = "groq".equals(visionProvider) && groq != null ? groq.vision() : "bedrock".equals(visionProvider)
                 ? configuredBedrock("bedrock-vision", bedrockVisionModel)
                 : visionRuntimeProbe.probe(visionUrl, visionModel);
 

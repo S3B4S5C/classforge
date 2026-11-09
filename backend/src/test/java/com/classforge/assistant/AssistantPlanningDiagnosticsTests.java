@@ -42,7 +42,7 @@ class AssistantPlanningDiagnosticsTests {
         Map<String, Object> body =
                 controller.handle(
                         exception
-                );
+                ).getBody();
 
         assertEquals(
                 "GROUNDING",
@@ -88,7 +88,7 @@ class AssistantPlanningDiagnosticsTests {
     private void assertVisionReason(VisionModelGatewayException.Reason reason) {
         AssistantPlanningException exception = new VisionModelGatewayException(reason, "hybrid rejected")
                 .withDiagnostic(AssistantPlanningStage.VISION, "IMAGE", "imagen: board.png", null);
-        Map<String, Object> body = new AssistantController(null, null, null, null, null).handle(exception);
+        Map<String, Object> body = new AssistantController(null, null, null, null, null).handle(exception).getBody();
 
         assertEquals("ASSISTANT_PLANNING_ERROR", body.get("error"));
         assertEquals("VISION", body.get("stage"));

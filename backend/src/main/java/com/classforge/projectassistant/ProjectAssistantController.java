@@ -49,10 +49,11 @@ public class ProjectAssistantController {
     }
 
     @ExceptionHandler({ProjectAssistantUnavailableException.class, AssistantPlanningException.class})
-    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
-    public Map<String, String> unavailable(RuntimeException error) {
-        return Map.of("error", "ASSISTANT_UNAVAILABLE", "message",
+    public ResponseEntity<Map<String, Object>> unavailable(RuntimeException error) {
+        var groq = com.classforge.assistant.groq.GroqErrorResponses.from(error);
+        if (groq != null) return groq;
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of("error", "ASSISTANT_UNAVAILABLE", "message",
                 error instanceof ProjectAssistantUnavailableException ? error.getMessage()
-                        : "No se pudo preparar la propuesta UML. Puedes reintentar.");
+                        : "No se pudo preparar la propuesta UML. Puedes reintentar."));
     }
 }

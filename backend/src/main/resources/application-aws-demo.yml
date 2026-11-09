@@ -12,17 +12,11 @@ server:
 classforge:
   assistant:
     text:
-      provider: bedrock
-    bedrock:
-      enabled: true
-      region: ${AWS_REGION:us-east-1}
-      request-timeout-seconds: ${CLASSFORGE_BEDROCK_TIMEOUT_SECONDS:300}
-      text-model: ${CLASSFORGE_BEDROCK_TEXT_MODEL:us.amazon.nova-2-lite-v1:0}
-      vision-model: ${CLASSFORGE_BEDROCK_VISION_MODEL:us.amazon.nova-2-lite-v1:0}
-      text-max-completion-tokens: ${CLASSFORGE_BEDROCK_TEXT_MAX_TOKENS:1024}
-    whisper-url: ${CLASSFORGE_ASSISTANT_WHISPER_URL:http://127.0.0.1:8093}
+      provider: groq
+    voice:
+      provider: groq
     vision:
-      provider: bedrock
+      provider: groq
       dense-two-pass-enabled: ${CLASSFORGE_ASSISTANT_VISION_TWO_PASS:false}
       dense-hybrid:
         enabled: ${CLASSFORGE_ASSISTANT_VISION_HYBRID:true}

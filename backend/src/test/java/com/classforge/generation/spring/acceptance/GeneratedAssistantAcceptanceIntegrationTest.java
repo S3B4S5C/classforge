@@ -61,7 +61,7 @@ class GeneratedAssistantAcceptanceIntegrationTest {
                 "GeneratedAssistantTypes.java", "GeneratedAssistantMetadata.java",
                 "GeneratedAssistantLlamaGateway.java", "GeneratedAssistantWhisperGateway.java",
                 "GeneratedAssistantHttpExecutor.java", "GeneratedAssistantService.java",
-                "GeneratedAssistantController.java"
+                "GeneratedAssistantController.java", "GeneratedAssistantGroqClient.java"
         )) {
             assertTrue(has(first, base + file), "Missing generated assistant file " + file);
         }
@@ -75,18 +75,24 @@ class GeneratedAssistantAcceptanceIntegrationTest {
         assertTrue(controller.contains("/voice"));
         assertTrue(controller.contains("/apply"));
         String llama = text(first, base + "GeneratedAssistantLlamaGateway.java");
-        assertTrue(llama.contains("/v1/chat/completions"));
+        assertTrue(llama.contains("groq.chat(request)"));
+        assertTrue(llama.contains("max_completion_tokens"));
+        assertFalse(llama.contains("/props"));
         assertTrue(llama.contains("route_data_request"));
         assertTrue(llama.contains("tool_choice"));
         assertTrue(llama.contains("filterFieldNames(entity)"));
         assertTrue(llama.contains("valueFieldNames(entity, intent)"));
         String whisper = text(first, base + "GeneratedAssistantWhisperGateway.java");
-        assertTrue(whisper.contains("/inference"));
+        assertTrue(whisper.contains("groq.transcribe"));
         assertTrue(whisper.contains("validateWav(bytes)"));
         assertTrue(whisper.contains("bytes[0] != 'R'"));
         assertTrue(whisper.contains("bytes[8] != 'W'"));
-        assertTrue(whisper.contains("temperature_inc"));
-        assertTrue(whisper.contains("GeneratedAssistantMetadata.speechPrompt()"));
+        String groq = text(first, base + "GeneratedAssistantGroqClient.java");
+        assertTrue(groq.contains("/audio/transcriptions"));
+        assertTrue(groq.contains("GeneratedAssistantMetadata.speechPrompt()"));
+        assertTrue(groq.contains("Retry-After"));
+        assertFalse(groq.contains("temperature_inc"));
+        assertFalse(groq.contains("/inference"));
         String recorder = text(first, "frontend/src/app/assistant/browser-wav-recorder.service.ts");
         assertTrue(recorder.contains("'RIFF'"));
         assertTrue(recorder.contains("'WAVE'"));

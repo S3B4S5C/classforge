@@ -164,6 +164,19 @@ class GeneratedProjectValidatorTests {
     }
 
     @Test
+    void allowsGeneratedGroqEnvironmentAndServerRuntimePlaceholdersWithoutAllowingArbitraryTemplates() {
+        String placeholders = "${GROQ_API_KEY:}\n${GROQ_BASE_URL:https://api.groq.com/openai/v1}\n"
+                + "${GROQ_TEXT_MODEL:openai/gpt-oss-120b}\n${GROQ_SPEECH_MODEL:whisper-large-v3-turbo}\n"
+                + "${GROQ_LANGUAGE:es}\n${GROQ_REQUEST_TIMEOUT_MILLIS:90000}\n"
+                + "${app.assistant.groq.api-key:}\n${app.assistant.groq.base-url:https://api.groq.com/openai/v1}\n"
+                + "${app.assistant.groq.text-model:openai/gpt-oss-120b}\n${app.assistant.groq.speech-model:whisper-large-v3-turbo}\n"
+                + "${app.assistant.groq.language:es}\n${app.assistant.groq.request-timeout-millis:90000}\n";
+        assertDoesNotThrow(() -> validator.validate(replace(validProject(), "README.md", file("README.md", placeholders))));
+        assertCode(replace(validProject(), "README.md", file("README.md", "${model.secret}\n")),
+                GeneratedProjectDiagnosticCode.UNRESOLVED_TEMPLATE_MARKER);
+    }
+
+    @Test
     void rejectsUnresolvedFreeMarkerButAllowsGeneratedRuntimeAndWrapperExpressions() {
         assertCode(
                 replace(validProject(), "README.md", file("README.md", "${model.basePackage}\n")),

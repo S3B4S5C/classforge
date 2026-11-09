@@ -1,6 +1,10 @@
 spring:
   application:
     name: classforge
+  config:
+    import:
+      - optional:file:./.env[.properties]
+      - optional:file:../.env[.properties]
 
   mongodb:
     uri: ${CLASSFORGE_MONGODB_URI:mongodb://localhost:27017/classforge?replicaSet=rs0}
@@ -23,24 +27,23 @@ classforge:
   assistant:
     conversation:
       request-timeout-millis: ${CLASSFORGE_ASSISTANT_CONVERSATION_TIMEOUT_MILLIS:90000}
-      max-context-chars: ${CLASSFORGE_ASSISTANT_CONVERSATION_MAX_CONTEXT_CHARS:120000}
+      max-context-chars: ${CLASSFORGE_ASSISTANT_CONVERSATION_MAX_CONTEXT_CHARS:18000}
       max-completion-tokens: ${CLASSFORGE_ASSISTANT_CONVERSATION_MAX_TOKENS:2048}
     text:
-      provider: ${CLASSFORGE_ASSISTANT_TEXT_PROVIDER:llama-cpp}
-    llama-url: ${CLASSFORGE_ASSISTANT_LLAMA_URL:http://127.0.0.1:8092}
-    llama-model: ${CLASSFORGE_ASSISTANT_LLAMA_MODEL:local-model}
-    whisper-url: ${CLASSFORGE_ASSISTANT_WHISPER_URL:http://127.0.0.1:8093}
-    bedrock:
-      enabled: ${CLASSFORGE_BEDROCK_ENABLED:false}
-      region: ${AWS_REGION:us-east-1}
-      request-timeout-seconds: ${CLASSFORGE_BEDROCK_TIMEOUT_SECONDS:300}
-      text-model: ${CLASSFORGE_BEDROCK_TEXT_MODEL:us.amazon.nova-2-lite-v1:0}
-      vision-model: ${CLASSFORGE_BEDROCK_VISION_MODEL:us.amazon.nova-2-lite-v1:0}
-      text-max-completion-tokens: ${CLASSFORGE_BEDROCK_TEXT_MAX_TOKENS:1024}
+      provider: groq
+    voice:
+      provider: groq
+    groq:
+      api-key: ${GROQ_API_KEY:}
+      base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1}
+      text-model: ${GROQ_TEXT_MODEL:openai/gpt-oss-120b}
+      vision-model: ${GROQ_VISION_MODEL:qwen/qwen3.8-27b}
+      speech-model: ${GROQ_SPEECH_MODEL:whisper-large-v3-turbo}
+      language: ${GROQ_LANGUAGE:es}
+      request-timeout-millis: ${GROQ_REQUEST_TIMEOUT_MILLIS:90000}
+      tool-max-completion-tokens: ${GROQ_TOOL_MAX_COMPLETION_TOKENS:2048}
     vision:
-      provider: ${CLASSFORGE_ASSISTANT_VISION_PROVIDER:llama-cpp}
-      url: ${CLASSFORGE_ASSISTANT_VISION_URL:http://127.0.0.1:8094}
-      model: ${CLASSFORGE_ASSISTANT_VISION_MODEL:vision-model}
+      provider: groq
       request-timeout-seconds: ${CLASSFORGE_ASSISTANT_VISION_TIMEOUT_SECONDS:180}
       max-completion-tokens: ${CLASSFORGE_ASSISTANT_VISION_MAX_TOKENS:3200}
       dense-two-pass-enabled: ${CLASSFORGE_ASSISTANT_VISION_TWO_PASS:false}

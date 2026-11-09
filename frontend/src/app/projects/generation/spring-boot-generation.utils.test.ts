@@ -329,8 +329,8 @@ test('advertises CU-19 generated application assistant without adding a new mode
   );
 
   assert.match(dialog, /Assistant de chat y voz/i);
-  assert.match(dialog, /Whisper/i);
-  assert.match(dialog, /Qwen\/llama\.cpp/i);
+  assert.match(dialog, /Groq/i);
+  assert.doesNotMatch(dialog, /Whisper|llama\.cpp/i);
   assert.match(dialog, /preview\/confirmacion/i);
   assert.doesNotMatch(dialog, /formControlName="(?:assistant|llama|whisper|voiceMode)"/);
 });

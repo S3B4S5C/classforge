@@ -17,6 +17,8 @@ import java.time.Duration;
 import java.util.UUID;
 
 @Component
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+        name = "classforge.assistant.voice.provider", havingValue = "whisper-cpp", matchIfMissing = true)
 public class WhisperCppSpeechToTextGateway
         implements SpeechToTextGateway {
 

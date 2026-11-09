@@ -1,5 +1,6 @@
 package com.classforge.assistant.vision;
 
+import com.classforge.assistant.AssistantPlanningException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -70,7 +71,7 @@ public class LlamaCppVisionHybridModelGateway implements VisionHybridModelGatewa
                     "mapeo-cerrado-de-cajas"
             );
             return jsonMapper.readValue(content, VisionGeometryClassMappingProposal.class);
-        } catch (VisionModelGatewayException exception) {
+        } catch (AssistantPlanningException exception) {
             throw exception;
         } catch (Exception exception) {
             throw outputContract("El mapeo cerrado Bx->classRef no cumple su contrato JSON.", exception);
@@ -97,7 +98,7 @@ public class LlamaCppVisionHybridModelGateway implements VisionHybridModelGatewa
             );
             validateSingletonAnnotation(proposal, candidate.edgeId());
             return proposal;
-        } catch (VisionModelGatewayException exception) {
+        } catch (AssistantPlanningException exception) {
             throw exception;
         } catch (Exception exception) {
             throw outputContract("La anotacion local de relaciones no cumple su contrato JSON.", exception);
@@ -125,7 +126,7 @@ public class LlamaCppVisionHybridModelGateway implements VisionHybridModelGatewa
             );
             validateMultiplicityTranscription(transcription, candidate.edgeId(), endpoint);
             return normalizeMultiplicityTranscription(transcription);
-        } catch (VisionModelGatewayException exception) {
+        } catch (AssistantPlanningException exception) {
             throw exception;
         } catch (Exception exception) {
             throw outputContract("La transcripcion local de multiplicidad no cumple su contrato JSON.", exception);
@@ -155,7 +156,7 @@ public class LlamaCppVisionHybridModelGateway implements VisionHybridModelGatewa
             );
             validateMultiplicityAttribution(attribution, candidate.edgeId(), endpoint, visibleCompetingEdgeIds);
             return attribution;
-        } catch (VisionModelGatewayException exception) {
+        } catch (AssistantPlanningException exception) {
             throw exception;
         } catch (Exception exception) {
             throw outputContract("La verificacion de ownership de multiplicidad no cumple su contrato JSON.", exception);
@@ -257,19 +258,10 @@ public class LlamaCppVisionHybridModelGateway implements VisionHybridModelGatewa
         payload.put("chat_template_kwargs", Map.of("enable_thinking", false));
 
         try {
-            HttpRequest request = HttpRequest.newBuilder(URI.create(url + "/v1/chat/completions"))
-                    .timeout(timeout)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonMapper.writeValueAsString(payload)))
-                    .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw transport("llama.cpp rechazo " + stage + ": HTTP " + response.statusCode(), null);
-            }
-            JsonNode root = jsonMapper.readTree(response.body());
+            JsonNode root = requestCompletion(payload, stage);
             JsonNode choices = root.get("choices");
             if (choices == null || !choices.isArray() || choices.size() == 0) {
-                throw outputContract("llama.cpp no devolvio choices en " + stage + ".", null);
+                throw outputContract("El proveedor visual no devolvio choices en " + stage + ".", null);
             }
             JsonNode first = choices.get(0);
             JsonNode message = first.get("message");
@@ -282,7 +274,7 @@ public class LlamaCppVisionHybridModelGateway implements VisionHybridModelGatewa
             JsonNode finish = first.get("finish_reason");
             if (finish != null && "length".equalsIgnoreCase(finish.asString())) {
                 throw outputContract(
-                        "La respuesta de " + stage + " quedo truncada por max_tokens. "
+                        "La respuesta de " + stage + " quedo truncada por limite de tokens. "
                                 + "completionTokens=" + scalarValue(completionTokens)
                                 + " contentLength=" + partialContent.length()
                                 + " contentPrefix=" + prefix(partialContent)
@@ -292,7 +284,7 @@ public class LlamaCppVisionHybridModelGateway implements VisionHybridModelGatewa
                 );
             }
             if (text == null || !text.isString() || text.asString().isBlank()) {
-                throw outputContract("llama.cpp no devolvio JSON textual en " + stage + ".", null);
+                throw outputContract("El proveedor visual no devolvio JSON textual en " + stage + ".", null);
             }
             return text.asString();
         } catch (HttpTimeoutException exception) {
@@ -301,6 +293,20 @@ public class LlamaCppVisionHybridModelGateway implements VisionHybridModelGatewa
             Thread.currentThread().interrupt();
             throw transport("La inferencia fue interrumpida durante " + stage + ".", exception);
         }
+    }
+
+    /** Transport seam shared by remote providers; endpoint validators stay in this pipeline. */
+    protected JsonNode requestCompletion(Map<String, Object> payload, String stage) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(url + "/v1/chat/completions"))
+                .timeout(timeout)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(jsonMapper.writeValueAsString(payload)))
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw transport("llama.cpp rechazo " + stage + ": HTTP " + response.statusCode(), null);
+        }
+        return jsonMapper.readTree(response.body());
     }
 
     private String stringValue(JsonNode value) {

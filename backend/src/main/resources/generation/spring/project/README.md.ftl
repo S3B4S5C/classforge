@@ -40,11 +40,17 @@ Validate it with `flutter analyze`, `flutter test` and `flutter build apk --debu
 
 ## Assistant: chat and voice
 
-The generated Spring backend exposes `/api/assistant/plan`, `/api/assistant/voice` and `/api/assistant/apply`. Angular and Flutter only call these Spring endpoints. Spring reuses the same local ClassForge-style runtimes by default: llama.cpp/Qwen at `http://127.0.0.1:8092` and whisper.cpp at `http://127.0.0.1:8093`.
+The generated Spring backend exposes `/api/assistant/plan`, `/api/assistant/voice` and `/api/assistant/apply`. Angular and Flutter only call these Spring endpoints. Spring uses **Groq only**, with `https://api.groq.com/openai/v1`, `openai/gpt-oss-120b` for data tools and `whisper-large-v3-turbo` for audio transcription. No additional AI server is required.
 
 Text and Whisper transcripts converge on the same native-tool planner. Read operations execute immediately. CREATE, UPDATE, relation changes and DELETE return a sanitized preview plus an opaque, short-lived token; only `/api/assistant/apply` executes that pending mutation. Sensitive values such as passwords are masked in previews.
 
-Runtime overrides are available through `LLAMA_URL`, `LLAMA_MODEL`, `WHISPER_URL`, `WHISPER_LANGUAGE` and `APP_API_BASE_URL`. `APP_API_BASE_URL` must point to this generated Spring API when it does not run on port 8080.
+Set `GROQ_API_KEY` in the Spring server environment before using the assistant. Never place it in Angular/Flutter configuration, a committed file or this ZIP. An unconfigured application still starts; assistant calls report that server configuration is missing. The generated backend stores no key value in source files.
+
+Runtime overrides are available through `GROQ_BASE_URL`, `GROQ_TEXT_MODEL`, `GROQ_SPEECH_MODEL`, `GROQ_LANGUAGE` and `GROQ_REQUEST_TIMEOUT_MILLIS`. Select a text model supporting function calling and a speech model supporting transcription. `APP_API_BASE_URL` must point to this generated Spring API when it does not run on port 8080.
+
+Groq free-plan quotas apply to the organization and are not unlimited production capacity. On HTTP 429 the backend returns a sanitized error with `Retry-After` and `retryAfterSeconds`; wait before manually retrying. There is no automatic provider retry, paid fallback or automatic execution of provider tools. Upstream provider authentication errors are reported as backend availability errors, so they do not invalidate your application's user session.
+
+Provider reference: https://console.groq.com/docs/tool-use/overview and https://console.groq.com/docs/speech-to-text .
 </#if><#if api.authEnabled()>## Authentication
 
 Authentication is enabled. `/api/auth/login` accepts `username` and `password`. `/api/auth/bootstrap` is a one-time public bootstrap endpoint that only works while the selected authentication table is empty; it accepts the generated `${api.authEntity().className}Request` body, hashes the selected password field with BCrypt and returns a JWT.

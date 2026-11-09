@@ -46,7 +46,7 @@ Write-Host "[info] Assistant voice: $($health.readyForVoice)"
 Write-Host "[info] Assistant image: $($health.readyForImage)"
 
 if ($RequireAi -and (-not $health.readyForText -or -not $health.readyForVoice -or -not $health.readyForImage)) {
-    throw "One or more local AI runtimes are not ready. Start llama :8092, whisper :8093 and vision :8094."
+    throw "Groq AI is not ready. Configure GROQ_API_KEY and verify model access/quota in the backend."
 }
 
 Write-Host "CU-27 demo smoke GREEN."

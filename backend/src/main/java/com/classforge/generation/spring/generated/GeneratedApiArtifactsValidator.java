@@ -296,6 +296,7 @@ final class GeneratedApiArtifactsValidator {
                 "GeneratedAssistantMetadata.java",
                 "GeneratedAssistantLlamaGateway.java",
                 "GeneratedAssistantWhisperGateway.java",
+                "GeneratedAssistantGroqClient.java",
                 "GeneratedAssistantHttpExecutor.java",
                 "GeneratedAssistantService.java",
                 "GeneratedAssistantController.java"
@@ -321,14 +322,21 @@ final class GeneratedApiArtifactsValidator {
             String whisper = textByPath.entrySet().stream()
                     .filter(entry -> entry.getKey().endsWith("/assistant/GeneratedAssistantWhisperGateway.java"))
                     .map(Map.Entry::getValue).findFirst().orElseThrow();
+            String groq = textByPath.entrySet().stream()
+                    .filter(entry -> entry.getKey().endsWith("/assistant/GeneratedAssistantGroqClient.java"))
+                    .map(Map.Entry::getValue).findFirst().orElseThrow();
             if (!controller.contains("/api/assistant") || !controller.contains("/plan") || !controller.contains("/voice") || !controller.contains("/apply"))
                 throw new IllegalArgumentException("CU-19 assistant controller must expose plan/voice/apply under /api/assistant.");
             if (!service.contains("previewToken") || !service.contains("PREVIEW_TTL") || !service.contains("pending.put"))
                 throw new IllegalArgumentException("Mutations must use expiring opaque preview tokens before apply.");
-            if (!llama.contains("/v1/chat/completions") || !llama.contains("tool_choice") || !llama.contains("route_data_request"))
-                throw new IllegalArgumentException("CU-19 must reuse llama.cpp native tool calling.");
-            if (!whisper.contains("/inference") || !whisper.contains("audio/wav"))
-                throw new IllegalArgumentException("CU-19 must reuse whisper-server WAV transcription.");
+            if (!llama.contains("groq.chat(request)") || !llama.contains("tool_choice") || !llama.contains("route_data_request")
+                    || !llama.contains("max_completion_tokens") || llama.contains("/props"))
+                throw new IllegalArgumentException("CU-19 must use Groq function calling with bounded completion tokens.");
+            if (!whisper.contains("groq.transcribe") || !whisper.contains("validateWav(bytes)"))
+                throw new IllegalArgumentException("CU-19 must validate WAV before Groq transcription.");
+            if (!groq.contains("/chat/completions") || !groq.contains("/audio/transcriptions") || !groq.contains("audio/wav")
+                    || !groq.contains("Authorization") || !groq.contains("Bearer ") || !groq.contains("Retry-After"))
+                throw new IllegalArgumentException("CU-19 must use authenticated Groq JSON/multipart requests and preserve rate-limit guidance.");
         } catch (Exception exception) {
             add(diagnostics, GeneratedProjectDiagnosticCode.GENERATED_ASSISTANT_ARTIFACT_INVALID, "assistant",
                     "Generated CU-19 assistant is structurally invalid: " + exception.getMessage());

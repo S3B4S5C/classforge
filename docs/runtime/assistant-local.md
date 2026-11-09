@@ -1,5 +1,8 @@
 # Runtime local del Asistente UML — CU08 cerrado
 
+> Referencia histórica para regresión. La ejecución normal y AWS usan Groq
+> desde 2026-11-08: ver [assistant-groq.md](assistant-groq.md).
+
 ClassForge no embebe los modelos dentro de Spring. Usa dos procesos locales persistentes.
 
 ## llama.cpp

@@ -223,7 +223,7 @@ final class GeneratedAssistantMetadataRenderer {
                     }
 
                     public static Command resolve(Intent intent, RawCommand raw) {
-                        if (raw == null) throw new IllegalArgumentException("llama.cpp no produjo un comando de datos.");
+                        if (raw == null) throw new IllegalArgumentException("Groq no produjo un comando de datos.");
                         EntityMeta entity = requireEntity(raw.entity());
                         requireCapability(entity, intent);
 

@@ -157,33 +157,10 @@ public class LlamaCppVisionModelGateway implements VisionModelGateway {
             String passName
     ) {
         try {
-            String requestBody = jsonMapper.writeValueAsString(payload);
-            HttpRequest request = HttpRequest.newBuilder(
-                            URI.create(url + "/v1/chat/completions")
-                    )
-                    .timeout(requestTimeout)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(
-                    request,
-                    HttpResponse.BodyHandlers.ofString()
-            );
-
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw transport(
-                        "El VLM local rechazo la pasada " + passName + ": HTTP "
-                                + response.statusCode()
-                                + responseSuffix(response.body()),
-                        null
-                );
-            }
-
-            JsonNode root = jsonMapper.readTree(response.body());
+            JsonNode root = requestCompletion(payload, passName);
             JsonNode choices = root.get("choices");
             if (choices == null || !choices.isArray() || choices.size() == 0) {
-                throw contract("llama.cpp no devolvio choices en la pasada " + passName + ".");
+                throw contract("El proveedor visual no devolvio choices en la pasada " + passName + ".");
             }
 
             JsonNode first = choices.get(0);
@@ -191,7 +168,7 @@ public class LlamaCppVisionModelGateway implements VisionModelGateway {
             if (finishReason != null && "length".equalsIgnoreCase(finishReason.asString())) {
                 throw contract(
                         "La respuesta visual de la pasada " + passName
-                                + " quedo truncada por max_tokens; no se intenta reparar JSON."
+                                + " quedo truncada por limite de tokens; no se intenta reparar JSON."
                 );
             }
 
@@ -199,7 +176,7 @@ public class LlamaCppVisionModelGateway implements VisionModelGateway {
             JsonNode content = message == null ? null : message.get("content");
             if (content == null || !content.isString() || content.asString().isBlank()) {
                 throw contract(
-                        "llama.cpp no devolvio contenido JSON textual en la pasada " + passName + "."
+                        "El proveedor visual no devolvio contenido JSON textual en la pasada " + passName + "."
                 );
             }
             return content.asString();
@@ -220,6 +197,23 @@ public class LlamaCppVisionModelGateway implements VisionModelGateway {
                     exception
             );
         }
+    }
+
+    /** Transport seam shared by remote providers; proposal parsing remains fail-closed. */
+    protected JsonNode requestCompletion(Map<String, Object> payload, String passName) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(url + "/v1/chat/completions"))
+                .timeout(requestTimeout)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(jsonMapper.writeValueAsString(payload)))
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw transport(
+                    "El VLM local rechazo la pasada " + passName + ": HTTP " + response.statusCode()
+                            + responseSuffix(response.body()), null
+            );
+        }
+        return jsonMapper.readTree(response.body());
     }
 
     Map<String, Object> requestPayload(

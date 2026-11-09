@@ -9,10 +9,13 @@ spring:
     open-in-view: false
 app:
   assistant:
-    llama-url: ${r'${LLAMA_URL:http://127.0.0.1:8092}'}
-    llama-model: ${r'${LLAMA_MODEL:local-model}'}
-    whisper-url: ${r'${WHISPER_URL:http://127.0.0.1:8093}'}
-    whisper-language: ${r'${WHISPER_LANGUAGE:es}'}
+    groq:
+      api-key: ${r'${GROQ_API_KEY:}'}
+      base-url: ${r'${GROQ_BASE_URL:https://api.groq.com/openai/v1}'}
+      text-model: ${r'${GROQ_TEXT_MODEL:openai/gpt-oss-120b}'}
+      speech-model: ${r'${GROQ_SPEECH_MODEL:whisper-large-v3-turbo}'}
+      language: ${r'${GROQ_LANGUAGE:es}'}
+      request-timeout-millis: ${r'${GROQ_REQUEST_TIMEOUT_MILLIS:90000}'}
     api-base-url: ${r'${APP_API_BASE_URL:http://127.0.0.1:8080}'}
 <#if api.authEnabled()>  security:
     jwt-secret: ${r'${JWT_SECRET:classforge-change-me-before-production}'}

@@ -1,5 +1,9 @@
 # Despliegue AWS para la demostración final (`aws-demo`)
 
+> Referencia histórica de Bedrock. Desde 2026-11-08, el perfil y bundle activos
+> usan únicamente Groq para texto, visión y voz. Usar
+> [assistant-groq.md](assistant-groq.md) para la configuración vigente.
+
 Fecha de baseline: **19-09-2026**.
 
 Este runbook despliega **la misma aplicación ClassForge** usada localmente, pero cambia los adaptadores de inferencia de texto/visión por Amazon Bedrock. El dominio UML, comandos, validadores, OpenCV, generación de aplicaciones, XMI, colaboración y frontend no cambian.

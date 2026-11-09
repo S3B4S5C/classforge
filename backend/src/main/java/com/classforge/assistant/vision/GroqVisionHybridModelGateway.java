@@ -1,0 +1,37 @@
+package com.classforge.assistant.vision;
+
+import com.classforge.assistant.groq.GroqClient;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+
+import java.util.Map;
+
+/** Keeps class mapping, edge and multiplicity validation shared with the OpenCV pipeline. */
+@Component
+@ConditionalOnProperty(name = "classforge.assistant.vision.provider", havingValue = "groq")
+public class GroqVisionHybridModelGateway extends LlamaCppVisionHybridModelGateway {
+    private final GroqClient client;
+
+    public GroqVisionHybridModelGateway(
+            JsonMapper jsonMapper,
+            VisionHybridPromptBuilder promptBuilder,
+            GroqClient client,
+            @Value("${classforge.assistant.groq.vision-model:qwen/qwen3.8-27b}") String model,
+            @Value("${classforge.assistant.vision.dense-hybrid.localization-max-completion-tokens:1200}") int localizationTokens,
+            @Value("${classforge.assistant.vision.dense-hybrid.relationship-max-completion-tokens:512}") int relationshipTokens,
+            @Value("${classforge.assistant.vision.dense-hybrid.multiplicity-max-completion-tokens:128}") int multiplicityTokens
+    ) {
+        // The overridden transport exclusively uses GroqClient's URL, authentication and timeout.
+        super(jsonMapper, promptBuilder, "http://unused.invalid", model, 1,
+                localizationTokens, relationshipTokens, multiplicityTokens);
+        this.client = client;
+    }
+
+    @Override
+    protected JsonNode requestCompletion(Map<String, Object> payload, String stage) {
+        return GroqVisionCompletion.request(client, payload);
+    }
+}

@@ -14,6 +14,9 @@ final class GeneratedTextValidator {
     private static final Set<String> ALLOWED_RUNTIME_PLACEHOLDERS = Set.of(
             "DB_URL", "DB_USERNAME", "DB_PASSWORD", "JWT_SECRET",
             "LLAMA_URL", "LLAMA_MODEL", "WHISPER_URL", "WHISPER_LANGUAGE", "APP_API_BASE_URL",
+            "GROQ_API_KEY", "GROQ_BASE_URL", "GROQ_TEXT_MODEL", "GROQ_SPEECH_MODEL", "GROQ_LANGUAGE", "GROQ_REQUEST_TIMEOUT_MILLIS",
+            "app.assistant.groq.api-key", "app.assistant.groq.base-url", "app.assistant.groq.text-model",
+            "app.assistant.groq.speech-model", "app.assistant.groq.language", "app.assistant.groq.request-timeout-millis",
             "app.security.jwt-secret", "app.security.jwt-expiration-seconds",
             "app.assistant.llama-url", "app.assistant.llama-model", "app.assistant.whisper-url",
             "app.assistant.whisper-language", "app.assistant.api-base-url");

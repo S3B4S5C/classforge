@@ -35,12 +35,13 @@ final class GeneratedAssistantApplicationRenderer {
                     }
 
                     public PlanResponse plan(String text, String authorization) { return planText(text, authorization, "TEXT"); }
+                    public boolean isConfigured() { return llama.isConfigured(); }
                     public PlanResponse voice(MultipartFile audio, String authorization) {
                         String transcript = whisper.transcribe(audio);
                         try {
                             return planText(transcript, authorization, "VOICE");
                         } catch (IllegalArgumentException exception) {
-                            throw new IllegalArgumentException("Whisper entendio: \\\"" + abbreviate(transcript, 220) + "\\\". "
+                            throw new IllegalArgumentException("Groq Whisper entendio: \\\"" + abbreviate(transcript, 220) + "\\\". "
                                     + (exception.getMessage() == null ? "No se pudo planificar la instruccion." : exception.getMessage()), exception);
                         }
                     }
@@ -111,6 +112,7 @@ final class GeneratedAssistantApplicationRenderer {
                 import java.util.Map;
                 import org.springframework.http.HttpStatus;
                 import org.springframework.http.MediaType;
+                import org.springframework.http.ResponseEntity;
                 import org.springframework.web.bind.annotation.ExceptionHandler;
                 import org.springframework.web.bind.annotation.GetMapping;
                 import org.springframework.web.bind.annotation.PostMapping;
@@ -148,7 +150,7 @@ final class GeneratedAssistantApplicationRenderer {
 
                     @GetMapping("/capabilities")
                     public Map<String, Object> capabilities() {
-                        return Map.of("text", true, "voice", true, "intents", java.util.Arrays.stream(Intent.values()).map(Enum::name).toList());
+                        return Map.of("provider", "groq", "text", service.isConfigured(), "voice", service.isConfigured(), "intents", java.util.Arrays.stream(Intent.values()).map(Enum::name).toList());
                     }
 
                     @ExceptionHandler(IllegalArgumentException.class)
@@ -160,7 +162,17 @@ final class GeneratedAssistantApplicationRenderer {
                     @ExceptionHandler(IllegalStateException.class)
                     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
                     public Map<String, String> unavailable(IllegalStateException exception) {
-                        return Map.of("error", "ASSISTANT_RUNTIME_UNAVAILABLE", "message", exception.getMessage() == null ? "Runtime local no disponible." : exception.getMessage());
+                        return Map.of("error", "ASSISTANT_RUNTIME_UNAVAILABLE", "message", "No se pudo completar la solicitud del asistente Groq.");
+                    }
+
+                    @ExceptionHandler(GeneratedAssistantGroqClient.ProviderException.class)
+                    public ResponseEntity<Map<String, Object>> providerUnavailable(GeneratedAssistantGroqClient.ProviderException exception) {
+                        boolean rateLimited = exception.statusCode() == 429;
+                        long wait = exception.retryAfterSeconds();
+                        var response = ResponseEntity.status(rateLimited ? 429 : 503);
+                        if (rateLimited) response.header("Retry-After", Long.toString(wait));
+                        return response.body(Map.of("error", rateLimited ? "ASSISTANT_RATE_LIMITED" : "ASSISTANT_RUNTIME_UNAVAILABLE",
+                                "message", exception.getMessage(), "retryAfterSeconds", rateLimited ? wait : 0L));
                     }
                 }
                 """, pkg);
