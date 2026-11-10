@@ -44,11 +44,14 @@ try {
     $fingerprint = $digestMatch.Groups[1].Value.ToUpperInvariant()
     $badging = (& $aapt dump badging $apk) -join "`n"
     if ($LASTEXITCODE -ne 0 -or $badging -notmatch "package: name='com.classforge.app'" -or $badging -notmatch "sdkVersion:'24'" -or $badging -notmatch "targetSdkVersion:'36'") { throw 'APK package/SDK differs from the release contract.' }
+    $versionCode = [regex]::Match($badging,"versionCode='([0-9]+)'").Groups[1].Value
+    $versionName = [regex]::Match($badging,"versionName='([^']+)'").Groups[1].Value
+    if (-not $versionCode -or -not $versionName) { throw 'APK version metadata is missing.' }
     & $NodeCommand (Join-Path $PSScriptRoot 'android-release.mjs') create com.classforge.app $fingerprint (Join-Path $privateDir 'assetlinks.json')
     if ($LASTEXITCODE -ne 0) { throw 'Unable to produce assetlinks.json.' }
     $hash = (Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash.ToLowerInvariant()
     [IO.File]::WriteAllText("$apk.sha256","$hash  classforge.apk`n")
-    $metadata = [ordered]@{packageName='com.classforge.app';versionName='1.0.0';versionCode=1;minSdk=24;targetSdk=36;origin='https://classforge-tiago-15124.eastus.cloudapp.azure.com';launchUrl='https://classforge-tiago-15124.eastus.cloudapp.azure.com/projects';apkSha256=$hash;signingCertificateSha256=$fingerprint;builtAtUtc=[DateTime]::UtcNow.ToString('o')}
+    $metadata = [ordered]@{packageName='com.classforge.app';versionName=$versionName;versionCode=[int]$versionCode;minSdk=24;targetSdk=36;origin='https://classforge-tiago-15124.eastus.cloudapp.azure.com';launchUrl='https://classforge-tiago-15124.eastus.cloudapp.azure.com/projects';apkSha256=$hash;signingCertificateSha256=$fingerprint;builtAtUtc=[DateTime]::UtcNow.ToString('o')}
     [IO.File]::WriteAllText((Join-Path $privateDir 'release.json'),($metadata | ConvertTo-Json),[Text.UTF8Encoding]::new($false))
     Write-Host "Verified signed APK: $apk"
     Write-Host "APK SHA256: $hash"

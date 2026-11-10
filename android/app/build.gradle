@@ -19,6 +19,7 @@ android {
         targetSdk 36
         versionCode 1
         versionName '1.0.0'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     signingConfigs {
         release {
@@ -44,8 +45,12 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
     lint { abortOnError true; checkReleaseBuilds true }
+    testBuildType 'release'
 }
 
 dependencies {
     implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.3.0'
+    androidTestImplementation 'junit:junit:4.13.2'
 }
