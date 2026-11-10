@@ -1,0 +1,23 @@
+spring:
+  mongodb:
+    uri: ${CLASSFORGE_MONGODB_URI}
+
+server:
+  port: ${SERVER_PORT:8080}
+  forward-headers-strategy: framework
+  error:
+    include-message: never
+    include-stacktrace: never
+
+classforge:
+  web:
+    spa:
+      enabled: true
+  security:
+    jwt:
+      secret: ${CLASSFORGE_JWT_SECRET}
+    websocket:
+      allowed-origin-patterns: ${CLASSFORGE_WEBSOCKET_ALLOWED_ORIGINS}
+  assistant:
+    groq:
+      api-key: ${GROQ_API_KEY}

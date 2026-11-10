@@ -64,6 +64,29 @@ tasks.named('processResources') {
     from('gradlew.bat') { into 'generation/spring/static' }
 }
 
+// Azure publishes one JAR. Keep frontend staging separate from main resources so
+// subsequent local/AWS builds cannot retain Angular files from a previous build.
+def frontendDist = providers.gradleProperty('frontendDist')
+def frontendIndexFile = frontendDist.isPresent() ? file(frontendDist.get() + '/index.html') : null
+def azureFrontend = tasks.register('prepareAzureFrontend', Sync) {
+    onlyIf { frontendDist.isPresent() }
+    from(frontendDist.orElse('unused-frontend-directory')) {
+        exclude '**/.env*', '**/*.map'
+    }
+    into layout.buildDirectory.dir('azure-frontend')
+    doFirst {
+        if (frontendIndexFile == null || !frontendIndexFile.isFile()) {
+            throw new GradleException('frontendDist must point to the Angular browser output containing index.html')
+        }
+    }
+}
+tasks.named('bootJar') {
+    if (frontendDist.isPresent()) {
+        dependsOn azureFrontend
+        from(azureFrontend) { into 'BOOT-INF/classes/static' }
+    }
+}
+
 tasks.withType(JavaCompile).configureEach {
     options.release = 21
 }
