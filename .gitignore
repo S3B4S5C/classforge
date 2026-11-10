@@ -52,3 +52,12 @@ classforge-aws-deploy-bundle.zip
 deploy/azure/*.local.json
 deploy/azure/vm/*.local.json
 deploy/azure/vm/*.local.env
+
+# Android build tools, signing material and release binaries
+.android-release/
+android/.gradle/
+android/.kotlin/
+android/local.properties
+android/**/build/
+*.keystore
+*.jks

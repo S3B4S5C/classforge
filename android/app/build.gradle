@@ -1,0 +1,51 @@
+plugins { id 'com.android.application' }
+
+def signingFile = System.getenv('CLASSFORGE_ANDROID_KEYSTORE')
+def signingPassword = System.getenv('CLASSFORGE_ANDROID_STORE_PASSWORD')
+def signingAlias = System.getenv('CLASSFORGE_ANDROID_KEY_ALIAS')
+def signingKeyPassword = System.getenv('CLASSFORGE_ANDROID_KEY_PASSWORD')
+if (gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') }
+        && (!signingFile || !signingPassword || !signingAlias || !signingKeyPassword)) {
+    throw new GradleException('Release signing is missing. Use scripts/android-build.ps1 with private signing configuration.')
+}
+
+android {
+    namespace 'com.classforge.app'
+    compileSdk 36
+    buildToolsVersion '35.0.0'
+    defaultConfig {
+        applicationId 'com.classforge.app'
+        minSdk 24
+        targetSdk 36
+        versionCode 1
+        versionName '1.0.0'
+    }
+    signingConfigs {
+        release {
+            if (signingFile) {
+                storeFile file(signingFile)
+                storePassword signingPassword
+                keyAlias signingAlias
+                keyPassword signingKeyPassword
+                enableV1Signing true
+                enableV2Signing true
+                enableV3Signing true
+            }
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    lint { abortOnError true; checkReleaseBuilds true }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+}
