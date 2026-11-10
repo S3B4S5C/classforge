@@ -6,6 +6,13 @@ for variable in CLASSFORGE_MONGODB_URI CLASSFORGE_JWT_SECRET CLASSFORGE_WEBSOCKE
     exit 1
   fi
 done
+if [[ ${CLASSFORGE_PUSH_ENABLED:-false} == true ]]; then
+  for variable in CLASSFORGE_PUSH_VAPID_PUBLIC_KEY CLASSFORGE_PUSH_VAPID_PRIVATE_KEY CLASSFORGE_PUSH_VAPID_SUBJECT; do
+    if [[ -z ${!variable:-} ]]; then
+      echo "Required push setting is empty: $variable" >&2; exit 1
+    fi
+  done
+fi
 if [[ ${#CLASSFORGE_JWT_SECRET} -lt 64 ]]; then
   echo 'CLASSFORGE_JWT_SECRET must contain at least 64 characters.' >&2
   exit 1

@@ -29,6 +29,14 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'com.auth0:java-jwt:4.6.0'
+    implementation('nl.martijndwars:web-push:5.1.2') {
+        exclude group: 'org.bouncycastle', module: 'bcprov-jdk15on'
+        exclude group: 'org.apache.httpcomponents', module: 'httpasyncclient'
+        exclude group: 'org.asynchttpclient', module: 'async-http-client'
+        exclude group: 'com.beust', module: 'jcommander'
+    }
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.86'
+    implementation 'org.bitbucket.b_c:jose4j:0.9.7'
     implementation 'org.openpnp:opencv:4.9.0-0'
     implementation 'org.freemarker:freemarker'
     implementation 'org.apache.commons:commons-compress:1.28.0'

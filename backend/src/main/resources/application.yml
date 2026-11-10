@@ -19,6 +19,11 @@ spring:
 server:
   port: 8082
 classforge:
+  push:
+    enabled: ${CLASSFORGE_PUSH_ENABLED:false}
+    public-key: ${CLASSFORGE_PUSH_VAPID_PUBLIC_KEY:}
+    private-key: ${CLASSFORGE_PUSH_VAPID_PRIVATE_KEY:}
+    subject: ${CLASSFORGE_PUSH_VAPID_SUBJECT:https://classforge-tiago-15124.eastus.cloudapp.azure.com}
   activity:
     sessions:
       inactivity-timeout: ${CLASSFORGE_SESSION_INACTIVITY_TIMEOUT:PT30M}

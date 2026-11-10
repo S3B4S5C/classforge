@@ -1,0 +1,12 @@
+import {generateKeyPairSync} from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+const output=process.argv[2];
+if(!output)throw Error('Usage: node scripts/push-create-vapid.mjs PRIVATE_ENV_OUTPUT');
+if(fs.existsSync(output))throw Error('VAPID file already exists. Preserve the key for current subscriptions.');
+const {publicKey,privateKey}=generateKeyPairSync('ec',{namedCurve:'prime256v1'});
+const pub=publicKey.export({format:'jwk'}),priv=privateKey.export({format:'jwk'});
+const encoded=Buffer.concat([Buffer.from([4]),Buffer.from(pub.x,'base64url'),Buffer.from(pub.y,'base64url')]).toString('base64url');
+fs.mkdirSync(path.dirname(output),{recursive:true,mode:0o700});
+fs.writeFileSync(output,`CLASSFORGE_PUSH_ENABLED=true\nCLASSFORGE_PUSH_VAPID_PUBLIC_KEY=${encoded}\nCLASSFORGE_PUSH_VAPID_PRIVATE_KEY=${priv.d}\nCLASSFORGE_PUSH_VAPID_SUBJECT=https://classforge-tiago-15124.eastus.cloudapp.azure.com\n`,{flag:'wx',mode:0o600});
+console.log('Private VAPID configuration created; key values were not printed.');
