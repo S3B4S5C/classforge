@@ -1,0 +1,4 @@
+# Activate together with azure: SPRING_PROFILES_ACTIVE=azure,azure-vm
+server:
+  address: 127.0.0.1
+  port: 8082

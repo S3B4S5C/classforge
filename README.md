@@ -153,7 +153,7 @@ Groq Free tiene cuotas; el modelo visual es preview. Consultar
 
 ## Persistencia
 
-Para preparar el hosting Azure (JAR completo, infraestructura y publicación), ver
+Para preparar una VM Azure (Ubuntu, JAR completo, nginx HTTPS/WSS y systemd), ver
 [despliegue Azure](docs/runtime/azure-deployment.md). La preparación no crea recursos.
 
 - MongoDB con Spring Data MongoDB para toda la base propia de ClassForge;

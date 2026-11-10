@@ -50,3 +50,5 @@ classforge-aws-deploy-bundle.zip
 # Azure artifacts and private deployment parameters
 .azure-deploy/
 deploy/azure/*.local.json
+deploy/azure/vm/*.local.json
+deploy/azure/vm/*.local.env

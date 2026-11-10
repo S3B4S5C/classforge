@@ -60,4 +60,5 @@ suscripción/recursos Azure, URI y allowlist Atlas y smoke contra el hostname p�
 Compilar Bicep no verifica cuotas regionales, permisos ni conexión real Azure/Atlas.
 El workflow se revisó y parseó localmente; no se ejecutó en GitHub Actions.
 
-Runbook: [despliegue Azure](../../runtime/azure-deployment.md).
+Runbook de esa preparación: [App Service](../../runtime/azure-app-service-deployment.md).
+El10nov2026 el usuario eligió VM; la guía vigente es [Azure VM](../../runtime/azure-vm-deployment.md).
