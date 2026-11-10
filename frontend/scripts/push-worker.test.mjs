@@ -44,3 +44,23 @@ test('logout acknowledges only after an in-flight notification is closed',async(
   await Promise.all([pushDone,logoutDone]);
   assert.deepEqual(order,['show','close','ack']);
 });
+test('notification click focuses the existing window before awaiting navigation',async()=>{
+  const handlers={},order=[];
+  const indexedDB={open:()=>{const request={};queueMicrotask(()=>{request.result={transaction:()=>({objectStore:()=>({get:()=>{const read={};queueMicrotask(()=>{read.result=owner;read.onsuccess();});return read;}})})};request.onsuccess();});return request;}};
+  const client={url:origin+'/projects',visibilityState:'visible',focus:async()=>{order.push('focus');},navigate:async()=>{order.push('navigate');return client;}};
+  const self={location:{origin},addEventListener:(type,handler)=>{handlers[type]=handler;},clients:{matchAll:async()=>[client],openWindow:async()=>order.push('open')}};
+  const source=(await readFile(new URL('../public/push-worker.js',import.meta.url),'utf8')).replace(/^import[^\n]+\n/,'');
+  vm.runInNewContext(source,{self,indexedDB,URL,notificationView,safeNotificationUrl});
+  let done;handlers.notificationclick({notification:{close(){},data:{ownerId:owner,url:'/projects/'+owner+'/activity'}},waitUntil:p=>{done=p;}});
+  await done;assert.deepEqual(order,['focus','navigate']);
+});
+for(const failure of ['rejected','null','hidden'])test(`notification click falls back when client is ${failure}`,async()=>{
+  const handlers={},order=[];
+  const indexedDB={open:()=>{const request={};queueMicrotask(()=>{request.result={transaction:()=>({objectStore:()=>({get:()=>{const read={};queueMicrotask(()=>{read.result=owner;read.onsuccess();});return read;}})})};request.onsuccess();});return request;}};
+  const client={url:origin+'/projects',visibilityState:failure==='hidden'?'hidden':'visible',focus:async()=>{order.push('focus');},navigate:async()=>{order.push('navigate');if(failure==='rejected')throw Error('closed');return null;}};
+  const self={location:{origin},addEventListener:(type,handler)=>{handlers[type]=handler;},clients:{matchAll:async()=>[client],openWindow:async()=>order.push('open')}};
+  const source=(await readFile(new URL('../public/push-worker.js',import.meta.url),'utf8')).replace(/^import[^\n]+\n/,'');
+  vm.runInNewContext(source,{self,indexedDB,URL,notificationView,safeNotificationUrl,console:{warn(){}}});
+  let done;handlers.notificationclick({notification:{close(){},data:{ownerId:owner,url:'/projects/'+owner+'/activity'}},waitUntil:p=>{done=p;}});
+  await done;assert.deepEqual(order,failure==='hidden'?['open']:['focus','navigate','open']);
+});

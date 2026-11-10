@@ -27,6 +27,11 @@ Para voz hay que conceder el permiso solicitado al navegador/sitio. No se exige
 almacenamiento amplio, contactos, acceso SSH ni claves de Groq/Mongo en el móvil.
 Las exportaciones XMI/ZIP aparecen en las descargas del dispositivo/navegador.
 
+Desde la versión1.1.0, la campana permite activar notificaciones push de actividad
+y sesiones cerradas. Android solicita permiso para **ClassForge** al activarlas.
+Instalar la actualización sobre el APK anterior conserva la firma y los datos.
+Ver [activación y operación de push](push-notifications.md).
+
 Requiere Internet; no es una app de trabajo offline. La sesión y almacenamiento
 del dominio se comparten con el navegador que proporciona TWA. Los cambios de la
 web aparecen al recargar/abrir la app. Paquete, firma o dominio nuevos requieren

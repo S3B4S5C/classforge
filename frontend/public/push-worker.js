@@ -44,9 +44,14 @@ self.addEventListener('notificationclick',event=>{
     const path=current&&data?.ownerId===current?safeNotificationUrl(data.url,self.location.origin):'/projects';
     const absolute=new URL(path,self.location.origin).href;
     for(const client of await self.clients.matchAll({type:'window',includeUncontrolled:true})){
-      if(new URL(client.url).origin!==self.location.origin)continue;
-      try {await client.navigate(absolute);await client.focus();return;}catch{ }
+      try {if(new URL(client.url).origin!==self.location.origin)continue;}catch{continue;}
+      // Hidden Android custom tabs can fail to foreground through focus().
+      // Let the browser open/reuse the application context for background clicks.
+      if(client.visibilityState!=='visible')continue;
+      // Bring a visible window forward before waiting for network navigation.
+      try {await client.focus();}catch{continue;}
+      try {if(await client.navigate(absolute))return;}catch(error){console.warn('ClassForge push navigation failed:',error.name);}
     }
     await self.clients.openWindow(absolute);
-  })());
+  })().catch(error=>console.warn('ClassForge push window failed:',error.name)));
 });
