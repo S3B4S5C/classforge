@@ -2,7 +2,10 @@
 
 Destino elegido por el usuario el10nov2026: **VM Ubuntu24.04 LTS x64**, Java21,
 nginx HTTPS/WSS, systemd y JAR completo con Angular. Groq sigue como única IA.
-Esta guía prepara una VM dedicada; no se ha creado ni modificado una VM real.
+Despliegue activo: [ClassForge](https://classforge-tiago-15124.eastus.cloudapp.azure.com).
+Se publicó el10nov2026 en una VM Standard_D2als_v7 en East US, con MongoDB Atlas
+Free. La [evidencia del despliegue real](../evidence/parcial2/azure-vm-live.md)
+registra las comprobaciones. Los siguientes pasos permiten reproducirlo.
 
 ## Archivos y requisitos
 

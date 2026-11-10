@@ -1,5 +1,8 @@
 # Preparación Azure VM — evidencia
 
+Este documento conserva la preparación previa. El despliegue remoto posterior
+y sus comprobaciones están en [Azure VM publicada](azure-vm-live.md).
+
 Fecha: 10 de noviembre de 2026. Base96d21e8, rama `tiago`.
 El usuario eligió VM Azure. La guía vigente es
 [Azure VM](../../runtime/azure-vm-deployment.md).
