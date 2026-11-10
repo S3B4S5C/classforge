@@ -1,6 +1,6 @@
 # APK ClassForge conectado — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Entregar un APK firmado conectado al ClassForge desplegado y verificarlo.
 **Architecture:** TWA oficial, mismo HTTPS/API/WSS que web, DAL por nginx.
@@ -31,12 +31,12 @@
 `normalizeFingerprint(value)`; build produce `.android-release/classforge.apk`,
 checksum, `assetlinks.json` y manifiesto público de metadatos sin secretos.
 
-- [ ] Escribir tests DAL: huella válida normalizada, rechazo de huella corta/nohex,
+- [x] Escribir tests DAL: huella válida normalizada, rechazo de huella corta/nohex,
   package inválido y origen configurado sin comodines. Ejecutar RED.
-- [ ] Implementar utilidades mínimas y módulo Android con launcher oficial.
-- [ ] Preparar firma privada, SDK local y wrapper verificado; ejecutar tests GREEN.
-- [ ] Build release/lint, apksigner verify, aapt dump, comprobar huella vs DAL.
-- [ ] Commit del módulo/scripts públicos; no agregar herramientas/secretos/artefactos.
+- [x] Implementar utilidades mínimas y módulo Android con launcher oficial.
+- [x] Preparar firma privada, SDK local y wrapper verificado; ejecutar tests GREEN.
+- [x] Build release/lint, apksigner verify, aapt dump, comprobar huella vs DAL.
+- [x] Commit del módulo/scripts públicos; no agregar herramientas/secretos/artefactos.
 
 ## Task 2: Publicación Android junto al sistema existente
 
@@ -45,18 +45,18 @@ checksum, `assetlinks.json` y manifiesto público de metadatos sin secretos.
 **Interfaces:** consume artefactos de Task1; publica `/.well-known/assetlinks.json`
 y `/android/classforge.apk`; no necesita reiniciar Java.
 
-- [ ] Validar rechazo de paquete incompleto/huellas inconsistentes antes de SSH.
-- [ ] Instalar archivos públicos mediante staging, respaldo y nginx -t/reload.
-- [ ] Verificar HTTPS200/JSON DAL, SHA del APK descargado y smoke previo de hosting.
-- [ ] Documentar instalación y actualizaciones; commit.
+- [x] Validar rechazo de paquete incompleto/huellas inconsistentes antes de SSH.
+- [x] Instalar archivos públicos mediante staging, respaldo y nginx -t/reload.
+- [x] Verificar HTTPS200/JSON DAL, SHA del APK descargado y smoke previo de hosting.
+- [x] Documentar instalación y actualizaciones; commit.
 
 ## Task 3: Comprobación Android y cierre
 
 **Files:** evidencia `docs/evidence/parcial2/android-connected.md`, guía/README.
 **Interfaces:** consume APK/URL de Tasks1–2 y cuentas sintéticas existentes.
 
-- [ ] Instalar y abrir APK en emulador con navegador compatible.
-- [ ] Verificar asociación TWA, login, proyecto, cambios compartidos y back.
-- [ ] Probar archivo de imagen, exportaciones y voz; registrar límites físicos.
-- [ ] Revisar diff completo con un reviewer fresco y corregir hallazgos importantes.
-- [ ] Smoke final, checksum/firma, commit/push `tiago`, entregar enlace APK.
+- [x] Instalar y abrir APK en emulador con navegador compatible.
+- [x] Verificar asociación TWA, login, proyecto, cambios compartidos y back.
+- [x] Probar archivo de imagen y exportaciones; documentar que el micrófono físico de voz requiere una prueba en el teléfono.
+- [x] Revisar diff completo con un reviewer fresco y corregir hallazgos importantes.
+- [x] Smoke final, checksum/firma, commit/push `tiago`, entregar enlace APK.

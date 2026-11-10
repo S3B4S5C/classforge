@@ -6,6 +6,10 @@ ClassForge es una herramienta CASE web, colaborativa y offline-first para modela
 
 La visión completa del producto está en `docs/product/product.md`. El estado realmente implementado está en `docs/puds/current-status.md`.
 
+Cliente Android conectado: [descargar APK firmado](https://classforge-tiago-15124.eastus.cloudapp.azure.com/android/classforge.apk).
+Usa la misma instancia de Azure, cuentas, proyectos e IA que la web. Requiere
+Internet y navegador Android compatible. [Instalación y compilación](docs/runtime/android-app.md).
+
 ## Estado actual
 
 **Fase de Transición — Ciclos 1–10 CERRADOS; CU-27 demo reproducible final CERRADO.**
