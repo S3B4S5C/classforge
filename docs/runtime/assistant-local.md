@@ -135,7 +135,11 @@ CLASSFORGE_ASSISTANT_VISION_HYBRID_RELATIONSHIP_TOKENS=512
 CLASSFORGE_ASSISTANT_VISION_HYBRID_MULTIPLICITY_TOKENS=128
 ```
 
-`CLASSFORGE_ASSISTANT_VISION_HYBRID=false` fuerza semantic-only como kill switch. `CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK=true` reactiva temporalmente el fallback semántico para rollback/debug; no es el default de producto.
+El bloque anterior habilita el modo híbrido explícitamente para el runtime local.
+El default general y el despliegue Groq usan `CLASSFORGE_ASSISTANT_VISION_HYBRID=false`
+y una sola lectura semántica, para evitar agotar la cuota gratuita con consultas
+por conector. `CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK=true` reactiva
+temporalmente el fallback semántico para rollback/debug; no es el default de producto.
 
 ### Health
 

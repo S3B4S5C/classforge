@@ -148,12 +148,15 @@ semantic max completion: 3200
 hybrid mapping:          1200
 relationship:             512
 multiplicity:             128
-hybrid enabled:          true
+hybrid enabled:          false
 min semantic classes:       4
 hybrid fallback:         false
 ```
 
-`CLASSFORGE_ASSISTANT_VISION_HYBRID=false` conserva un kill switch semantic-only. `CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK=true` conserva rollback/debug explícito, pero no es el default productivo.
+El despliegue Groq usa una sola pasada semántica para ajustarse a la cuota gratuita.
+`CLASSFORGE_ASSISTANT_VISION_HYBRID=true` habilita el modo híbrido explícitamente
+para entornos con cuota suficiente. `CLASSFORGE_ASSISTANT_VISION_HYBRID_FALLBACK=true`
+conserva rollback/debug explícito, pero no es el default productivo.
 
 ### Calibraciones cerradas
 

@@ -21,7 +21,7 @@ public class GroqVisionModelGateway extends LlamaCppVisionModelGateway {
             GroqClient client,
             @Value("${classforge.assistant.groq.vision-model:qwen/qwen3.8-27b}") String model,
             @Value("${classforge.assistant.vision.max-completion-tokens:3200}") int maxCompletionTokens,
-            @Value("${classforge.assistant.vision.dense-two-pass-enabled:true}") boolean denseTwoPassEnabled,
+            @Value("${classforge.assistant.vision.dense-two-pass-enabled:false}") boolean denseTwoPassEnabled,
             @Value("${classforge.assistant.vision.dense-two-pass-min-classes:4}") int denseTwoPassMinClasses,
             @Value("${classforge.assistant.vision.relationship-max-completion-tokens:1800}") int relationshipMaxCompletionTokens
     ) {

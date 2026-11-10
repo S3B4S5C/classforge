@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProjectRequestScope, type ProjectRequestToken } from '../state/workspace/project-request-scope';
+import { formatAssistantImageError } from './assistant-image-error.utils';
 import {
   MatButtonModule,
 } from '@angular/material/button';
@@ -301,15 +302,6 @@ export class ProjectImageUmlPanelComponent
   }
 
   private formatError(response: HttpErrorResponse): string {
-    if (response.status === 409) {
-      return 'El proyecto cambió. Analiza la imagen nuevamente.';
-    }
-    if (response.error?.visionReason === 'OUTPUT_CONTRACT') {
-      return 'No pudimos interpretar esta imagen. Prueba otra vez o usa una imagen más clara.';
-    }
-    if (response.error?.visionReason === 'TRANSPORT') {
-      return 'No se pudo analizar la imagen. Intenta nuevamente.';
-    }
-    return 'No se pudo completar el análisis.';
+    return formatAssistantImageError(response);
   }
 }

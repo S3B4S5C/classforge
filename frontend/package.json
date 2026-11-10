@@ -12,7 +12,7 @@
     "test:characterization": "npm run test:generation && npm run test:commands && npm run test:workspace && npm run test:assistant && npm run test:activity && npm run test:push",
     "test:push": "node --experimental-strip-types --test src/app/features/notifications/push-*.test.ts scripts/push-worker.test.mjs scripts/push-session.test.mjs",
     "test:activity": "node --experimental-transform-types --experimental-loader ./scripts/ts-extension-loader.mjs --test src/app/features/activity/*.test.ts src/app/features/notifications/*.test.ts",
-    "test:assistant": "node --experimental-transform-types --experimental-loader ./scripts/ts-extension-loader.mjs --test src/app/features/project-assistant/*.test.ts",
+    "test:assistant": "node --experimental-transform-types --experimental-loader ./scripts/ts-extension-loader.mjs --test src/app/features/project-assistant/*.test.ts src/app/projects/assistant/*.test.ts",
     "test:workspace": "node --experimental-transform-types --experimental-loader ./scripts/ts-extension-loader.mjs --test src/app/projects/state/workspace/*.test.ts"
   },
   "engines": {

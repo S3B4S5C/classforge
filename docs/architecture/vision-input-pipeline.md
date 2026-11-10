@@ -147,7 +147,13 @@ Qwen3-VL recibe la imagen y un contexto estructurado reducido del proyecto. La p
 
 No recibe autoridad para generar UUID ni mutar el proyecto.
 
-El routing productivo usa:
+Con Groq y cuota gratuita, el routing productivo usa una sola pasada semántica
+(`CLASSFORGE_ASSISTANT_VISION_HYBRID=false`, también el default general), validada
+antes del preview. Las consultas por conector del modo híbrido pueden agotar la
+cuota después de una primera lectura válida. Ver la
+[verificación del arreglo](../evidence/parcial2/image-reader-groq-fix.md).
+
+El routing híbrido de las calibraciones se puede habilitar explícitamente:
 
 ```text
 CLASSFORGE_ASSISTANT_VISION_HYBRID=true

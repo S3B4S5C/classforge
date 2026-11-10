@@ -159,6 +159,15 @@ y crear/invitar al proyecto normalmente.
 
 ## 6. Comprobar la publicación
 
+El lector de imágenes usa una sola consulta visual a Groq, con validación de
+evidencia, referencias, revisión y preview antes de Apply. Mantener
+`CLASSFORGE_ASSISTANT_VISION_TWO_PASS=false` y
+`CLASSFORGE_ASSISTANT_VISION_HYBRID=false` con la cuota gratuita: el modo híbrido
+realiza consultas adicionales por conector y multiplicidad que pueden agotar
+la cuota aunque la primera lectura sea válida. Puede habilitarse explícitamente
+en entornos con cuota suficiente. Un HTTP429 se muestra con el tiempo de espera
+del proveedor; el análisis no aplica cambios automáticamente.
+
 Desde el equipo:
 
 ```powershell
