@@ -63,5 +63,6 @@ No se creó VM ni se ejecutaron SSH, apt, systemd o Certbot contra una máquina
 remota. La comprobación nginx Windows no sustituye la instalación y validación
 nginx1.24 de Ubuntu24.04. Certificado público, renovación ACME, reglas de red,
 cuota regional, IP pública y conexión Atlas quedan por comprobar en Azure.
-La elección final de MongoDB se consultó al usuario y sigue pendiente; el
-instalador no crea Mongo ni modifica bases habituales.
+El usuario confirmó posteriormente MongoDB Atlas; el instalador no crea Mongo
+ni modifica bases habituales. La guía y los valores de tamaño propuestos se
+actualizaron a B2als_v2, sin reconstruir el bundle (no contiene infraestructura).

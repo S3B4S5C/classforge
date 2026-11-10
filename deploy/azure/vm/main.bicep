@@ -4,7 +4,7 @@ targetScope = 'resourceGroup'
 @maxLength(40)
 param vmName string = 'classforge-vm'
 param location string = resourceGroup().location
-param vmSize string = 'Standard_B2s'
+param vmSize string = 'Standard_B2als_v2'
 param adminUsername string = 'azureuser'
 @description('SSH PUBLIC key only; never pass the private key.')
 @minLength(40)

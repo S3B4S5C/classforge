@@ -3,7 +3,7 @@
 El usuario eligió explícitamente una VM Azure en lugar de App Service.
 La preparación vigente será Ubuntu24.04 LTS, Java21, nginx, HTTPS/WSS y systemd.
 Se conserva el JAR con Angular y Groq, una instancia para el broker STOMP.
-MongoDB Atlas sigue como propuesta hasta recibir la preferencia de base de datos;
+El usuario confirmó MongoDB Atlas como base de datos;
 el backend acepta otro replica set mediante URI. No crear recursos ni conectarse
 a una VM en esta tarea: aún faltan suscripción, IP administrativa y SSH.
 
@@ -30,6 +30,6 @@ con ambos perfiles y smoke HTTP/WS usando Mongo aislado. Revisión independiente
 y Git push a tiago autorizada. Distinguir pruebas locales de validación Azure/TLS.
 
 La VM, IP, disco y tráfico pueden generar costo. El tamaño inicial propuesto
-es Standard_B2s (revisar disponibilidad/cuota regional); no es un compromiso de
+es Standard_B2als_v2 (revisar disponibilidad/cuota regional); no es un compromiso de
 precio ni una creación de recursos. Atlas, DNS y certificado públicos siguen
 pendientes hasta conocer los recursos reales.

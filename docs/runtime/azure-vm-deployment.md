@@ -15,7 +15,7 @@ Esta guía prepara una VM dedicada; no se ha creado ni modificado una VM real.
 Para compilar: JDK21, Node24 compatible, PowerShell y MongoDB replica set para
 pruebas. Para crear recursos: Azure CLI, suscripción seleccionada y cuota regional.
 Para publicar: cliente SSH/SCP, clave SSH y permisos sudo en Ubuntu.
-Tamaño inicial propuesto: Standard_B2s; comprobar disponibilidad y costo de VM,
+Tamaño recomendado: Standard_B2als_v2 (2 vCPU, 4 GiB); comprobar disponibilidad y costo de VM,
 disco e IP en la suscripción. No se requiere GPU. Mantener una sola instancia:
 el broker STOMP y la presencia siguen en memoria.
 
@@ -63,10 +63,8 @@ Usar los outputs `fqdn` e `ipAddress` reales, sin adivinar el nombre DNS.
 
 ## 3. MongoDB y secretos
 
-La propuesta inicial sigue siendo MongoDB Atlas. También se admite un replica
-set existente mediante CLASSFORGE_MONGODB_URI. **No sirve un Mongo standalone**.
-Si se elige instalar Mongo en esta VM, habrá que preparar su replica set, volumen
-y backups antes de arrancar ClassForge; el instalador actual no instala Mongo.
+El usuario confirmó **MongoDB Atlas**. La VM aloja Java/nginx y Atlas conserva
+los datos mediante CLASSFORGE_MONGODB_URI. No instalar MongoDB en esta VM.
 
 En Atlas, crear un usuario `readWrite` para `classforge` y añadir la IP pública
 estática de la VM a la allowlist. La URI debe nombrar explícitamente la base:
@@ -198,3 +196,4 @@ cobrando incluso tras desasignar la VM. Revisar recursos/costos al terminar.
 - [Certificados Ubuntu](https://ubuntu.com/server/docs/how-to/security/obtain-tls-certificates/).
 - [Certbot](https://certbot.eff.org/instructions?os=snap&ws=nginx).
 - [Bicep VM](https://learn.microsoft.com/en-us/azure/templates/microsoft.compute/virtualmachines).
+- [Tamaños Basv2](https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/general-purpose/basv2-series).

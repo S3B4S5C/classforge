@@ -3,7 +3,7 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "vmName": { "value": "classforge-vm" },
-    "vmSize": { "value": "Standard_B2s" },
+    "vmSize": { "value": "Standard_B2als_v2" },
     "adminUsername": { "value": "azureuser" },
     "sshPublicKey": { "value": "" },
     "adminPublicIp": { "value": "" },
