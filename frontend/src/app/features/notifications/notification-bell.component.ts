@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 import { NotificationStore } from './notification.store';
 import type { ProjectNotification } from './notification-model';
+import { PushDeviceService } from './push-device.service';
 
 @Component({
   selector: 'app-notification-bell', imports: [DatePipe, MatButtonModule, RouterLink],
@@ -11,8 +12,9 @@ import type { ProjectNotification } from './notification-model';
 })
 export class NotificationBellComponent {
   readonly store = inject(NotificationStore);
+  readonly push = inject(PushDeviceService);
   readonly expanded = signal(false);
-  toggle(): void { this.expanded.update(value => !value); if (this.expanded()) this.store.refresh(); }
+  toggle(): void { this.expanded.update(value => !value); if (this.expanded()) { this.store.refresh(); void this.push.refresh(); } }
   open(notification: ProjectNotification): void { this.store.read(notification); this.expanded.set(false); }
   @HostListener('document:keydown.escape') escape(): void { this.expanded.set(false); }
 }

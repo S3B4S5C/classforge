@@ -25,6 +25,9 @@ export class NotificationStore {
   readonly updates = new Subject<NotificationEvent>();
 
   constructor() {
+    const pushed = (event:MessageEvent) => { if(event.data?.type==='CLASSFORGE_PUSH' && event.data.ownerId===this.userId) this.refresh(); };
+    navigator.serviceWorker?.addEventListener('message',pushed);
+    this.destroy.onDestroy(()=>navigator.serviceWorker?.removeEventListener('message',pushed));
     effect(() => {
       const token = this.auth.token(), user = this.auth.user()?.id;
       this.changed.next(); this.generation++; this.epoch++; this.headRequest++;

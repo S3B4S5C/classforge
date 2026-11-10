@@ -10,6 +10,22 @@
       <button mat-button type="button" aria-label="Cerrar panel" (click)="expanded.set(false)">Cerrar</button></header>
     <div class="panel-actions"><button mat-button type="button" [disabled]="!store.unread() || store.loading()" (click)="store.readAll()">Marcar todas como leídas</button>
       <button mat-button type="button" [disabled]="store.loading()" (click)="store.refresh()">Actualizar</button></div>
+    <section class="push-settings" aria-label="Notificaciones push">
+      <strong>Avisos en este dispositivo</strong>
+      @if (!push.supported) { <p>Este navegador no permite notificaciones push. Puedes seguir usando la campana.</p> }
+      @else if (!push.enabled()) { <p>Las notificaciones push no están disponibles ahora.</p> }
+      @else {
+        <p>Recibe avisos de actividad y sesiones cerradas aunque cierres ClassForge.</p>
+        @if (push.permission() === 'denied') { <p>El permiso está bloqueado. Puedes cambiarlo en los ajustes de notificaciones de Android o del navegador.</p> }
+        @if (push.active()) {
+          <button mat-button type="button" [disabled]="push.busy()" (click)="push.disable()">Desactivar push</button>
+          <button mat-button type="button" [disabled]="push.busy() || push.permission() === 'denied'" (click)="push.test()">Enviar aviso de prueba</button>
+        } @else {
+          <button mat-button type="button" [disabled]="push.busy() || push.permission() === 'denied'" (click)="push.enable()">Activar notificaciones push</button>
+        }
+      }
+      @if (push.feedback()) { <p role="status">{{ push.feedback() }}</p> }
+    </section>
     @if (store.error()) { <p class="error" role="alert">{{ store.error() }}</p> }
     @if (store.loading() && !store.items().length) { <p class="feedback" role="status">Cargando notificaciones…</p> }
     @if (!store.loading() && !store.items().length) { <div class="feedback"><span class="material-symbols-rounded" aria-hidden="true">notifications_none</span><p>No tienes notificaciones todavía.</p></div> }
