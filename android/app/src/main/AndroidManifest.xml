@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <queries>
+        <package android:name="com.android.chrome" />
+    </queries>
     <application
         android:allowBackup="false"
         android:usesCleartextTraffic="false"
@@ -27,10 +30,14 @@
                 android:value="https://classforge-tiago-15124.eastus.cloudapp.azure.com/projects" />
         </activity>
         <activity
-            android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
+            android:name="com.classforge.app.ClassForgeLauncherActivity"
             android:exported="true">
             <meta-data android:name="android.support.customtabs.trusted.DEFAULT_URL"
                 android:value="https://classforge-tiago-15124.eastus.cloudapp.azure.com/projects" />
+            <meta-data android:name="android.support.customtabs.trusted.LAUNCHING_BROWSER"
+                android:value="com.android.chrome" />
+            <meta-data android:name="android.support.customtabs.trusted.LAUNCHING_BROWSER_NAME"
+                android:value="Google Chrome" />
             <meta-data android:name="android.support.customtabs.trusted.FALLBACK_STRATEGY" android:value="customtabs" />
             <meta-data android:name="android.support.customtabs.trusted.STATUS_BAR_COLOR" android:resource="@color/brand" />
             <meta-data android:name="android.support.customtabs.trusted.NAVIGATION_BAR_COLOR" android:resource="@color/surface" />

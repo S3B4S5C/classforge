@@ -7,8 +7,8 @@ conexiones HTTPS/WSS, sin duplicar backend, base o credenciales.
 ## Instalar y entrar
 
 1. Descargar [classforge.apk](https://classforge-tiago-15124.eastus.cloudapp.azure.com/android/classforge.apk)
-   desde el teléfono Android7 o posterior. Tener Chrome actualizado o un navegador
-   compatible con TWA. El APK se instala directamente; no se publicó en Play Store.
+   desde el teléfono Android 7 o posterior. Tener Google Chrome actualizado,
+   instalado y habilitado. El APK se instala directamente; no se publicó en Play Store.
 2. Abrir el archivo y seguir el instalador de Android. Si solicita permiso para
    instalar desde el navegador/gestor de archivos, el propietario del dispositivo
    debe decidir si habilitar esa fuente para esta instalación.
@@ -31,6 +31,20 @@ Desde la versión1.1.0, la campana permite activar notificaciones push de activi
 y sesiones cerradas. Android solicita permiso para **ClassForge** al activarlas.
 Instalar la actualización sobre el APK anterior conserva la firma y los datos.
 Ver [activación y operación de push](push-notifications.md).
+
+La versión1.1.1 usa explícitamente **Google Chrome** como proveedor del APK.
+Evita que la preferencia del teléfono seleccione Samsung Internet para las
+funciones de push. Chrome debe estar instalado y habilitado; si falta, la app
+muestra el aviso correspondiente. Al cambiar desde otro navegador, puede ser
+necesario iniciar sesión y activar push otra vez en el nuevo perfil de Chrome.
+
+La versión1.1.2 prepara primero el permiso nativo de **ClassForge** en Android 13
+o posterior. Si falta, muestra una explicación con **Activar avisos** y
+**Continuar sin avisos**; el diálogo de Android solo se abre al elegir activar.
+Después se abre Chrome y se activa la suscripción desde la campana. Conceder
+el permiso del sitio o de Chrome no sustituye el permiso nativo de ClassForge.
+Si se omite o rechaza, la app sigue funcionando y puede habilitarse después
+desde los ajustes de notificaciones de Android.
 
 Requiere Internet; no es una app de trabajo offline. La sesión y almacenamiento
 del dominio se comparten con el navegador que proporciona TWA. Los cambios de la

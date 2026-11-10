@@ -52,6 +52,12 @@ export class PushDeviceService {
       registration.active!.postMessage(message,[channel.port2]);
     });
   }
+  private async subscriptionLost(user:string):Promise<void> {
+    if(!this.current(user))return;
+    this.active.set(false);
+    this.feedback.set('La suscripción de este navegador ya no está disponible. Revisa los permisos de notificaciones de ClassForge y Chrome en Android y vuelve a activar push.');
+    await this.bind(null,user);
+  }
   async refresh():Promise<void> {
     const user=this.flow.owner();if(!user||!this.supported||this.busy())return;
     try {
@@ -61,7 +67,8 @@ export class PushDeviceService {
       this.enabled.set(config.enabled);this.publicKey=config.publicKey;this.permission.set(Notification.permission);
       if(!config.enabled)return;
       const registration=await this.registration(false),subscription=await registration?.pushManager.getSubscription();
-      if(!subscription||!this.current(user))return;
+      if(!this.current(user))return;
+      if(!subscription){if(this.active())await this.subscriptionLost(user);return;}
       const status=await this.request(this.http.post<{registered:boolean}>('/api/push/subscriptions/status',{endpoint:subscription.endpoint}));
       if(!this.current(user))return;
       if(status.registered){await this.bind(user);if(this.current(user))this.active.set(true);}
@@ -111,10 +118,14 @@ export class PushDeviceService {
   }
   async test():Promise<void> {
     if(!this.active()||this.busy())return;
+    const user=this.flow.owner();
     this.busy.set(true);this.feedback.set(null);
     try {
       const subscription=await (await this.registration(false))?.pushManager.getSubscription();
-      if(!subscription||!this.current(this.flow.owner()))throw Error('Activa las notificaciones primero.');
+      if(!this.current(user))return;
+      if(!subscription){
+        await this.subscriptionLost(user!);return;
+      }
       await this.request(this.http.post<void>('/api/push/subscriptions/test',{endpoint:subscription.endpoint}));
       this.feedback.set('Aviso de prueba en cola. Debería aparecer en las notificaciones del dispositivo.');
     } catch(error){this.feedback.set(this.message(error,'No pudimos enviar la prueba. Reintenta más tarde.'));}

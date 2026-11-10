@@ -29,6 +29,36 @@ impedir la entrega. No es un canal de entrega garantizada ni habilita trabajo
 offline. Si el permiso está bloqueado, habilitarlo desde ajustes de Android o
 del sitio y volver al panel. Mantener Chrome actualizado para usar el APK.
 
+### Se pierde la suscripción tras enviar una prueba
+
+Un 202 de la API solo confirma que la prueba entró en cola; un 201 del proveedor
+confirma su aceptación, no que Android la haya presentado. Si el navegador
+elimina la suscripción, el panel debe reflejar el estado perdido y limpiar la
+asociación del worker, sin atribuirlo a una desactivación voluntaria del usuario.
+
+Revisar permisos de notificaciones de **ClassForge**, de **Chrome** y del sitio,
+incluidas las categorías de Android. Actualizar Chrome y confirmar que se usa
+el APK 1.1.2 o posterior para estas correcciones. Para comparar con la web, pegar el origen HTTPS en la
+barra de una pestaña nueva de Chrome; tocar el enlace puede abrir el APK por
+App Links. No recrear suscripciones automáticamente para eludir una denegación
+del sistema. El doble diálogo de permisos por sí solo no confirma la causa.
+
+Se reportó este síntoma en un Samsung S20 FE con Android 13/One UI 5.1.
+Al separar la familia del navegador de la versión de Chromium, las peticiones
+fallidas se identificaron como **Samsung Internet** (motor Chromium 143).
+Los envíos observados fueron aceptados por FCM. El APK 1.1.1 selecciona
+explícitamente `com.android.chrome` mediante la configuración oficial de
+Android Browser Helper, con el mismo servicio de delegación y la misma firma.
+Si Chrome falta o está deshabilitado, muestra el aviso de navegador requerido.
+También se reprodujo el síntoma en el emulador con Chrome después de una
+instalación limpia: el navegador obtuvo permiso, mientras ClassForge seguía sin
+`POST_NOTIFICATIONS`; tras la prueba, la suscripción desapareció y el permiso
+web pasó a denegado. La versión1.1.2 ofrece el permiso nativo de ClassForge antes
+de abrir el proveedor, con consentimiento explícito y opción de continuar sin
+avisos. La prueba instrumentada verifica ese orden y el permiso de la app.
+La recepción física en ese Samsung debe confirmarse tras instalar la actualización;
+la prueba del emulador no sustituye esa comprobación.
+
 ## Configuración del servidor
 
 Generar el par solo una vez, en una ubicación privada fuera de Git:
