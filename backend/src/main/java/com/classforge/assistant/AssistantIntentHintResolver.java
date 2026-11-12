@@ -58,7 +58,10 @@ public class AssistantIntentHintResolver {
                         || containsApprox(tokens, "agrupa")
                         || normalized.contains("0..")
                         || normalized.contains("1..")
-                        || normalized.contains("..*");
+                        || normalized.contains("..*")
+                        || normalized.contains("clase intermedia")
+                        || normalized.contains("clase de asociacion")
+                        || normalized.contains("muchos a muchos");
 
         boolean attributeContext =
                 containsApprox(tokens, "atributo")
