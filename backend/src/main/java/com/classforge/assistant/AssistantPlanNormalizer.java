@@ -128,7 +128,8 @@ public class AssistantPlanNormalizer {
                 action.sourceLower(),
                 action.sourceUpper(),
                 action.targetLower(),
-                action.targetUpper()
+                action.targetUpper(),
+                trimOrNull(action.associationClassName())
         );
     }
 
