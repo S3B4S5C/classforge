@@ -166,6 +166,11 @@ public class AssistantIntentHintResolver {
             if (deleteCue) {
                 candidates.add(AssistantActionType.DELETE_RELATIONSHIP);
                 evidence.add("relationship+delete");
+            } else if (createCue
+                    && (normalized.contains("clase intermedia")
+                        || normalized.contains("clase de asociacion"))) {
+                candidates.add(AssistantActionType.CREATE_RELATIONSHIP);
+                evidence.add("relationship+association-class");
             } else if (multiplicityCue || containsApprox(tokens, "existente") || updateCue) {
                 candidates.add(AssistantActionType.UPDATE_RELATIONSHIP);
                 evidence.add("relationship+update");
