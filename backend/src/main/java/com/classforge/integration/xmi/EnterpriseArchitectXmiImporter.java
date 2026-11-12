@@ -172,6 +172,10 @@ public class EnterpriseArchitectXmiImporter {
             if (type.endsWith("Package") || is(child, "nestedPackage")) {
                 context.packageCount++;
                 collectPackagedElements(child, context);
+            } else if (type.endsWith("AssociationClass")) {
+                // UML AssociationClass is simultaneously a Class and an Association.
+                context.classElements.add(child);
+                context.associationElements.add(child);
             } else if (type.endsWith("Class")) {
                 context.classElements.add(child);
             } else if (type.endsWith("Association")) {
@@ -323,13 +327,17 @@ public class EnterpriseArchitectXmiImporter {
                 default -> UmlRelationshipType.ASSOCIATION;
             };
 
+            boolean isAssociationClass = xmiType(association).endsWith("AssociationClass");
+            UUID linkedClassId = isAssociationClass
+                    ? context.classIds.get(associationId) : null;
             result.add(new UmlRelationship(
-                    stableUuid(associationId),
+                    stableUuid(isAssociationClass ? associationId + ":association" : associationId),
                     source.classId(),
                     target.classId(),
                     relationshipType,
                     source.multiplicity(),
-                    target.multiplicity()
+                    target.multiplicity(),
+                    linkedClassId
             ));
         }
         return result;
