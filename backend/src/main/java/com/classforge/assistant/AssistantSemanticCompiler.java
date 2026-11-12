@@ -311,7 +311,8 @@ public class AssistantSemanticCompiler {
                 action.sourceLower(),
                 action.sourceUpper(),
                 action.targetLower(),
-                action.targetUpper()
+                action.targetUpper(),
+                action.associationClassName()
         );
     }
 }
