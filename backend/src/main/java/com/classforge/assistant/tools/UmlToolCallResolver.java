@@ -401,12 +401,14 @@ public class UmlToolCallResolver {
             if (associationClass.id().equals(source.id()) || associationClass.id().equals(target.id())) {
                 throw new AssistantPlanningException("La clase intermedia no puede ser un extremo.");
             }
+            final UUID sourceId = source.id();
+            final UUID targetId = target.id();
             boolean existingAssociation = document.umlModel().relationships().stream()
                     .anyMatch(candidate -> candidate.type() == UmlRelationshipType.ASSOCIATION
-                            && ((candidate.sourceClassId().equals(source.id())
-                                        && candidate.targetClassId().equals(target.id()))
-                                || (candidate.sourceClassId().equals(target.id())
-                                        && candidate.targetClassId().equals(source.id()))));
+                            && ((candidate.sourceClassId().equals(sourceId)
+                                        && candidate.targetClassId().equals(targetId))
+                                || (candidate.sourceClassId().equals(targetId)
+                                        && candidate.targetClassId().equals(sourceId))));
             action = new AssistantPlanAction(
                     existingAssociation ? com.classforge.assistant.AssistantActionType.UPDATE_RELATIONSHIP
                             : action.type(),
