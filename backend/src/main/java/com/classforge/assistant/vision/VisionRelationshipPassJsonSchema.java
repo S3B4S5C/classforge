@@ -22,6 +22,7 @@ public final class VisionRelationshipPassJsonSchema {
                         "properties": {
                           "sourceRef": {"type": "string", "minLength": 1, "maxLength": 120},
                           "targetRef": {"type": "string", "minLength": 1, "maxLength": 120},
+                          "associationClassRef": {"type": "string", "minLength": 1, "maxLength": 120},
                           "type": {
                             "type": "string",
                             "enum": ["ASSOCIATION", "AGGREGATION", "COMPOSITION", "GENERALIZATION"]
