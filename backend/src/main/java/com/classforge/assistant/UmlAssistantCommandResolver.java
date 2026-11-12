@@ -666,14 +666,16 @@ public class UmlAssistantCommandResolver {
                 sourceId,
                 targetId,
                 type,
-                multiplicity(
-                        action.sourceLower(),
-                        action.sourceUpper()
-                ),
-                multiplicity(
-                        action.targetLower(),
-                        action.targetUpper()
-                ),
+                associationClassId != null
+                        && action.sourceLower() == null
+                        && action.sourceUpper() == null
+                        ? new Multiplicity(0, null)
+                        : multiplicity(action.sourceLower(), action.sourceUpper()),
+                associationClassId != null
+                        && action.targetLower() == null
+                        && action.targetUpper() == null
+                        ? new Multiplicity(0, null)
+                        : multiplicity(action.targetLower(), action.targetUpper()),
                 associationClassId
         );
     }
