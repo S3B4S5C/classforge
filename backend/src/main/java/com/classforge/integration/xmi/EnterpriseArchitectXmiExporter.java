@@ -98,6 +98,9 @@ public class EnterpriseArchitectXmiExporter {
             line(xml, 3, "<packagedElement xmi:type=\"" + elementType + "\" xmi:id=\""
                     + relationshipId + "\"" + name + " visibility=\"public\" memberEnd=\"" + sourceEndId + " " + targetEndId + "\">");
             if (associationClass != null) {
+                line(xml, 4, "<ownedComment xmi:type=\"uml:Comment\" xmi:id=\""
+                        + derivedId("EAID", "association-class-relation:" + relationship.id())
+                        + "\" body=\"ClassForgeRelationshipId:" + xmiId("EAID", relationship.id()) + "\"/>");
                 for (UmlAttribute attribute : associationClass.attributes()) {
                     String typeId = attribute.dataType() == UmlDataType.CUSTOM
                             ? customTypes.get(attribute.customTypeName())
