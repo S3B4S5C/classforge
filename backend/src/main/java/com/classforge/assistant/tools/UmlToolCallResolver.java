@@ -391,10 +391,39 @@ public class UmlToolCallResolver {
                 null
         );
 
+        String associationClassName = optionalText(args, "association_class");
+        if (associationClassName != null) {
+            if (relationshipType != UmlRelationshipType.ASSOCIATION) {
+                throw new AssistantPlanningException("Solo ASSOCIATION admite una clase intermedia.");
+            }
+            ExistingClass associationClass = existingClass(associationClassName, catalog, document);
+            requireGroundedClass(userText, associationClass);
+            if (associationClass.id().equals(source.id()) || associationClass.id().equals(target.id())) {
+                throw new AssistantPlanningException("La clase intermedia no puede ser un extremo.");
+            }
+            boolean existingAssociation = document.umlModel().relationships().stream()
+                    .anyMatch(candidate -> candidate.type() == UmlRelationshipType.ASSOCIATION
+                            && ((candidate.sourceClassId().equals(source.id())
+                                        && candidate.targetClassId().equals(target.id()))
+                                || (candidate.sourceClassId().equals(target.id())
+                                        && candidate.targetClassId().equals(source.id()))));
+            action = new AssistantPlanAction(
+                    existingAssociation ? com.classforge.assistant.AssistantActionType.UPDATE_RELATIONSHIP
+                            : action.type(),
+                    action.className(), action.newName(), action.safeAttributes(),
+                    action.attributeName(), action.newAttributeName(), action.dataType(),
+                    action.customTypeName(), action.visibility(), action.nullable(),
+                    action.identifier(), source.name(), target.name(), relationshipType,
+                    action.sourceLower(), action.sourceUpper(),
+                    action.targetLower(), action.targetUpper(), associationClass.name()
+            );
+        }
+
         return new ResolvedAction(
                 action,
                 List.of(source.reference(), target.reference()),
-                "Crear " + relationshipType + " " + source.name() + " -> " + target.name()
+                "Crear/actualizar " + relationshipType + " " + source.name() + " -> " + target.name()
+                        + (associationClassName == null ? "" : " con clase de asociacion " + associationClassName)
         );
     }
 
