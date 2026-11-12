@@ -14,6 +14,7 @@ final class UmlRelationshipValidator {
         Set<UUID> classIds = new HashSet<>();
         Set<UUID> relationshipIds =
                 new HashSet<>();
+        Set<UUID> associationClassIds = new HashSet<>();
 
         for (UmlClass umlClass : classes) {
             if (
@@ -114,6 +115,46 @@ final class UmlRelationshipValidator {
                         relationshipId,
                         "Una clase no puede generalizarse a si misma."
                 );
+            }
+
+            if (relationship.associationClassId() != null) {
+                UUID associationId = relationship.associationClassId();
+                if (!classIds.contains(associationId)) {
+                    collector.error(path + ".associationClassId",
+                            "ASSOCIATION_CLASS_NOT_FOUND", relationshipId,
+                            "La clase de asociacion debe existir en el proyecto.");
+                }
+                if (relationship.type() != UmlRelationshipType.ASSOCIATION) {
+                    collector.error(path + ".associationClassId",
+                            "ASSOCIATION_CLASS_TYPE_INVALID", relationshipId,
+                            "Una clase de asociacion solo puede pertenecer a una asociacion UML.");
+                }
+                if (associationId.equals(relationship.sourceClassId())
+                        || associationId.equals(relationship.targetClassId())) {
+                    collector.error(path + ".associationClassId",
+                            "ASSOCIATION_CLASS_IS_ENDPOINT", relationshipId,
+                            "La clase de asociacion no puede ser uno de los extremos.");
+                }
+                if (!associationClassIds.add(associationId)) {
+                    collector.error(path + ".associationClassId",
+                            "ASSOCIATION_CLASS_ALREADY_USED", relationshipId,
+                            "Cada clase de asociacion solo puede pertenecer a una relacion.");
+                }
+                if (Objects.equals(relationship.sourceClassId(), relationship.targetClassId())) {
+                    collector.error(path + ".targetClassId",
+                            "ASSOCIATION_CLASS_REFLEXIVE_UNSUPPORTED", relationshipId,
+                            "Las clases de asociacion reflexivas no estan soportadas.");
+                }
+                if (relationship.sourceMultiplicity() == null
+                        || relationship.targetMultiplicity() == null
+                        || relationship.sourceMultiplicity().upper() != null
+                        || relationship.targetMultiplicity().upper() != null
+                        || relationship.sourceMultiplicity().lower() > 1
+                        || relationship.targetMultiplicity().lower() > 1) {
+                    collector.error(path + ".associationClassId",
+                            "ASSOCIATION_CLASS_REQUIRES_MANY_TO_MANY", relationshipId,
+                            "La clase de asociacion requiere multiplicidades 0..* o 1..* en ambos extremos.");
+                }
             }
 
             if (
