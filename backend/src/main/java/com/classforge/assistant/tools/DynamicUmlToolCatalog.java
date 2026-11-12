@@ -175,7 +175,7 @@ public class DynamicUmlToolCatalog {
             if (containsAny(text, "agrega", "agregale", "anade", "atributo", "campo", "ponle")) {
                 result.add(AssistantToolName.ADD_ATTRIBUTES);
             }
-            if (containsAny(text, "relacion", "relaciona", "conecta", "asocia", "hereda", "agrupa", "compuesta")) {
+            if (containsAny(text, "relacion", "relaciona", "conecta", "asocia", "hereda", "agrupa", "compuesta", "clase intermedia", "clase de asociacion", "muchos a muchos")) {
                 result.add(createRelationshipTool(userText));
             }
             if (containsAny(text, "renombra", "cambia el nombre", "ahora se llama")) {
@@ -317,7 +317,7 @@ public class DynamicUmlToolCatalog {
             );
             case CREATE_ASSOCIATION -> relationshipCreateDefinition(
                     tool,
-                    "Create an ASSOCIATION between two existing classes.",
+                    "Create an ASSOCIATION between two existing classes; optional association_class is a distinct existing UML class containing attributes of a many-to-many link (dashed tether in UML). When supplied both ends must be 0..* or 1..*. If this association already exists, attach the class to it rather than creating a duplicate.",
                     "source_class",
                     "Association source class explicitly mentioned by the user.",
                     "target_class",
@@ -396,6 +396,10 @@ public class DynamicUmlToolCatalog {
         Map<String, Object> properties = new LinkedHashMap<>();
         properties.put(firstName, existingEnumSchema(firstDescription, classNames));
         properties.put(secondName, existingEnumSchema(secondDescription, classNames));
+        if (tool == AssistantToolName.CREATE_ASSOCIATION) {
+            properties.put("association_class", existingEnumSchema(
+                    "Optional existing UML class holding the own attributes of this many-to-many association. Never choose an endpoint.", classNames));
+        }
         properties.put("source_lower", lowerIntegerSchema("Optional source/whole/subclass lower multiplicity; omit unless explicitly requested."));
         properties.put("source_upper", upperIntegerSchema("Optional source/whole/subclass upper multiplicity; -1 means *; omit unless explicitly requested."));
         properties.put("target_lower", lowerIntegerSchema("Optional target/part/superclass lower multiplicity; omit unless explicitly requested."));
