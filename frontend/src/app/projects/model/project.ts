@@ -49,6 +49,8 @@ export interface UmlRelationship {
   type: UmlRelationshipType;
   sourceMultiplicity: Multiplicity | null;
   targetMultiplicity: Multiplicity | null;
+  /** A UML association class linked to the relation (not another endpoint). */
+  associationClassId?: string | null;
 }
 
 export interface UmlModel {
