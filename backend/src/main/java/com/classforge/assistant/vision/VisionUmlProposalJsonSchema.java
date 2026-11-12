@@ -188,6 +188,11 @@ public final class VisionUmlProposalJsonSchema {
                             "minLength": 1,
                             "maxLength": 120
                           },
+                          "associationClassRef": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120
+                          },
                           "type": {
                             "type": "string",
                             "enum": [
