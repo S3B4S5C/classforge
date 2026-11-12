@@ -131,9 +131,34 @@ public class VisionProposalCompiler {
             UmlRelationshipType type = parseRelationshipType(relationship.type());
             VisionMultiplicityProposal sourceMultiplicity = relationship.sourceMultiplicity();
             VisionMultiplicityProposal targetMultiplicity = relationship.targetMultiplicity();
+            String associationClassName = relationship.associationClassRef() == null
+                    ? null
+                    : resolveClassReference(
+                            relationship.associationClassRef(), referenceToClassName, document);
+
+            if (associationClassName != null) {
+                if (type != UmlRelationshipType.ASSOCIATION
+                        || normalize(associationClassName).equals(normalize(source))
+                        || normalize(associationClassName).equals(normalize(target))) {
+                    throw new AssistantPlanningException(
+                            "La clase de asociacion visual debe ser distinta a los extremos de una ASSOCIATION.");
+                }
+                if (!many(sourceMultiplicity) || !many(targetMultiplicity)) {
+                    warnings.add("La imagen sugiere clase de asociacion, pero no confirma ambas multiplicidades muchos-a-muchos; se omitio el enlace.");
+                    associationClassName = null;
+                }
+            }
 
             UmlRelationship existing = existingRelationship(document, source, target, type);
             if (existing != null) {
+                if (associationClassName != null && existing.associationClassId() == null) {
+                    actions.add(associationAction(
+                            AssistantActionType.UPDATE_RELATIONSHIP, source, target, type,
+                            sourceMultiplicity, targetMultiplicity, associationClassName));
+                } else if (associationClassName != null
+                        && existing.associationClassId() != null) {
+                    warnings.add("La asociacion visual ya posee una clase intermedia; revisa que corresponda a la imagen.");
+                }
                 if (multiplicityConflicts(sourceMultiplicity, existing.sourceMultiplicity())
                         || multiplicityConflicts(targetMultiplicity, existing.targetMultiplicity())) {
                     warnings.add(
@@ -148,26 +173,9 @@ public class VisionProposalCompiler {
                 continue;
             }
 
-            actions.add(action(
-                    AssistantActionType.CREATE_RELATIONSHIP,
-                    null,
-                    null,
-                    List.of(),
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    source,
-                    target,
-                    type,
-                    lower(sourceMultiplicity),
-                    upper(sourceMultiplicity),
-                    lower(targetMultiplicity),
-                    upper(targetMultiplicity)
-            ));
+            actions.add(associationAction(
+                    AssistantActionType.CREATE_RELATIONSHIP, source, target, type,
+                    sourceMultiplicity, targetMultiplicity, associationClassName));
         }
 
         String summary = proposal.summary() == null || proposal.summary().isBlank()
@@ -179,6 +187,31 @@ public class VisionProposalCompiler {
                 new AssistantSemanticPlan(summary, List.copyOf(actions)),
                 List.copyOf(warnings),
                 confidence
+        );
+    }
+
+    private boolean many(VisionMultiplicityProposal multiplicity) {
+        return multiplicity != null
+                && Boolean.TRUE.equals(multiplicity.unbounded())
+                && multiplicity.lower() != null
+                && multiplicity.lower() >= 0
+                && multiplicity.lower() <= 1;
+    }
+
+    private AssistantPlanAction associationAction(
+            AssistantActionType actionType,
+            String source, String target, UmlRelationshipType type,
+            VisionMultiplicityProposal sourceMultiplicity,
+            VisionMultiplicityProposal targetMultiplicity,
+            String associationClassName
+    ) {
+        return new AssistantPlanAction(
+                actionType, null, null, List.of(),
+                null, null, null, null, null, null, null,
+                source, target, type,
+                lower(sourceMultiplicity), upper(sourceMultiplicity),
+                lower(targetMultiplicity), upper(targetMultiplicity),
+                associationClassName
         );
     }
 
