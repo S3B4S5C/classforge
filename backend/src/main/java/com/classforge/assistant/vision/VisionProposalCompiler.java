@@ -151,7 +151,11 @@ public class VisionProposalCompiler {
 
             UmlRelationship existing = existingRelationship(document, source, target, type);
             if (existing != null) {
-                if (associationClassName != null && existing.associationClassId() == null) {
+                boolean conflictingMultiplicity =
+                        multiplicityConflicts(sourceMultiplicity, existing.sourceMultiplicity())
+                        || multiplicityConflicts(targetMultiplicity, existing.targetMultiplicity());
+                if (associationClassName != null && existing.associationClassId() == null
+                        && !conflictingMultiplicity) {
                     actions.add(associationAction(
                             AssistantActionType.UPDATE_RELATIONSHIP, source, target, type,
                             sourceMultiplicity, targetMultiplicity, associationClassName));
@@ -159,8 +163,7 @@ public class VisionProposalCompiler {
                         && existing.associationClassId() != null) {
                     warnings.add("La asociacion visual ya posee una clase intermedia; revisa que corresponda a la imagen.");
                 }
-                if (multiplicityConflicts(sourceMultiplicity, existing.sourceMultiplicity())
-                        || multiplicityConflicts(targetMultiplicity, existing.targetMultiplicity())) {
+                if (conflictingMultiplicity) {
                     warnings.add(
                             "La relacion '" + source + " -> " + target + "' ya existe con multiplicidades distintas; "
                                     + "se omitio el cambio visual por seguridad."
