@@ -129,6 +129,7 @@ export class UmlClassCommandExecution {
           !== umlClass.id
         && relationship.targetClassId
           !== umlClass.id
+        && relationship.associationClassId !== umlClass.id
       ) {
         throw new UmlCommandError(
           'RESTORE_RELATIONSHIP_NOT_CONNECTED',
@@ -209,7 +210,8 @@ export class UmlClassCommandExecution {
       document.umlModel.relationships.filter(
         (relationship) =>
           relationship.sourceClassId !== classId
-          && relationship.targetClassId !== classId,
+          && relationship.targetClassId !== classId
+          && relationship.associationClassId !== classId,
       );
 
     delete document.layout.nodes[classId];
