@@ -216,6 +216,12 @@ type MultiplicityOption =
                 }
               }
             </mat-select>
+            @if (form.controls.associationClassId.hasError('manyToManyRequired')) {
+              <mat-error>Ambos extremos deben ser 0..* o 1..*.</mat-error>
+            }
+            @if (form.controls.associationClassId.hasError('invalidEndpoint')) {
+              <mat-error>La clase intermedia no puede ser un extremo.</mat-error>
+            }
           </mat-form-field>
           @if (form.controls.associationClassId.value) {
             <p class="dialog-copy">
