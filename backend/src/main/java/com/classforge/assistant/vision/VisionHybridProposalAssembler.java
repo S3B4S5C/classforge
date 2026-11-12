@@ -31,6 +31,23 @@ public class VisionHybridProposalAssembler {
             classes.put(normalize(umlClass.ref()), umlClass);
         }
 
+        // The CV pass traces solid edges; dashed association-class tethers belong
+        // to semantic transcription and must be merged into the solid edge.
+        Map<String, String> associationRefsBySolidEdge = new HashMap<>();
+        Set<String> tetherClasses = new LinkedHashSet<>();
+        for (VisionRelationshipProposal semanticRelation : semantic.safeRelationships()) {
+            if (semanticRelation.associationClassRef() == null
+                    || semanticRelation.associationClassRef().isBlank()
+                    || !"ASSOCIATION".equalsIgnoreCase(semanticRelation.type())) {
+                continue;
+            }
+            associationRefsBySolidEdge.put(
+                    relationshipKey("ASSOCIATION",
+                            semanticRelation.sourceRef(), semanticRelation.targetRef()),
+                    semanticRelation.associationClassRef());
+            tetherClasses.add(normalize(semanticRelation.associationClassRef()));
+        }
+
         List<VisionRelationshipProposal> relationships = new ArrayList<>();
         Set<String> seenEdgeIds = new LinkedHashSet<>();
         Set<String> seenRelationships = new LinkedHashSet<>();
@@ -90,6 +107,12 @@ public class VisionHybridProposalAssembler {
             if (!classes.containsKey(normalize(source)) || !classes.containsKey(normalize(target))) {
                 throw new AssistantPlanningException("El edge hibrido no apunta a refs de clases confirmadas.");
             }
+            // Avoid converting the dashed association-class tether into a
+            // spurious independent association to either original endpoint.
+            if (tetherClasses.contains(normalize(source))
+                    || tetherClasses.contains(normalize(target))) {
+                continue;
+            }
             String duplicate = relationshipKey(type, source, target);
             if (!seenRelationships.add(duplicate)) {
                 throw new AssistantPlanningException("La anotacion hibrida produjo una relacion duplicada: " + duplicate);
@@ -106,7 +129,8 @@ public class VisionHybridProposalAssembler {
                             required(edge.evidenceLabel(), "evidenceLabel"),
                             edge.confidence(),
                             null, null, null, null
-                    )
+                    ),
+                    associationRefsBySolidEdge.get(relationshipKey(type, source, target))
             ));
         }
 
