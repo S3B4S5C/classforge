@@ -27,6 +27,7 @@ import {
   createUmlClassCell,
 } from '../uml-class-shape';
 import {
+  createAssociationClassConnectorCell,
   createUmlRelationshipCell,
   resetRelationshipCell,
   selectRelationshipCell,
@@ -580,7 +581,8 @@ export class UmlCanvasComponent
 
         this.selectCell({
           kind: 'relationship',
-          id: String(linkView.model.id),
+          id: String(linkView.model.get('associationClassRelationshipId')
+            ?? linkView.model.id),
         });
       },
     );
@@ -599,7 +601,8 @@ export class UmlCanvasComponent
         event.stopPropagation();
 
         const relationshipId =
-          String(linkView.model.id);
+          String(linkView.model.get('associationClassRelationshipId')
+            ?? linkView.model.id);
 
         this.selectCell({
           kind: 'relationship',
@@ -808,6 +811,11 @@ export class UmlCanvasComponent
         createUmlRelationshipCell,
       );
 
+    const associationClassCells =
+      document.umlModel.relationships
+        .map(createAssociationClassConnectorCell)
+        .filter((cell): cell is dia.Link => cell !== null);
+
     const oldCount =
       this.previousClassCount;
 
@@ -817,6 +825,7 @@ export class UmlCanvasComponent
     this.graph.resetCells([
       ...elementCells,
       ...relationshipCells,
+      ...associationClassCells,
     ]);
 
     this.previousClassCount =
