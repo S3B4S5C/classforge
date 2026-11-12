@@ -464,7 +464,8 @@ public class UmlAssistantCommandResolver {
                         source.id(),
                         target.id(),
                         type,
-                        action
+                        action,
+                        document
                 ),
                 null
         );
@@ -511,7 +512,8 @@ public class UmlAssistantCommandResolver {
                         source.id(),
                         target.id(),
                         type,
-                        action
+                        action,
+                        document
                 ),
                 null
         );
@@ -558,14 +560,18 @@ public class UmlAssistantCommandResolver {
             UUID sourceId,
             UUID targetId,
             UmlRelationshipType type,
-            AssistantPlanAction action
+            AssistantPlanAction action,
+            ProjectDocument document
     ) {
+        UUID associationClassId = resolveAssociationClassId(
+                action, document, current.associationClassId());
         if (type == UmlRelationshipType.GENERALIZATION) {
             return new UmlRelationship(
                     current.id(),
                     sourceId,
                     targetId,
                     type,
+                    null,
                     null,
                     null
             );
@@ -585,7 +591,8 @@ public class UmlAssistantCommandResolver {
                         current.targetMultiplicity(),
                         action.targetLower(),
                         action.targetUpper()
-                )
+                ),
+                associationClassId
         );
     }
 
@@ -635,8 +642,10 @@ public class UmlAssistantCommandResolver {
             UUID sourceId,
             UUID targetId,
             UmlRelationshipType type,
-            AssistantPlanAction action
+            AssistantPlanAction action,
+            ProjectDocument document
     ) {
+        UUID associationClassId = resolveAssociationClassId(action, document, null);
         if (
                 type
                         == UmlRelationshipType.GENERALIZATION
@@ -646,6 +655,7 @@ public class UmlAssistantCommandResolver {
                     sourceId,
                     targetId,
                     type,
+                    null,
                     null,
                     null
             );
@@ -663,8 +673,20 @@ public class UmlAssistantCommandResolver {
                 multiplicity(
                         action.targetLower(),
                         action.targetUpper()
-                )
+                ),
+                associationClassId
         );
+    }
+
+    private UUID resolveAssociationClassId(
+            AssistantPlanAction action,
+            ProjectDocument document,
+            UUID current
+    ) {
+        if (action.associationClassName() == null || action.associationClassName().isBlank()) {
+            return current;
+        }
+        return findClass(document, action.associationClassName()).id();
     }
 
     private Multiplicity multiplicity(
