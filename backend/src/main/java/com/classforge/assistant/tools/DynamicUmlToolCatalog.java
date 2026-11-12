@@ -166,6 +166,13 @@ public class DynamicUmlToolCatalog {
             boolean compound,
             boolean allowFinish
     ) {
+        String normalizedRequest = normalize(userText);
+        if (!compound && containsAny(normalizedRequest,
+                "clase intermedia", "clase de asociacion", "association class")) {
+            // CREATE_ASSOCIATION accepts an optional attached class and
+            // resolves to UPDATE_RELATIONSHIP when the solid edge exists.
+            return List.of(AssistantToolName.CREATE_ASSOCIATION);
+        }
         if (compound) {
             List<AssistantToolName> result = new ArrayList<>();
             String text = normalize(userText);
