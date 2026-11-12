@@ -85,6 +85,40 @@ export function createUmlRelationshipCell(
   return link;
 }
 
+/**
+ * UML association class connector: dashed class-to-middle-of-association link,
+ * not another persisted UmlRelationship.
+ */
+export function createAssociationClassConnectorCell(
+  relationship: UmlRelationship,
+): dia.Link | null {
+  if (!relationship.associationClassId) {
+    return null;
+  }
+  const link = new shapes.standard.Link({
+    id: `${relationship.id}:association-class`,
+    source: { id: relationship.associationClassId },
+    target: {
+      id: relationship.id,
+      anchor: { name: 'connectionRatio', args: { ratio: 0.5 } },
+    },
+    attrs: {
+      line: {
+        stroke: LINK_COLOR,
+        strokeWidth: 1.6,
+        strokeDasharray: '6 5',
+        sourceMarker: noMarker(),
+        targetMarker: noMarker(),
+      },
+      wrapper: { strokeWidth: 10 },
+    },
+  });
+  link.router('normal');
+  link.connector('straight');
+  link.set('associationClassRelationshipId', relationship.id);
+  return link;
+}
+
 export function selectRelationshipCell(
   link: dia.Link,
 ): void {
