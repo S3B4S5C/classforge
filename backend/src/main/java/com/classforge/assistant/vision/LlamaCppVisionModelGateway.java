@@ -345,6 +345,40 @@ public class LlamaCppVisionModelGateway implements VisionModelGateway {
             }
         }
 
+        // The second VLM pass focuses on solid edges. Preserve a previously
+        // grounded dashed association-class tether if this pass omits it.
+        List<VisionRelationshipProposal> mergedRelationships = new ArrayList<>();
+        for (VisionRelationshipProposal proposed : relationshipPass.safeRelationships()) {
+            if (proposed.associationClassRef() != null) {
+                if (!allowedRefs.contains(normalizeRef(proposed.associationClassRef()))) {
+                    throw contract("associationClassRef must point to a confirmed visual class.");
+                }
+                mergedRelationships.add(proposed);
+                continue;
+            }
+            String preservedRef = null;
+            if ("ASSOCIATION".equalsIgnoreCase(proposed.type())) {
+                for (VisionRelationshipProposal first : firstPass.safeRelationships()) {
+                    if (!"ASSOCIATION".equalsIgnoreCase(first.type())
+                            || first.associationClassRef() == null) {
+                        continue;
+                    }
+                    boolean sameDirection = first.sourceRef().equalsIgnoreCase(proposed.sourceRef())
+                            && first.targetRef().equalsIgnoreCase(proposed.targetRef());
+                    boolean oppositeDirection = first.sourceRef().equalsIgnoreCase(proposed.targetRef())
+                            && first.targetRef().equalsIgnoreCase(proposed.sourceRef());
+                    if (sameDirection || oppositeDirection) {
+                        preservedRef = first.associationClassRef();
+                        break;
+                    }
+                }
+            }
+            mergedRelationships.add(new VisionRelationshipProposal(
+                    proposed.sourceRef(), proposed.targetRef(), proposed.type(),
+                    proposed.sourceMultiplicity(), proposed.targetMultiplicity(),
+                    proposed.evidence(), preservedRef));
+        }
+
         List<String> warnings = new ArrayList<>();
         warnings.addAll(firstPass.safeWarnings());
         warnings.addAll(relationshipPass.safeWarnings());
@@ -357,7 +391,7 @@ public class LlamaCppVisionModelGateway implements VisionModelGateway {
         return new VisionUmlProposal(
                 firstPass.summary(),
                 firstPass.safeClasses(),
-                relationshipPass.safeRelationships(),
+                List.copyOf(mergedRelationships),
                 List.copyOf(new LinkedHashSet<>(warnings)),
                 confidence
         );
