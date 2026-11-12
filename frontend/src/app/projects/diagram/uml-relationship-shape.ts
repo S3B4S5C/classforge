@@ -98,10 +98,9 @@ export function createAssociationClassConnectorCell(
   const link = new shapes.standard.Link({
     id: `${relationship.id}:association-class`,
     source: { id: relationship.associationClassId },
-    target: {
-      id: relationship.id,
-      linkAnchor: { name: 'connectionRatio', args: { ratio: 0.5 } },
-    },
+    // For a link-to-link endpoint, JointJS 4.3 uses defaultLinkAnchor.
+    // Its built-in default is connectionRatio(0.5): the midpoint.
+    target: { id: relationship.id },
     attrs: {
       line: {
         stroke: LINK_COLOR,
