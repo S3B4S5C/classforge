@@ -42,7 +42,28 @@ public class VisionProposalGroundingValidator {
             required(relationship.sourceRef(), "relationship.sourceRef");
             required(relationship.targetRef(), "relationship.targetRef");
             required(relationship.type(), "relationship.type");
-            requireEvidence(relationship.evidence(), null, "relationship.evidence", null);
+            String relationEvidence = requireEvidence(
+                    relationship.evidence(), null, "relationship.evidence", null);
+            if (relationship.associationClassRef() != null
+                    && !relationship.associationClassRef().isBlank()) {
+                if (!"ASSOCIATION".equalsIgnoreCase(relationship.type())) {
+                    throw new AssistantPlanningException(
+                            "associationClassRef solo es valido para ASSOCIATION.");
+                }
+                String assocRef = relationship.associationClassRef().trim();
+                if (assocRef.equalsIgnoreCase(relationship.sourceRef())
+                        || assocRef.equalsIgnoreCase(relationship.targetRef())) {
+                    throw new AssistantPlanningException(
+                            "associationClassRef no puede ser un extremo de la relacion.");
+                }
+                boolean visibleClass = proposal.safeClasses().stream().anyMatch(
+                        candidate -> assocRef.equalsIgnoreCase(candidate.ref())
+                                || assocRef.equalsIgnoreCase(candidate.name()));
+                if (!visibleClass) {
+                    throw new AssistantPlanningException(
+                            "associationClassRef debe identificar una clase visible en la imagen.");
+                }
+            }
         }
     }
 
