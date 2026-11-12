@@ -571,6 +571,8 @@ export class ProjectWorkspacePage {
           relationship.sourceClassId
             === umlClass.id
           || relationship.targetClassId
+            === umlClass.id
+          || relationship.associationClassId
             === umlClass.id,
       ).length;
 
