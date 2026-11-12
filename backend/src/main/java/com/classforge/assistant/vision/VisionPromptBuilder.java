@@ -66,6 +66,17 @@ public class VisionPromptBuilder {
             - Ejemplo: "- id: UUID" => name="id", dataType="UUID", visibility="PRIVATE".
             - Ejemplo: "- activo: Boolean" => name="activo", dataType="BOOLEAN", visibility="PRIVATE".
 
+            Clases de asociacion UML (muy importante):
+            - Un rectangulo UML con atributos unido mediante una linea DISCONTINUA al PUNTO MEDIO de otra linea de asociacion es una CLASE DE ASOCIACION (association class).
+            - El rectangulo sigue siendo una clase UML normal en classes (con sus atributos visibles).
+            - La linea discontinua NO es otra relacion entre dos clases ni una herencia.
+            - En la relacion principal, agrega associationClassRef con el ref de esa clase; conserva sourceRef, targetRef, tipo y multiplicidades de sus extremos reales.
+            - Ejemplo: Asamblea --0..* a 1..*-- Vocero, y Comite conectado con linea punteada al centro => classes contiene Asamblea, Vocero y Comite; relationships tiene SOLO la asociacion Asamblea/Vocero con associationClassRef=ref de Comite.
+            - No reemplaces la asociacion original por dos relaciones 1:N.
+            - Declara associationClassRef solamente si ves la linea discontinua terminando en la linea de asociacion, no cuando una clase simplemente esta cerca o hay una linea que termina en otra clase.
+            - Si la topologia no es fiable, omite associationClassRef y agrega un warning; no inventes.
+            - En relaciones con clase de asociacion lee las multiplicidades de los dos extremos del conector principal, no del enlace discontinuo.
+
             Relaciones y direccion:
             - Usa solo relaciones: ASSOCIATION, AGGREGATION, COMPOSITION, GENERALIZATION.
             - GENERALIZATION: el triangulo hueco apunta SIEMPRE a la superclase. sourceRef es la subclase, ubicada en el extremo opuesto al triangulo; targetRef es la superclase, tocada por el triangulo.
@@ -120,6 +131,13 @@ public class VisionPromptBuilder {
             - Rombo HUECO/BLANCO (◇) en un extremo => AGGREGATION; sourceRef es la clase tocada por el rombo.
             - Triangulo HUECO de generalizacion => GENERALIZATION; sourceRef es la subclase y targetRef la superclase tocada por el triangulo.
             - No conviertas una linea simple en AGGREGATION/COMPOSITION por conocimiento del dominio.
+
+            Clases de asociacion:
+            - Una linea discontinua desde un rectangulo UML hasta el centro de un conector principal es una association class, NO una relacion independiente.
+            - Asigna associationClassRef al ref de la tercera clase unida por esa linea discontinua.
+            - Solo refiere clases ya transcritas en la lista cerrada y con evidencia visual clara.
+            - Conserva los extremos de la asociacion principal y sus multiplicidades.
+            - Si el enlace discontinuo es ambiguo, no inventes associationClassRef.
 
             Multiplicidades:
             - Busca multiplicidades SOLO en una vecindad pequena de cada extremo de la relacion ya confirmada.
