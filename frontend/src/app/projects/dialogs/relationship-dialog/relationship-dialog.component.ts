@@ -35,6 +35,7 @@ export interface RelationshipDialogResult {
   type: UmlRelationshipType;
   sourceMultiplicity: Multiplicity | null;
   targetMultiplicity: Multiplicity | null;
+  associationClassId: string | null;
 }
 
 type MultiplicityOption =
@@ -202,6 +203,28 @@ type MultiplicityOption =
             </mat-form-field>
           </div>
         }
+
+        @if (form.controls.type.value === 'ASSOCIATION') {
+          <mat-form-field appearance="outline">
+            <mat-label>Clase de asociacion (opcional)</mat-label>
+            <mat-select formControlName="associationClassId">
+              <mat-option value="">Sin clase intermedia</mat-option>
+              @for (umlClass of data.classes; track umlClass.id) {
+                @if (umlClass.id !== form.controls.sourceClassId.value
+                  && umlClass.id !== form.controls.targetClassId.value) {
+                  <mat-option [value]="umlClass.id">{{ umlClass.name }}</mat-option>
+                }
+              }
+            </mat-select>
+          </mat-form-field>
+          @if (form.controls.associationClassId.value) {
+            <p class="dialog-copy">
+              Esta clase pertenece a la asociacion y contiene sus atributos.
+              Ambos extremos deben tener multiplicidad 0..* o 1..*.
+              Crea primero la clase intermedia con el boton Nueva clase.
+            </p>
+          }
+        }
       </form>
     </mat-dialog-content>
 
@@ -367,6 +390,10 @@ export class RelationshipDialogComponent {
           validators: [Validators.required],
         },
       ),
+    associationClassId: new FormControl(
+      this.data.relationship?.associationClassId ?? '',
+      { nonNullable: true },
+    ),
     targetMultiplicity:
       new FormControl<MultiplicityOption>(
         this.toOption(
@@ -398,6 +425,18 @@ export class RelationshipDialogComponent {
     }
 
     const raw = this.form.getRawValue();
+    if (raw.associationClassId && raw.type === 'ASSOCIATION'
+      && (!['0..*', '1..*'].includes(raw.sourceMultiplicity)
+        || !['0..*', '1..*'].includes(raw.targetMultiplicity))) {
+      this.form.controls.associationClassId.setErrors({ manyToManyRequired: true });
+      return;
+    }
+    if (raw.associationClassId &&
+      (raw.associationClassId === raw.sourceClassId
+        || raw.associationClassId === raw.targetClassId)) {
+      this.form.controls.associationClassId.setErrors({ invalidEndpoint: true });
+      return;
+    }
 
     const isGeneralization =
       raw.type === 'GENERALIZATION';
@@ -406,6 +445,9 @@ export class RelationshipDialogComponent {
       sourceClassId: raw.sourceClassId,
       targetClassId: raw.targetClassId,
       type: raw.type,
+      associationClassId: raw.type === 'ASSOCIATION'
+        ? (raw.associationClassId || null)
+        : null,
       sourceMultiplicity:
         isGeneralization
           ? null
