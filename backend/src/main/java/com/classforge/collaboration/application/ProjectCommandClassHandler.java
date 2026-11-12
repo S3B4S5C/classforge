@@ -132,7 +132,8 @@ final class ProjectCommandClassHandler {
                     relationship.sourceClassId()
                             .equals(umlClass.id())
                             || relationship.targetClassId()
-                            .equals(umlClass.id()),
+                            .equals(umlClass.id())
+                            || umlClass.id().equals(relationship.associationClassId()),
                     "RESTORE_RELATIONSHIP_NOT_CONNECTED",
                     "RESTORE_CLASS can only restore relationships connected to the class"
             );
@@ -246,6 +247,7 @@ final class ProjectCommandClassHandler {
                                 .equals(classId)
                                 || relationship.targetClassId()
                                 .equals(classId)
+                                || classId.equals(relationship.associationClassId())
         );
 
         HashMap<UUID, DiagramNodeLayout> nodes =
