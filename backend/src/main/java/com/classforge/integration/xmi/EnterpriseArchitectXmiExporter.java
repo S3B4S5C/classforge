@@ -53,7 +53,17 @@ public class EnterpriseArchitectXmiExporter {
             }
         }
 
+        java.util.Set<UUID> attachedClassIds = new java.util.HashSet<>();
+        for (UmlRelationship relationship : relationships) {
+            if (relationship.associationClassId() != null) {
+                attachedClassIds.add(relationship.associationClassId());
+            }
+        }
+
         for (UmlClass umlClass : classes) {
+            if (attachedClassIds.contains(umlClass.id())) {
+                continue; // emitted once as uml:AssociationClass below
+            }
             line(xml, 3, "<packagedElement xmi:type=\"uml:Class\" xmi:id=\"" + xmiId("EAID", umlClass.id()) + "\" name=\"" + escape(umlClass.name()) + "\" visibility=\"public\">");
             for (UmlAttribute attribute : umlClass.attributes()) {
                 String typeId = attribute.dataType() == UmlDataType.CUSTOM
@@ -74,10 +84,34 @@ public class EnterpriseArchitectXmiExporter {
             if (relationship.type() == UmlRelationshipType.GENERALIZATION) {
                 continue;
             }
-            String relationshipId = xmiId("EAID", relationship.id());
+            UmlClass associationClass = relationship.associationClassId() == null
+                    ? null : classes.stream()
+                            .filter(candidate -> candidate.id().equals(relationship.associationClassId()))
+                            .findFirst().orElse(null);
+            String relationshipId = associationClass == null
+                    ? xmiId("EAID", relationship.id())
+                    : xmiId("EAID", associationClass.id());
             String sourceEndId = derivedId("EAID", "association-source:" + relationship.id());
             String targetEndId = derivedId("EAID", "association-target:" + relationship.id());
-            line(xml, 3, "<packagedElement xmi:type=\"uml:Association\" xmi:id=\"" + relationshipId + "\" visibility=\"public\" memberEnd=\"" + sourceEndId + " " + targetEndId + "\">");
+            String elementType = associationClass == null ? "uml:Association" : "uml:AssociationClass";
+            String name = associationClass == null ? "" : " name=\"" + escape(associationClass.name()) + "\"";
+            line(xml, 3, "<packagedElement xmi:type=\"" + elementType + "\" xmi:id=\""
+                    + relationshipId + "\"" + name + " visibility=\"public\" memberEnd=\"" + sourceEndId + " " + targetEndId + "\">");
+            if (associationClass != null) {
+                for (UmlAttribute attribute : associationClass.attributes()) {
+                    String typeId = attribute.dataType() == UmlDataType.CUSTOM
+                            ? customTypes.get(attribute.customTypeName())
+                            : primitiveTypeId(attribute.dataType());
+                    String isId = attribute.identifier() ? " isID=\"true\"" : "";
+                    line(xml, 4, "<ownedAttribute xmi:type=\"uml:Property\" xmi:id=\""
+                            + xmiId("EAID", attribute.id()) + "\" name=\"" + escape(attribute.name())
+                            + "\" visibility=\"" + visibility(attribute.visibility().name())
+                            + "\" type=\"" + typeId + "\"" + isId + ">");
+                    multiplicity(xml, 5, attribute.nullable()
+                            ? new Multiplicity(0, 1) : Multiplicity.one(), attribute.id(), "attribute");
+                    line(xml, 4, "</ownedAttribute>");
+                }
+            }
             line(xml, 4, "<ownedEnd xmi:type=\"uml:Property\" xmi:id=\"" + sourceEndId + "\" type=\"" + xmiId("EAID", relationship.sourceClassId()) + "\" association=\"" + relationshipId + "\" aggregation=\"" + aggregation(relationship.type()) + "\">");
             multiplicity(xml, 5, normalizeMultiplicity(relationship.sourceMultiplicity()), relationship.id(), "source");
             line(xml, 4, "</ownedEnd>");
