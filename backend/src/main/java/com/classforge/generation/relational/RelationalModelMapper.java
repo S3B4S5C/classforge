@@ -3,6 +3,7 @@ package com.classforge.generation.relational;
 import com.classforge.generation.relational.model.*;
 import com.classforge.project.domain.document.*;
 import java.util.*;
+import java.nio.charset.StandardCharsets;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -22,14 +23,33 @@ public class RelationalModelMapper {
         preflight(classes, relationships, classById, parentRelationship, diagnostics);
         if (!diagnostics.isEmpty()) throw new RelationalMappingException(diagnostics);
 
+        Set<UUID> associationClassIds = new HashSet<>();
+        for (UmlRelationship relationship : relationships) {
+            if (relationship.associationClassId() != null) {
+                associationClassIds.add(relationship.associationClassId());
+            }
+        }
+
         Map<UUID, TableBuilder> tables = new HashMap<>();
         for (UmlClass umlClass : classes) {
             TableBuilder table = new TableBuilder(new RelationalTableOrigin(RelationalTableOriginType.UML_CLASS, umlClass.id()), umlClass.name(), naming.toSnakeCase(umlClass.name()));
             tables.put(umlClass.id(), table);
             for (UmlAttribute attribute : umlClass.attributes()) table.add(new RelationalColumn(RelationalColumnOrigin.ATTRIBUTE, attribute.id(), attribute.name(), naming.toSnakeCase(attribute.name()), type(attribute.dataType()), attribute.identifier() ? false : attribute.nullable()), diagnostics, umlClass.id());
+            if (associationClassIds.contains(umlClass.id())
+                    && umlClass.attributes().stream().noneMatch(UmlAttribute::identifier)) {
+                // Association classes with no explicit identifier still need a stable,
+                // generated primary key in Java/JPA and the relational IR.
+                table.add(new RelationalColumn(RelationalColumnOrigin.ATTRIBUTE,
+                        derivedId("association-class-id:" + umlClass.id()),
+                        "id", "id", RelationalDataType.UUID, false),
+                        diagnostics, umlClass.id());
+            }
         }
         for (UmlClass umlClass : classes) if (!parentRelationship.containsKey(umlClass.id())) {
             List<String> keys = umlClass.attributes().stream().filter(UmlAttribute::identifier).map(a -> naming.toSnakeCase(a.name())).sorted().toList();
+            if (keys.isEmpty() && associationClassIds.contains(umlClass.id())) {
+                keys = List.of("id");
+            }
             tables.get(umlClass.id()).primaryKey = new RelationalPrimaryKey(keys);
         }
         List<RelationalRelation> relations = new ArrayList<>();
@@ -72,7 +92,14 @@ public class RelationalModelMapper {
             if (prior != null) diag(ds, RelationalMappingDiagnosticCode.RELATIONAL_TABLE_NAME_COLLISION, c.id(), "classes", "Classes map to the same relational table: " + physical);
             boolean subclass = parents.containsKey(c.id());
             List<UmlAttribute> ids = c.attributes().stream().filter(UmlAttribute::identifier).toList();
-            if (!subclass && ids.isEmpty()) diag(ds, RelationalMappingDiagnosticCode.CLASS_IDENTIFIER_REQUIRED, c.id(), "classes", "A root class requires an identifier.");
+            boolean associationClass = rs.stream().anyMatch(r -> r != null && c.id().equals(r.associationClassId()));
+            if (!subclass && ids.isEmpty() && !associationClass) diag(ds, RelationalMappingDiagnosticCode.CLASS_IDENTIFIER_REQUIRED, c.id(), "classes", "A root class requires an identifier.");
+            if (associationClass && subclass) diag(ds, RelationalMappingDiagnosticCode.ASSOCIATION_CLASS_INVALID, c.id(), "classes", "Association class cannot be an inheritance subclass.");
+            if (associationClass && ids.isEmpty() && c.attributes().stream()
+                    .anyMatch(a -> naming.toSnakeCase(a.name()).equals("id"))) {
+                diag(ds, RelationalMappingDiagnosticCode.RELATIONAL_COLUMN_NAME_COLLISION,
+                        c.id(), "classes", "Implicit association-class id would collide with a declared attribute.");
+            }
             if (subclass && !ids.isEmpty()) diag(ds, RelationalMappingDiagnosticCode.SUBCLASS_IDENTIFIER_NOT_ALLOWED, c.id(), "classes", "A subclass inherits its identity.");
             for (UmlAttribute a : c.attributes()) if (a.dataType() == UmlDataType.CUSTOM) diag(ds, RelationalMappingDiagnosticCode.CUSTOM_TYPE_UNSUPPORTED, a.id(), "attributes", "CUSTOM is unsupported until enum/value-object semantics are explicit.");
             Set<String> columns = new HashSet<>(); for (UmlAttribute a : c.attributes()) if (!columns.add(naming.toSnakeCase(a.name()))) diag(ds, RelationalMappingDiagnosticCode.RELATIONAL_COLUMN_NAME_COLLISION, a.id(), "attributes", "Attributes map to the same column.");
@@ -80,6 +107,26 @@ public class RelationalModelMapper {
         for (UmlRelationship r : rs) if (r != null) {
             if (!classById.containsKey(r.sourceClassId())) diag(ds, RelationalMappingDiagnosticCode.RELATIONSHIP_CLASS_NOT_FOUND, r.id(), "relationships.sourceClassId", "Relationship sourceClassId does not reference a known UML class.");
             if (!classById.containsKey(r.targetClassId())) diag(ds, RelationalMappingDiagnosticCode.RELATIONSHIP_CLASS_NOT_FOUND, r.id(), "relationships.targetClassId", "Relationship targetClassId does not reference a known UML class.");
+            if (r.associationClassId() != null) {
+                if (!classById.containsKey(r.associationClassId())
+                        || r.type() != UmlRelationshipType.ASSOCIATION
+                        || r.associationClassId().equals(r.sourceClassId())
+                        || r.associationClassId().equals(r.targetClassId())
+                        || rs.stream().filter(candidate -> candidate != null
+                                && r.associationClassId().equals(candidate.associationClassId())).count() > 1) {
+                    diag(ds, RelationalMappingDiagnosticCode.ASSOCIATION_CLASS_INVALID,
+                            r.id(), "relationships.associationClassId",
+                            "Association class must exist, be distinct from endpoints, and belong to exactly one association.");
+                }
+                if (r.sourceMultiplicity() == null || r.targetMultiplicity() == null
+                        || r.sourceMultiplicity().upper() != null
+                        || r.targetMultiplicity().upper() != null
+                        || r.sourceMultiplicity().lower() > 1
+                        || r.targetMultiplicity().lower() > 1) {
+                    diag(ds, RelationalMappingDiagnosticCode.ASSOCIATION_CLASS_INVALID,
+                            r.id(), "relationships", "Association class requires a many-to-many relation.");
+                }
+            }
             if (r.type() == UmlRelationshipType.GENERALIZATION) continue;
             if (Objects.equals(r.sourceClassId(), r.targetClassId())) diag(ds, RelationalMappingDiagnosticCode.REFLEXIVE_RELATIONSHIP_UNSUPPORTED, r.id(), "relationships", "Reflexive relationships need role names.");
             RelationalCardinality source = cardinality(r.sourceMultiplicity(), r, ds); RelationalCardinality target = cardinality(r.targetMultiplicity(), r, ds);
@@ -89,7 +136,12 @@ public class RelationalModelMapper {
     private void mapRelationship(UmlRelationship r, Map<UUID, TableBuilder> tables, List<RelationalRelation> relations, List<RelationalMappingDiagnostic> ds) {
         TableBuilder source = tables.get(r.sourceClassId()), target = tables.get(r.targetClassId());
         RelationalCardinality sc = cardinality(r.sourceMultiplicity(), r, ds), tc = cardinality(r.targetMultiplicity(), r, ds); if (sc == null || tc == null || source == null || target == null) return;
-        boolean sm = many(sc), tm = many(tc); RelationalReferentialAction action = r.type() == UmlRelationshipType.COMPOSITION ? RelationalReferentialAction.CASCADE : RelationalReferentialAction.NO_ACTION;
+        boolean sm = many(sc), tm = many(tc);
+        if (r.associationClassId() != null) {
+            mapAssociationClass(r, tables, source, target, sc, tc, relations, ds);
+            return;
+        }
+        RelationalReferentialAction action = r.type() == UmlRelationshipType.COMPOSITION ? RelationalReferentialAction.CASCADE : RelationalReferentialAction.NO_ACTION;
         if (r.type() == UmlRelationshipType.COMPOSITION) { addForeignKey(r, target, source, sc == RelationalCardinality.ZERO_OR_ONE, action, false, ds); relations.add(relation(r, source, target, sc, tc, RelationalRelationStorage.FOREIGN_KEY, target.name, null, action)); return; }
         if (sm && tm) { join(r, source, target, sc, tc, action, tables, relations, ds); return; }
         if (sm != tm) { TableBuilder holder = sm ? source : target, referenced = sm ? target : source; RelationalCardinality referencedCard = sm ? tc : sc; addForeignKey(r, holder, referenced, referencedCard == RelationalCardinality.ZERO_OR_ONE, action, false, ds); relations.add(relation(r, source, target, sc, tc, RelationalRelationStorage.FOREIGN_KEY, holder.name, null, action)); return; }
@@ -101,6 +153,60 @@ public class RelationalModelMapper {
         addForeignKey(r, holder, referenced, referencedCard == RelationalCardinality.ZERO_OR_ONE, action, true, ds);
         relations.add(relation(r, source, target, sc, tc, RelationalRelationStorage.FOREIGN_KEY, holder.name, null, action));
     }
+    private void mapAssociationClass(
+            UmlRelationship relationship, Map<UUID, TableBuilder> tables,
+            TableBuilder source, TableBuilder target,
+            RelationalCardinality sourceCardinality, RelationalCardinality targetCardinality,
+            List<RelationalRelation> relations, List<RelationalMappingDiagnostic> diagnostics
+    ) {
+        TableBuilder association = tables.get(relationship.associationClassId());
+        if (association == null || !many(sourceCardinality) || !many(targetCardinality)) {
+            diag(diagnostics, RelationalMappingDiagnosticCode.ASSOCIATION_CLASS_INVALID,
+                    relationship.id(), "relationships.associationClassId",
+                    "Association class must exist and both endpoints must have many cardinality.");
+            return;
+        }
+
+        // One persistent entity/table for the association class, with its
+        // own UML attributes, two NOT NULL foreign keys and one unique pair.
+        UUID sourceFkId = derivedId("association-class:" + relationship.id() + ":source");
+        UUID targetFkId = derivedId("association-class:" + relationship.id() + ":target");
+        UmlRelationship sourceLink = new UmlRelationship(
+                sourceFkId, relationship.associationClassId(),
+                relationship.sourceClassId(), UmlRelationshipType.ASSOCIATION,
+                Multiplicity.one(), sourceCardinality == RelationalCardinality.ONE_OR_MANY
+                        ? new Multiplicity(1, null) : new Multiplicity(0, null));
+        UmlRelationship targetLink = new UmlRelationship(
+                targetFkId, relationship.associationClassId(),
+                relationship.targetClassId(), UmlRelationshipType.ASSOCIATION,
+                Multiplicity.one(), targetCardinality == RelationalCardinality.ONE_OR_MANY
+                        ? new Multiplicity(1, null) : new Multiplicity(0, null));
+        addForeignKey(sourceLink, association, source, false,
+                RelationalReferentialAction.NO_ACTION, false, diagnostics);
+        addForeignKey(targetLink, association, target, false,
+                RelationalReferentialAction.NO_ACTION, false, diagnostics);
+        List<String> pair = association.foreignKeys.stream()
+                .filter(fk -> fk.sourceRelationshipId().equals(sourceFkId)
+                        || fk.sourceRelationshipId().equals(targetFkId))
+                .flatMap(fk -> fk.columnNames().stream()).distinct().sorted().toList();
+        association.uniques.add(new RelationalUniqueConstraint(pair));
+        relations.add(new RelationalRelation(sourceFkId, UmlRelationshipType.ASSOCIATION,
+                association.name, source.name, RelationalCardinality.ZERO_OR_MANY,
+                RelationalCardinality.EXACTLY_ONE,
+                RelationalRelationStorage.FOREIGN_KEY, association.name, null,
+                RelationalReferentialAction.NO_ACTION));
+        relations.add(new RelationalRelation(targetFkId, UmlRelationshipType.ASSOCIATION,
+                association.name, target.name, RelationalCardinality.ZERO_OR_MANY,
+                RelationalCardinality.EXACTLY_ONE,
+                RelationalRelationStorage.FOREIGN_KEY, association.name, null,
+                RelationalReferentialAction.NO_ACTION));
+    }
+
+    private UUID derivedId(String seed) {
+        return UUID.nameUUIDFromBytes(("classforge:" + seed)
+                .getBytes(StandardCharsets.UTF_8));
+    }
+
     private void join(UmlRelationship r, TableBuilder source, TableBuilder target, RelationalCardinality sc, RelationalCardinality tc, RelationalReferentialAction action, Map<UUID, TableBuilder> tables, List<RelationalRelation> relations, List<RelationalMappingDiagnostic> ds) {
         String name = r.type() == UmlRelationshipType.ASSOCIATION ? List.of(source.name, target.name).stream().sorted().reduce((a,b)->a+"_"+b).orElseThrow() : source.name + "_" + target.name;
         if (tables.values().stream().anyMatch(t -> t.name.equals(name))) { diag(ds, RelationalMappingDiagnosticCode.RELATIONAL_TABLE_NAME_COLLISION, r.id(), "relationships", "Join table collides: " + name); return; }
