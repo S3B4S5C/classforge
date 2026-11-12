@@ -100,7 +100,7 @@ export function createAssociationClassConnectorCell(
     source: { id: relationship.associationClassId },
     target: {
       id: relationship.id,
-      anchor: { name: 'connectionRatio', args: { ratio: 0.5 } },
+      linkAnchor: { name: 'connectionRatio', args: { ratio: 0.5 } },
     },
     attrs: {
       line: {
