@@ -134,6 +134,42 @@ export class UmlCommandExecutionSupport {
       );
     }
 
+    if (relationship.associationClassId) {
+      const associationId = relationship.associationClassId;
+      this.requireClass(document, associationId);
+      if (relationship.type !== 'ASSOCIATION'
+        || associationId === relationship.sourceClassId
+        || associationId === relationship.targetClassId
+        || relationship.sourceClassId === relationship.targetClassId) {
+        throw new UmlCommandError(
+          'ASSOCIATION_CLASS_INVALID',
+          'La clase intermedia requiere una asociacion entre dos clases diferentes.',
+          relationship.id,
+        );
+      }
+      if (document.umlModel.relationships.some(
+        (candidate) =>
+          candidate.id !== relationship.id
+          && candidate.associationClassId === associationId,
+      )) {
+        throw new UmlCommandError(
+          'ASSOCIATION_CLASS_ALREADY_USED',
+          'La clase intermedia ya pertenece a otra relacion.',
+          relationship.id,
+        );
+      }
+      const many = (m: Multiplicity | null) =>
+        !!m && (m.lower === 0 || m.lower === 1) && m.upper === null;
+      if (!many(relationship.sourceMultiplicity)
+        || !many(relationship.targetMultiplicity)) {
+        throw new UmlCommandError(
+          'ASSOCIATION_CLASS_REQUIRES_MANY_TO_MANY',
+          'Ambas multiplicidades deben ser 0..* o 1..*.',
+          relationship.id,
+        );
+      }
+    }
+
     if (
       relationship.type !== 'GENERALIZATION'
     ) {
