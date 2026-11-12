@@ -330,8 +330,21 @@ public class EnterpriseArchitectXmiImporter {
             boolean isAssociationClass = xmiType(association).endsWith("AssociationClass");
             UUID linkedClassId = isAssociationClass
                     ? context.classIds.get(associationId) : null;
+            String relationshipXmiId = associationId;
+            if (isAssociationClass) {
+                relationshipXmiId = associationId + ":association";
+                for (Element child : childElements(association)) {
+                    if (is(child, "ownedComment")) {
+                        String body = child.getAttribute("body");
+                        if (body.startsWith("ClassForgeRelationshipId:")) {
+                            relationshipXmiId = body.substring("ClassForgeRelationshipId:".length());
+                            break;
+                        }
+                    }
+                }
+            }
             result.add(new UmlRelationship(
-                    stableUuid(isAssociationClass ? associationId + ":association" : associationId),
+                    stableUuid(relationshipXmiId),
                     source.classId(),
                     target.classId(),
                     relationshipType,
