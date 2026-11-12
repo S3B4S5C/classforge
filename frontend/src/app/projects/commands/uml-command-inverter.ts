@@ -62,6 +62,8 @@ export class UmlCommandInverter {
                 relationship.sourceClassId
                   === command.classId
                 || relationship.targetClassId
+                  === command.classId
+                || relationship.associationClassId
                   === command.classId,
             )
             .map(
